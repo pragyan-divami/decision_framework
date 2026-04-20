@@ -349,4 +349,7 @@ Use for the internal decision map, emotion codes, KPI categories, persona-weight
 Use for adaptation logic across urgency, emotion, mental load, role-sensitive framing, and KPI slot ordering.
 
 - `references/examples.md`
-Use for worked examples across multiple personas, taxonomy states, role-enrichment cases, and webapp upload format.
+Use for worked examples across multiple personas, taxonomy states, and role-enrichment cases.
+
+- `references/upload-format.md`
+Use for the webapp markdown upload format, required and optional sections, and backend parsing behavior.
