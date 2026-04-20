@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adaptive Decision Framing Console</title>
+  <style>
+    :root {
+      --bg: #f3f0e8;
+      --panel: rgba(251, 249, 244, 0.94);
+      --line: rgba(18, 32, 51, 0.12);
+      --text: #122033;
+      --muted: #596677;
+      --accent: #1c4b8c;
+      --accent-soft: rgba(28, 75, 140, 0.09);
+      --good: #1d6a4f;
+      --good-soft: rgba(29, 106, 79, 0.09);
+      --warn: #8a5a13;
+      --warn-soft: rgba(138, 90, 19, 0.09);
+      --danger: #b94d3e;
+      --danger-soft: rgba(185, 77, 62, 0.09);
+      --shadow: 0 30px 70px rgba(24, 31, 41, 0.08);
+      --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+      --font-body: "Avenir Next", "Segoe UI", sans-serif;
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(28, 75, 140, 0.08), transparent 24%),
+        radial-gradient(circle at 86% 2%, rgba(185, 77, 62, 0.08), transparent 18%),
+        linear-gradient(180deg, #f6f3ec 0%, #efe9dc 100%);
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image:
+        linear-gradient(rgba(18, 32, 51, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18, 32, 51, 0.03) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at center, black 32%, transparent 76%);
+    }
+    .page {
+      width: min(1280px, calc(100vw - 36px));
+      margin: 18px auto 36px;
+      display: grid;
+      gap: 18px;
+    }
+    .hero, .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius-xl);
+    }
+    .hero {
+      padding: 18px 24px;
+      display: grid;
+      gap: 12px;
+    }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+    }
+    .hero-heading {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.55rem, 2.6vw, 2.35rem);
+      line-height: 0.98;
+      letter-spacing: -0.02em;
+    }
+    .hero-copy, .card-note, .status-line, .summary-text, .support-box p, .risk-card p, .list-item p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .hero-copy {
+      margin: 0;
+      max-width: 1080px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .upload-box, .summary-box, .support-box, .risk-card, .list-item, .kpi {
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 18px;
+    }
+    .upload-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      white-space: nowrap;
+    }
+    .hero-status {
+      min-height: 1.5em;
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .button {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .button:disabled { opacity: 0.6; cursor: wait; }
+    .status-line { font-size: 0.92rem; }
+    .card { padding: 24px; display: none; }
+    .card.visible { display: block; }
+    .grid { display: grid; gap: 18px; }
+    .hero-stats, .emotion-grid, .kpi-grid, .two-col, .compact-grid, .fact-grid, .support-grid { display: grid; gap: 12px; }
+    .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .emotion-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .two-col, .compact-grid, .support-grid { grid-template-columns: 1fr 1fr; }
+    .fact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stat, .summary-box, .support-box, .risk-card, .kpi { padding: 18px; }
+    .stat-label, .summary-label, .switcher-label, .kpi-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .stat-value, .summary-value, .kpi-value {
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+    .stat-value {
+      font-size: clamp(1.05rem, 1.8vw, 1.4rem);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .stat-note {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .summary-value { font-family: var(--font-display); font-size: clamp(1.2rem, 2vw, 1.65rem); line-height: 1.05; margin-bottom: 8px; }
+    .summary-headline {
+      font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin-bottom: 8px;
+      overflow-wrap: anywhere;
+    }
+    .summary-subtext {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .emotion-pill {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: #fffdf8;
+      color: var(--muted);
+      border-radius: 18px;
+      padding: 14px 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .emotion-pill.active {
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
+      border-color: rgba(28, 75, 140, 0.22);
+      color: var(--text);
+    }
+    .emotion-code {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+    .emotion-name { display: block; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .emotion-type { font-size: 0.82rem; line-height: 1.4; }
+    .tag, .kpi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+      width: fit-content;
+    }
+    .tag.good, .kpi-chip.risk-green { background: var(--good-soft); color: var(--good); }
+    .tag.warn, .kpi-chip.risk-yellow { background: var(--warn-soft); color: var(--warn); }
+    .tag.danger, .kpi-chip.risk-red { background: var(--danger-soft); color: var(--danger); }
+    .tag.accent { background: var(--accent-soft); color: var(--accent); }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+    .card-title { margin: 0; font-size: 1.18rem; letter-spacing: 0.01em; }
+    .list-grid { display: grid; gap: 10px; }
+    .list-item {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 12px 14px;
+    }
+    .list-item p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
+    .list-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; background: var(--accent); }
+    .fact-item {
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 10px;
+      align-items: start;
+      min-height: 84px;
+    }
+    .fact-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.45;
+    }
+    .fact-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-top: 4px;
+      background: var(--accent);
+    }
+    .kpi.priority {
+      border-color: rgba(28, 75, 140, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(28, 75, 140, 0.04);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.03), #fffdf8 48%);
+    }
+    .kpi.hidden { display: none; }
+    .kpi-value { font-size: clamp(1.35rem, 2.3vw, 2rem); font-weight: 600; }
+    .kpi-note, .kpi-meta { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+    .show-more-btn {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.92);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .risk-card.warn { border-color: rgba(138, 90, 19, 0.16); background: linear-gradient(180deg, rgba(138, 90, 19, 0.06), rgba(255, 253, 248, 0.96)); }
+    .risk-card.good { border-color: rgba(29, 106, 79, 0.16); background: linear-gradient(180deg, rgba(29, 106, 79, 0.06), rgba(255, 253, 248, 0.96)); }
+    .risk-card.danger { border-color: rgba(185, 77, 62, 0.16); background: linear-gradient(180deg, rgba(185, 77, 62, 0.06), rgba(255, 253, 248, 0.96)); }
+    .risk-card.accent { border-color: rgba(28, 75, 140, 0.16); background: linear-gradient(180deg, rgba(28, 75, 140, 0.06), rgba(255, 253, 248, 0.96)); }
+    .support-box h3, .risk-card h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .support-box p, .risk-card p { margin: 0; font-size: 0.95rem; }
+    .recommendation-layout { display: grid; gap: 12px; }
+    .recommendation-card { padding: 16px; }
+    @media (max-width: 1120px) {
+      .hero-stats, .emotion-grid, .kpi-grid, .two-col, .compact-grid, .fact-grid, .support-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .page { width: min(100vw - 18px, 100%); margin: 10px auto 24px; }
+      .hero, .card { padding: 16px; }
+      .card-header { flex-direction: column; align-items: start; }
+      .hero-top { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div class="hero-heading">
+          <div class="eyebrow">Decision Framework</div>
+          <h1 id="heroTitle">Upload the Persona and Scenario</h1>
+          <p class="hero-copy" id="heroCopy">
+            Upload one markdown file containing both persona and scenario. The app parses it, runs the backend analysis, and shows the result here.
+          </p>
+        </div>
+        <label class="button upload-trigger" for="fileInput">Upload Markdown</label>
+      </div>
+      <input id="fileInput" type="file" accept=".md,text/markdown" hidden />
+      <p class="hero-status" id="statusLine">No file analyzed yet.</p>
+    </section>
+
+    <section class="card" id="clarificationCard">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Clarification Required</h2>
+          <div class="card-note">The backend will stop and ask for one targeted missing piece instead of pretending a full analysis exists.</div>
+        </div>
+      </div>
+      <div class="summary-box">
+        <div class="summary-value" id="clarificationMessage"></div>
+      </div>
+    </section>
+
+    <section class="card" id="resultCard">
+      <div class="grid">
+        <div class="hero-stats" id="heroStats"></div>
+        <article>
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Emotion Variants</h2>
+              <div class="card-note">Switch between all 6 emotions without re-uploading the file.</div>
+            </div>
+          </div>
+          <div class="emotion-grid" id="emotionGrid"></div>
+        </article>
+        <article class="card visible" style="padding:0; background:transparent; border:none; box-shadow:none; backdrop-filter:none;">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Priority KPIs</h2>
+              <div class="card-note">The KPI strip changes order based on the selected emotion, while risk flags stay tied to the recommended path.</div>
+            </div>
+            <button class="show-more-btn" id="kpiToggle" type="button" aria-expanded="false">Show more KPIs</button>
+          </div>
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </article>
+        <article>
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recommended Action</h2>
+              <div class="card-note">Server-side analysis output rendered in a reusable client view.</div>
+            </div>
+            <div class="tag accent" id="stanceTag">Adaptive</div>
+          </div>
+          <div class="recommendation-layout">
+            <div class="compact-grid">
+              <div class="summary-box recommendation-card">
+                <div class="summary-label">Recommended Action</div>
+                <div class="summary-headline" id="recommendationTitle"></div>
+                <div class="summary-subtext" id="recommendationSnapshot"></div>
+              </div>
+              <div class="summary-box recommendation-card">
+                <div class="summary-label">Persona Lens</div>
+                <div class="summary-subtext" id="personaLens"></div>
+              </div>
+            </div>
+            <div class="fact-grid" id="priorityFacts"></div>
+            <div class="support-grid">
+              <div class="risk-card" id="emotionRiskCard">
+                <h3>Consequence Risk</h3>
+                <p id="emotionConsequence"></p>
+              </div>
+              <div class="support-box">
+                <h3>Blind Spots To Flag</h3>
+                <p id="blindSpotText"></p>
+              </div>
+            </div>
+            <div class="support-box">
+              <h3>Suggested Next Step</h3>
+              <p id="nextStepText"></p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const heroTitle = document.getElementById("heroTitle");
+    const heroCopy = document.getElementById("heroCopy");
+    const statusLine = document.getElementById("statusLine");
+    const clarificationCard = document.getElementById("clarificationCard");
+    const clarificationMessage = document.getElementById("clarificationMessage");
+    const resultCard = document.getElementById("resultCard");
+    const heroStats = document.getElementById("heroStats");
+    const emotionGrid = document.getElementById("emotionGrid");
+    const kpiGrid = document.getElementById("kpiGrid");
+    const kpiToggle = document.getElementById("kpiToggle");
+    const stanceTag = document.getElementById("stanceTag");
+    const recommendationTitle = document.getElementById("recommendationTitle");
+    const recommendationSnapshot = document.getElementById("recommendationSnapshot");
+    const personaLens = document.getElementById("personaLens");
+    const priorityFacts = document.getElementById("priorityFacts");
+    const emotionConsequence = document.getElementById("emotionConsequence");
+    const blindSpotText = document.getElementById("blindSpotText");
+    const nextStepText = document.getElementById("nextStepText");
+    const emotionRiskCard = document.getElementById("emotionRiskCard");
+
+    let analysisState = null;
+    let kpisExpanded = false;
+    let activeEmotionCode = "A";
+
+    function setStatus(text) {
+      statusLine.textContent = text;
+    }
+
+    function setHeroContent(title, copy) {
+      heroTitle.textContent = title;
+      heroCopy.textContent = copy;
+    }
+
+    function renderList(container, items) {
+      container.innerHTML = items.map((item) => `
+        <div class="list-item">
+          <div class="list-dot"></div>
+          <p>${item}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderFacts(container, items) {
+      container.innerHTML = items.map((item) => `
+        <div class="fact-item">
+          <div class="fact-dot"></div>
+          <p>${item}</p>
+        </div>
+      `).join("");
+    }
+
+    function renderHeroStats(payload) {
+      const parsed = payload.parsed;
+      const enrichment = payload.enrichment;
+      const baseline = payload.baseline;
+      const stats = [
+        { label: "File", value: payload.fileName, note: parsed.title || "Uploaded markdown file" },
+        { label: "Persona", value: parsed.persona || "Unknown", note: parsed.timeHorizon || "No time horizon supplied" },
+        { label: "Baseline", value: baseline.recommendedOptionLabel, note: `${baseline.confidence} confidence` },
+        { label: "Enrichment", value: enrichment.used ? "Used" : "Skipped", note: enrichment.used ? enrichment.mode : "Scenario-first analysis" }
+      ];
+      heroStats.innerHTML = stats.map((stat) => `
+        <div class="stat">
+          <div class="stat-label">${stat.label}</div>
+          <div class="stat-value">${stat.value}</div>
+          <div class="stat-note">${stat.note}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderEmotionPills(payload) {
+      emotionGrid.innerHTML = payload.emotionVariants.map((variant) => `
+        <button class="emotion-pill ${variant.code === activeEmotionCode ? "active" : ""}" data-code="${variant.code}">
+          <span class="emotion-code">Variant ${variant.code}</span>
+          <span class="emotion-name">${variant.name}</span>
+          <span class="emotion-type">${variant.state}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderKPIs(variant) {
+      const catalog = analysisState.kpiCatalog;
+      const optionId = variant.recommendedOptionId;
+      const priorityMap = new Map((variant.kpiOrdering || []).map((item) => [item.code, item]));
+      const slotOrder = {
+        priority: 0,
+        blind_spot_warning: 1,
+        primary: 2,
+        secondary: 3
+      };
+      const ranked = catalog
+        .map((kpi) => {
+          const priority = priorityMap.get(kpi.code) || {
+            rankScore: 0,
+            weightPct: 0,
+            slotType: "secondary",
+            reason: "default ordering"
+          };
+          return {
+            ...kpi,
+            priorityScore: priority.rankScore,
+            priorityReason: priority.reason,
+            slotType: priority.slotType,
+            weightPct: priority.weightPct,
+            risk: kpi.optionRisks[optionId]
+          };
+        })
+        .sort((a, b) =>
+          (slotOrder[a.slotType] - slotOrder[b.slotType]) ||
+          (b.weightPct - a.weightPct) ||
+          (b.priorityScore - a.priorityScore) ||
+          a.code.localeCompare(b.code)
+        );
+
+      kpiGrid.innerHTML = ranked.map((kpi, index) => `
+        <div class="kpi ${index < 4 ? "priority" : "hidden"}" data-hidden="${index >= 4 ? "true" : "false"}">
+          <div class="kpi-label">${kpi.label}</div>
+          <div class="kpi-chip risk-${kpi.risk.level}">${kpi.risk.text}</div>
+          <div class="kpi-value">${kpi.optionValues[optionId]}</div>
+          <div class="kpi-note">${kpi.baselineNote}</div>
+          <div class="kpi-meta">${kpi.optionMeta[optionId]}</div>
+          <div class="kpi-meta">Slot: ${kpi.slotType.replaceAll("_", " ")} · ${kpi.priorityReason}</div>
+        </div>
+      `).join("");
+
+      updateKpiVisibility(false);
+    }
+
+    function updateKpiVisibility(expanded) {
+      kpisExpanded = expanded;
+      const hiddenCards = kpiGrid.querySelectorAll('[data-hidden="true"]');
+      hiddenCards.forEach((card) => card.classList.toggle("hidden", !expanded));
+      const hiddenCount = hiddenCards.length;
+      if (!hiddenCount) {
+        kpiToggle.hidden = true;
+        return;
+      }
+      kpiToggle.hidden = false;
+      kpiToggle.textContent = expanded ? "Show fewer KPIs" : `Show ${hiddenCount} more KPIs`;
+      kpiToggle.setAttribute("aria-expanded", String(expanded));
+    }
+
+    function activateEmotion(code) {
+      if (!analysisState) return;
+      activeEmotionCode = code;
+      const variant = analysisState.emotionVariants.find((item) => item.code === code) || analysisState.emotionVariants[0];
+      document.querySelectorAll(".emotion-pill").forEach((pill) => {
+        pill.classList.toggle("active", pill.dataset.code === code);
+      });
+      stanceTag.textContent = variant.headerBadge || variant.recommendedOptionLabel;
+      stanceTag.className = `tag ${variant.tone}`;
+      recommendationTitle.textContent = variant.recommendedOptionLabel;
+      recommendationSnapshot.textContent = variant.snapshotSubtitle || variant.state;
+      personaLens.textContent = variant.personaLens;
+      renderFacts(priorityFacts, variant.priorityFacts);
+      emotionConsequence.textContent = variant.consequenceRisk;
+      blindSpotText.textContent = variant.blindSpots;
+      nextStepText.textContent = variant.nextStep;
+      emotionRiskCard.className = `risk-card ${variant.tone}`;
+      renderKPIs(variant);
+    }
+
+    function renderClarification(payload) {
+      resultCard.classList.remove("visible");
+      clarificationCard.classList.add("visible");
+      clarificationMessage.textContent = payload.message;
+      const parsed = payload.parsed || {};
+      setHeroContent(parsed.scenarioTitle || parsed.title || "Upload the Persona and Scenario", payload.message);
+    }
+
+    function renderResult(payload) {
+      clarificationCard.classList.remove("visible");
+      resultCard.classList.add("visible");
+      analysisState = payload;
+      const scenarioSummary = payload.parsed?.scenario || "Scenario uploaded and analyzed.";
+      const scenarioTitle = payload.parsed?.scenarioTitle || payload.parsed?.call || payload.parsed?.title || payload.fileName;
+      setHeroContent(scenarioTitle, scenarioSummary);
+      renderHeroStats(payload);
+      renderEmotionPills(payload);
+      activateEmotion(activeEmotionCode);
+    }
+
+    async function analyzeUpload() {
+      const file = fileInput.files[0];
+      if (!file) {
+        setStatus("Select one markdown file before analyzing.");
+        return;
+      }
+      setStatus(`Uploading ${file.name} and running backend analysis...`);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/analyze", {
+          method: "POST",
+          body: formData
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.status === "error") {
+          throw new Error(payload.message || "Analysis failed.");
+        }
+        setStatus(`Analysis complete for ${payload.fileName}.`);
+        if (payload.status === "clarification_required") {
+          renderClarification(payload);
+        } else {
+          renderResult(payload);
+        }
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+      }
+    }
+
+    fileInput.addEventListener("change", analyzeUpload);
+    emotionGrid.addEventListener("click", (event) => {
+      const pill = event.target.closest(".emotion-pill");
+      if (!pill) return;
+      activateEmotion(pill.dataset.code);
+    });
+    kpiToggle.addEventListener("click", () => {
+      updateKpiVisibility(!kpisExpanded);
+    });
+  </script>
+</body>
+</html>

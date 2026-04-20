@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenario 01 · Cross-OpCo Aggregation</title>
+  <style>
+    :root {
+      --bg: #f3f0e8;
+      --paper: #fbf9f4;
+      --ink: #122033;
+      --muted: #596677;
+      --line: rgba(18, 32, 51, 0.12);
+      --accent: #1c4b8c;
+      --accent-soft: rgba(28, 75, 140, 0.08);
+      --warn: #8a5a13;
+      --warn-soft: rgba(138, 90, 19, 0.08);
+      --good: #1d6a4f;
+      --good-soft: rgba(29, 106, 79, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --shadow: 0 30px 70px rgba(24, 31, 41, 0.08);
+      --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+      --font-body: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(28, 75, 140, 0.08), transparent 24%),
+        linear-gradient(180deg, #f6f3ec 0%, #efe9dc 100%);
+      color: var(--ink);
+      font-family: var(--font-body);
+    }
+
+    .page {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 26px auto 48px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero,
+    .card {
+      background: rgba(251, 249, 244, 0.9);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+
+    .hero {
+      border-radius: var(--radius-xl);
+      padding: 30px 32px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .eyebrow {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 5vw, 4.3rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-copy {
+      margin: 0;
+      max-width: 860px;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.7;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .stat-note {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .main,
+    .side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.18rem;
+      letter-spacing: 0.01em;
+    }
+
+    .card-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      max-width: 520px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 14px;
+    }
+
+    .summary-line {
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .summary-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      line-height: 1.15;
+    }
+
+    .summary-text {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.96rem;
+      margin-top: 10px;
+    }
+
+    .facts {
+      display: grid;
+      gap: 12px;
+    }
+
+    .fact {
+      display: grid;
+      grid-template-columns: 12px 1fr;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .fact-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 6px;
+    }
+
+    .fact p {
+      margin: 0;
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .paths {
+      display: grid;
+      gap: 12px;
+    }
+
+    .path {
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid rgba(18, 32, 51, 0.1);
+      background: #fffdf8;
+    }
+
+    .path.recommended {
+      background: linear-gradient(180deg, rgba(29, 106, 79, 0.1), rgba(255, 253, 248, 0.94));
+      border-color: rgba(29, 106, 79, 0.25);
+    }
+
+    .path-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .path h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill.good {
+      color: var(--good);
+      background: var(--good-soft);
+    }
+
+    .pill.warn {
+      color: var(--warn);
+      background: var(--warn-soft);
+    }
+
+    .pill.accent {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .path p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .path ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .path li + li {
+      margin-top: 8px;
+    }
+
+    .action-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .action {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .action-num {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .action strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .action span {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    .decision-box {
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(28, 75, 140, 0.12), rgba(255, 253, 248, 0.95));
+      border: 1px solid rgba(28, 75, 140, 0.16);
+    }
+
+    .decision-box h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .decision-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      .hero-stats,
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100vw - 20px, 100%);
+        margin: 10px auto 28px;
+      }
+
+      .hero,
+      .card {
+        padding: 20px;
+      }
+
+      .card-header,
+      .path-top {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Scenario 01 · Cross-OpCo Demand Aggregation</div>
+        <h1>Use Motors' renewal to aggregate now, but carve out Steel.</h1>
+        <p class="hero-copy">
+          The best path is to capture group leverage immediately through Motors and Power, while protecting Steel's captive-plant relationship. This keeps savings momentum alive without turning one supplier relationship into a governance rupture.
+        </p>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-label">Decision Window</div>
+          <div class="stat-value">90 days</div>
+          <div class="stat-note">Motors' contract creates a live action window.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Savings Potential</div>
+          <div class="stat-value">₹180 cr</div>
+          <div class="stat-note">Estimated value from group aggregation.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Combined Volume</div>
+          <div class="stat-value">180k t/yr</div>
+          <div class="stat-note">Category scale across Motors, Steel, and Power.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Critical Constraint</div>
+          <div class="stat-value">Steel</div>
+          <div class="stat-note">Captive-plant co-investment makes a forced switch costly.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="main">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recommended Direction</h2>
+              <div class="card-note">Show the decision, the reason, and the immediate consequence. Nothing else first.</div>
+            </div>
+          </div>
+
+          <div class="summary">
+            <div class="summary-line">
+              <div class="summary-label">Recommendation</div>
+              <div class="summary-value">Aggregate Motors + Power now. Carve out Steel.</div>
+              <div class="summary-text">
+                This captures visible group savings in the current renewal cycle while avoiding unnecessary damage to Steel's embedded strategic supplier arrangement.
+              </div>
+            </div>
+            <div class="summary-line">
+              <div class="summary-label">Why This Wins</div>
+              <div class="summary-text">
+                It balances the two things that matter most in this scenario: proving cross-OpCo synergy and preserving trust where capital has already been co-invested.
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Relevant Data</h2>
+              <div class="card-note">Only the facts that change the call.</div>
+            </div>
+          </div>
+
+          <div class="facts">
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>Motors' industrial-gases contract renews in <strong>90 days</strong>, creating a real but manageable decision window.</p>
+            </div>
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>The combined category volume across Motors, Steel, and Power is <strong>180,000 tonnes/year</strong>.</p>
+            </div>
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>A unified contract is estimated to generate <strong>12-14% savings</strong>, roughly <strong>₹180 cr</strong>.</p>
+            </div>
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>Steel's current supplier has <strong>co-invested in a captive plant at Kalinganagar</strong>, so switching is not a normal sourcing event.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Options</h2>
+              <div class="card-note">Distinct paths only.</div>
+            </div>
+          </div>
+
+          <div class="paths">
+            <div class="path recommended">
+              <div class="path-top">
+                <h3>Aggregate Motors + Power now. Keep Steel out for this cycle.</h3>
+                <div class="pill good">Recommended</div>
+              </div>
+              <p>Captures immediate group value without breaking Steel's captive-plant relationship.</p>
+              <ul>
+                <li>Preserves the renewal window at Motors.</li>
+                <li>Shows visible group synergy this quarter.</li>
+                <li>Avoids escalating Steel into a political or supplier-trust conflict.</li>
+              </ul>
+            </div>
+
+            <div class="path">
+              <div class="path-top">
+                <h3>Force full aggregation now</h3>
+                <div class="pill warn">Highest friction</div>
+              </div>
+              <p>Strongest savings signal, but too likely to trigger resistance and damage a strategic relationship.</p>
+              <ul>
+                <li>Maximizes short-term synergy optics.</li>
+                <li>Risks backlash from Steel and broader OpCo defensiveness.</li>
+                <li>Could reduce future cooperation even if it wins now.</li>
+              </ul>
+            </div>
+
+            <div class="path">
+              <div class="path-top">
+                <h3>Delay six months for full alignment</h3>
+                <div class="pill accent">Lowest conflict</div>
+              </div>
+              <p>Reduces immediate friction, but weakens the current savings opportunity.</p>
+              <ul>
+                <li>Protects internal consensus.</li>
+                <li>May lose leverage from Motors' live renewal.</li>
+                <li>Pushes visible synergy delivery further out.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="side">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Actions</h2>
+              <div class="card-note">What should happen next.</div>
+            </div>
+          </div>
+
+          <div class="action-list">
+            <div class="action">
+              <div class="action-num">1</div>
+              <div>
+                <strong>Approve partial aggregation now</strong>
+                <span>Move Motors and Power into a common negotiation path in this renewal cycle.</span>
+              </div>
+            </div>
+            <div class="action">
+              <div class="action-num">2</div>
+              <div>
+                <strong>Formally carve out Steel</strong>
+                <span>Position the carve-out as protection of an existing strategic capital relationship, not as a refusal of group synergy.</span>
+              </div>
+            </div>
+            <div class="action">
+              <div class="action-num">3</div>
+              <div>
+                <strong>Ask for a quantified Steel exception note</strong>
+                <span>Get a short memo on what savings are lost by excluding Steel and whether a later migration path exists.</span>
+              </div>
+            </div>
+            <div class="action">
+              <div class="action-num">4</div>
+              <div>
+                <strong>Set the next review checkpoint</strong>
+                <span>Revisit Steel at the next renewal alignment milestone instead of forcing a premature switch now.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Decision Logic</h2>
+              <div class="card-note">Why the recommendation is defensible.</div>
+            </div>
+          </div>
+
+          <div class="decision-box">
+            <h3>Best balance of value and control</h3>
+            <p>
+              Forcing full aggregation creates avoidable resistance. Delaying loses live leverage. Partial aggregation is the clean middle path: it proves group savings now while containing relationship and governance risk.
+            </p>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Still Missing</h2>
+              <div class="card-note">Only ask for what materially changes the decision.</div>
+            </div>
+          </div>
+
+          <div class="facts">
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>How much of the <strong>₹180 cr</strong> depends specifically on including Steel.</p>
+            </div>
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>Whether the captive-plant arrangement creates operational lock-in beyond commercial preference.</p>
+            </div>
+            <div class="fact">
+              <div class="fact-dot"></div>
+              <p>Whether Motors can use a short bridge extension if negotiation timing tightens.</p>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

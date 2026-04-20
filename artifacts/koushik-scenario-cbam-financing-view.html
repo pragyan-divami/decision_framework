@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koushik Scenario · CBAM Financing Decision Webapp</title>
+  <style>
+    :root {
+      --bg: #f3f0e8;
+      --panel: rgba(251, 249, 244, 0.94);
+      --line: rgba(18, 32, 51, 0.12);
+      --text: #122033;
+      --muted: #596677;
+      --accent: #1c4b8c;
+      --accent-soft: rgba(28, 75, 140, 0.09);
+      --good: #1d6a4f;
+      --good-soft: rgba(29, 106, 79, 0.09);
+      --warn: #8a5a13;
+      --warn-soft: rgba(138, 90, 19, 0.09);
+      --danger: #b94d3e;
+      --danger-soft: rgba(185, 77, 62, 0.09);
+      --shadow: 0 30px 70px rgba(24, 31, 41, 0.08);
+      --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+      --font-body: "Avenir Next", "Segoe UI", sans-serif;
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(28, 75, 140, 0.08), transparent 24%),
+        radial-gradient(circle at 86% 2%, rgba(185, 77, 62, 0.08), transparent 18%),
+        linear-gradient(180deg, #f6f3ec 0%, #efe9dc 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image:
+        linear-gradient(rgba(18, 32, 51, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18, 32, 51, 0.03) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at center, black 32%, transparent 76%);
+    }
+
+    .page {
+      width: min(1280px, calc(100vw - 36px));
+      margin: 18px auto 36px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      display: grid;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -12%;
+      top: -35%;
+      width: 540px;
+      height: 540px;
+      background: radial-gradient(circle, rgba(28, 75, 140, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.2vw, 2.9rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.58;
+      font-size: 0.98rem;
+      max-width: 1120px;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.45rem;
+      font-weight: 700;
+      line-height: 1.05;
+      margin-bottom: 4px;
+    }
+
+    .stat-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .emotion-switcher {
+      display: grid;
+      gap: 12px;
+    }
+
+    .switcher-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+    }
+
+    .emotion-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .emotion-pill {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: #fffdf8;
+      color: var(--muted);
+      border-radius: 18px;
+      padding: 14px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 180ms ease, transform 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .emotion-pill:hover {
+      transform: translateY(-2px);
+      border-color: rgba(28, 75, 140, 0.22);
+      background: rgba(28, 75, 140, 0.04);
+    }
+
+    .emotion-pill.active {
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
+      border-color: rgba(28, 75, 140, 0.22);
+      color: var(--text);
+    }
+
+    .emotion-code {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .emotion-name {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .emotion-type {
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .layout,
+    .main {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.18rem;
+      letter-spacing: 0.01em;
+    }
+
+    .card-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      max-width: 680px;
+    }
+
+    .summary-box {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-family: var(--font-display);
+      font-size: clamp(1.45rem, 2.5vw, 2rem);
+      line-height: 1.08;
+      margin-bottom: 12px;
+    }
+
+    .summary-text {
+      color: var(--muted);
+      font-size: 0.96rem;
+      line-height: 1.65;
+    }
+
+    .decision-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .kpi.priority {
+      border-color: rgba(28, 75, 140, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(28, 75, 140, 0.04);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.03), #fffdf8 48%);
+    }
+
+    .kpi.hidden {
+      display: none;
+    }
+
+    .kpi-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .kpi-value {
+      font-size: clamp(1.35rem, 2.3vw, 2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .kpi-note,
+    .kpi-meta {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .kpi-chip,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+      width: fit-content;
+      max-width: 100%;
+      line-height: 1.2;
+    }
+
+    .kpi-chip.risk-red,
+    .tag.danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .kpi-chip.risk-yellow,
+    .tag.warn {
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .kpi-chip.risk-green,
+    .tag.good {
+      background: var(--good-soft);
+      color: var(--good);
+    }
+
+    .tag.accent {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .show-more-btn {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.92);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .list-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: 12px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .list-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-top: 5px;
+      background: var(--accent);
+    }
+
+    .list-item p {
+      margin: 0;
+      line-height: 1.58;
+      color: var(--text);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .risk-card,
+    .support-box {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .risk-card.warn {
+      border-color: rgba(138, 90, 19, 0.16);
+      background: linear-gradient(180deg, rgba(138, 90, 19, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.good {
+      border-color: rgba(29, 106, 79, 0.16);
+      background: linear-gradient(180deg, rgba(29, 106, 79, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.danger {
+      border-color: rgba(185, 77, 62, 0.16);
+      background: linear-gradient(180deg, rgba(185, 77, 62, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.accent {
+      border-color: rgba(28, 75, 140, 0.16);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card h3,
+    .support-box h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .risk-card p,
+    .support-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1120px) {
+      .emotion-grid,
+      .hero-stats,
+      .kpi-grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100vw - 18px, 100%);
+        margin: 10px auto 24px;
+      }
+
+      .hero,
+      .card {
+        padding: 18px;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">P2 · CFO Decision View</div>
+      <h1>CBAM Refinancing vs Green-Steel Capex Deferral</h1>
+      <p class="hero-copy">
+        EU CBAM on Indian flat steel exports is expected to add roughly €140M per year to European exposure just as a €900M green-steel tranche requires sign-off. The available calls are not equally attractive: raise a sustainability-linked bond at 7.2%, defer €300M of capex by 9 months, or split the move. The role lens here is balance-sheet discipline, financing credibility, and protection of the broader green-steel transformation thesis.
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-label">Board Window</div>
+          <div class="stat-value">Month-End</div>
+          <div class="stat-note">Weeks, not quarters, for final sign-off.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">CBAM Pressure</div>
+          <div class="stat-value">€140M/yr</div>
+          <div class="stat-note">Projected annual exposure if nothing offsets the hit.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Capital Need</div>
+          <div class="stat-value">€900M</div>
+          <div class="stat-note">Green-steel tranche requiring approval now.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Baseline Call</div>
+          <div class="stat-value">Split</div>
+          <div class="stat-note">Equal-weight baseline points to raise €600M + defer €300M.</div>
+        </div>
+      </div>
+      <div class="emotion-switcher">
+        <div class="switcher-label">Select Emotional State</div>
+        <div class="emotion-grid" id="emotionGrid"></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="main">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Priority KPIs</h2>
+              <div class="card-note">The KPI strip changes order and urgency based on the active emotional weighting, while the option risk flags remain tied to the recommended path.</div>
+            </div>
+            <button class="show-more-btn" id="kpiToggle" type="button" aria-expanded="false">Show 4 more KPIs</button>
+          </div>
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recommended Action</h2>
+              <div class="card-note">This mirrors the localhost-style emotion-sensitive recommendation card, including divergence from baseline and blind-spot notes.</div>
+            </div>
+            <div class="tag accent" id="stanceTag">Adaptive</div>
+          </div>
+          <div class="decision-stack">
+            <div class="summary-box">
+              <div class="summary-label">Decision Snapshot</div>
+              <div class="summary-value" id="recommendationTitle"></div>
+              <div class="summary-text" id="recommendationReason"></div>
+            </div>
+            <div class="summary-box">
+              <div class="summary-label">Persona Lens</div>
+              <div class="summary-text" id="personaLens"></div>
+            </div>
+            <div class="list-grid" id="priorityFacts"></div>
+            <div class="two-col">
+              <div class="risk-card" id="emotionRiskCard">
+                <h3>Consequence Risk</h3>
+                <p id="emotionConsequence"></p>
+              </div>
+              <div class="support-box">
+                <h3>Blind Spots To Flag</h3>
+                <p id="blindSpotText"></p>
+              </div>
+            </div>
+            <div class="two-col">
+              <div class="support-box">
+                <h3>Public Role Context</h3>
+                <p id="roleContext"></p>
+              </div>
+              <div class="support-box">
+                <h3>Suggested Next Step</h3>
+                <p id="nextStepText"></p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const kpiCatalog = {
+      K1: {
+        label: "Net Debt / EBITDA",
+        current: "Watch leverage tolerance at board sign-off",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "3.2x pressure",
+          B: "2.9x relief",
+          C: "3.0x contained"
+        },
+        optionMeta: {
+          A: "Full bond pushes leverage optics harder",
+          B: "Deferral protects near-term balance sheet",
+          C: "Partial raise keeps leverage in a more defensible band"
+        }
+      },
+      K2: {
+        label: "WACC",
+        current: "7.2% SLB sets the visible cost anchor",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "7.2% locked",
+          B: "Near-term hold",
+          C: "Blended burden"
+        },
+        optionMeta: {
+          A: "Highest explicit financing cost",
+          B: "Avoids new expensive issuance now",
+          C: "Contains but does not remove financing premium"
+        }
+      },
+      K3: {
+        label: "Free Cash Flow",
+        current: "Month-end cash discipline under scrutiny",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Funding-heavy",
+          B: "Near-term relief",
+          C: "Managed draw"
+        },
+        optionMeta: {
+          A: "Protects project continuity but commits more cash structure",
+          B: "Best short-term breathing room",
+          C: "More balanced near-term cash posture"
+        }
+      },
+      K4: {
+        label: "CBAM Levy Exposure",
+        current: "€140M/yr estimate",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Mitigation preserved",
+          B: "Pass-through dependent",
+          C: "Partially hedged"
+        },
+        optionMeta: {
+          A: "Keeps transformation logic strongest against CBAM",
+          B: "Relies on customer pass-through acceptance",
+          C: "Reduces but does not remove exposure pressure"
+        }
+      },
+      K5: {
+        label: "Green-Steel Milestone Compliance",
+        current: "18 months into 8-year conversion",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "On track",
+          B: "Slip risk",
+          C: "Manageable drift"
+        },
+        optionMeta: {
+          A: "Best timeline protection",
+          B: "9-month deferment risks visible slippage",
+          C: "Smaller delay but still needs critical-path discipline"
+        }
+      },
+      K6: {
+        label: "Price Pass-Through Acceptance",
+        current: "Stellantis already pushing back",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Lower reliance",
+          B: "High reliance",
+          C: "Reduced reliance"
+        },
+        optionMeta: {
+          A: "Least dependent on customer tolerance",
+          B: "Most exposed to customer pushback",
+          C: "Still exposed, but less than full deferral"
+        }
+      },
+      K7: {
+        label: "Credit Rating Outlook",
+        current: "External confidence still matters at month-end",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Watch leverage optics",
+          B: "Watch thesis drift",
+          C: "More defensible"
+        },
+        optionMeta: {
+          A: "Financing burden may pressure rating view",
+          B: "Strategic delay can also weaken confidence",
+          C: "Balanced signal if execution remains credible"
+        }
+      },
+      K8: {
+        label: "Scope 1+2 Trajectory",
+        current: "Committed transition curve under scrutiny",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Trajectory held",
+          B: "Trajectory at risk",
+          C: "Partial protection"
+        },
+        optionMeta: {
+          A: "Best protection for committed decarbonization path",
+          B: "Most visible risk to emissions trajectory",
+          C: "Better than full deferment, weaker than full funding"
+        }
+      }
+    };
+
+    const optionRiskMatrix = {
+      A: {
+        K1: { level: "yellow", text: "Moderate risk" },
+        K2: { level: "red", text: "High risk" },
+        K3: { level: "yellow", text: "Moderate risk" },
+        K4: { level: "yellow", text: "Moderate risk" },
+        K5: { level: "green", text: "Low risk" },
+        K6: { level: "yellow", text: "Moderate risk" },
+        K7: { level: "yellow", text: "Moderate risk" },
+        K8: { level: "green", text: "Low risk" }
+      },
+      B: {
+        K1: { level: "green", text: "Low risk" },
+        K2: { level: "green", text: "Low risk" },
+        K3: { level: "green", text: "Low risk" },
+        K4: { level: "red", text: "High risk" },
+        K5: { level: "red", text: "High risk" },
+        K6: { level: "red", text: "High risk" },
+        K7: { level: "yellow", text: "Moderate risk" },
+        K8: { level: "red", text: "High risk" }
+      },
+      C: {
+        K1: { level: "yellow", text: "Moderate risk" },
+        K2: { level: "yellow", text: "Moderate risk" },
+        K3: { level: "yellow", text: "Moderate risk" },
+        K4: { level: "yellow", text: "Moderate risk" },
+        K5: { level: "yellow", text: "Moderate risk" },
+        K6: { level: "yellow", text: "Moderate risk" },
+        K7: { level: "yellow", text: "Moderate risk" },
+        K8: { level: "yellow", text: "Moderate risk" }
+      }
+    };
+
+    const roleContextText = "Tata Steel's public materials describe the CFO role as leading financing strategy, large funding programs, risk management, portfolio restructuring, investor-facing finance, and sustainability-linked finance. This web view uses that role context as enrichment, not as scenario truth.";
+
+    const emotionVariants = [
+      {
+        code: "A",
+        name: "Cautious",
+        state: "Risk-first, downside-protective",
+        stance: { label: "Split", tone: "warn" },
+        option: "C",
+        recommendation: "Raise €600M and defer €300M so the balance sheet is protected without visibly breaking the green-steel thesis.",
+        reason: "This state treats irreversible financing regret and full strategic slippage as the two failures to avoid. The split contains both without pretending either problem disappears.",
+        personaLens: "A cautious CFO will overweight leverage discipline, refinancing regret, customer pushback risk, and the reputational cost of committing too aggressively under uncertainty.",
+        weights: { K1: 24, K2: 18, K3: 18, K4: 10, K5: 8, K6: 10, K7: 8, K8: 4 },
+        facts: [
+          "The month-end deadline is real, but the decision still has meaningful uncertainty around pass-through and milestone consequences.",
+          "A full deferment protects cash most cleanly, but it opens too much strategic and emissions-path downside at once.",
+          "A full bond keeps the roadmap cleanest, but locks in expensive capital and milestone pressure immediately."
+        ],
+        consequence: "This emotional state can underreact to long-cycle transition damage if it defines safety too narrowly as near-term balance-sheet protection.",
+        blindSpots: "Green-steel milestone compliance and Scope 1+2 trajectory are materially underweighted here. If the split still creates critical-path delay, cautious framing can miss strategic damage.",
+        nextStep: "Validate whether the €300M deferment avoids critical-path damage. If not, the cautious split starts to look like a disguised deferment."
+      },
+      {
+        code: "B",
+        name: "Strategic",
+        state: "Long-horizon, thesis-protective",
+        stance: { label: "Full SLB", tone: "good" },
+        option: "A",
+        recommendation: "Raise the full sustainability-linked bond and protect the green-steel conversion timeline as the core strategic asset.",
+        reason: "This state sees CBAM, customer pressure, and decarbonization credibility as one linked strategic system. A visible capex slip risks damaging the broader transition thesis more than the financing premium does.",
+        personaLens: "A strategic CFO will privilege long-term competitiveness, decarbonization credibility, and capital deployment that keeps the transformation logic intact.",
+        weights: { K1: 6, K2: 9, K3: 6, K4: 18, K5: 22, K6: 9, K7: 8, K8: 22 },
+        facts: [
+          "The program is already 18 months into an 8-year transition, so this is not an abstract future bet anymore.",
+          "CBAM is beginning next quarter, which raises the cost of weak decarbonization positioning.",
+          "A public timeline slip may weaken the credibility of the entire transformation narrative."
+        ],
+        consequence: "This emotional state can justify an expensive financing move too easily because protecting the thesis feels strategically pure.",
+        blindSpots: "Net debt, WACC, and free cash flow are underweighted here. A strategic lens can normalize financing pain that later constrains the rest of the portfolio.",
+        nextStep: "Stress-test rating and financing downside under the full bond, but only as a confirmatory check rather than a reason to revisit the strategy itself."
+      },
+      {
+        code: "C",
+        name: "Diplomatic",
+        state: "Stakeholder-balancing, coalition-sensitive",
+        stance: { label: "Split", tone: "warn" },
+        option: "C",
+        recommendation: "Take the split path because it is the most defensible answer across board, group finance, customers, and transition stakeholders.",
+        reason: "This state wants a move that can be explained coherently to multiple constituencies without making any one stakeholder absorb the entire burden.",
+        personaLens: "A diplomatic CFO will look for a decision that preserves trust with the CEO, Tata Sons, bondholders, and customers while still keeping the transition project alive.",
+        weights: { K1: 10, K2: 8, K3: 8, K4: 10, K5: 14, K6: 18, K7: 18, K8: 14 },
+        facts: [
+          "Customers are already pushing back, which means the market narrative matters as much as the spreadsheet.",
+          "A full deferment is hard to defend to transition-focused stakeholders; a full bond is harder to defend to pure capital-discipline critics.",
+          "The split creates the broadest room for alignment even if it is not the cleanest single-axis answer."
+        ],
+        consequence: "This emotional state can overvalue defendability and settle on a compromise that is politically balanced but economically second-best.",
+        blindSpots: "It underweights the most extreme downside flags by smoothing them into stakeholder language. If one KPI is truly red, a diplomatic compromise may hide it instead of solving it.",
+        nextStep: "Frame the split with explicit decision triggers so it remains a controlled compromise rather than a vague middle path."
+      },
+      {
+        code: "D",
+        name: "Decisive",
+        state: "Action-biased, commitment-oriented",
+        stance: { label: "Full SLB", tone: "danger" },
+        option: "A",
+        recommendation: "Raise the full bond now and keep the transition moving. Do not let financing hesitation become strategic drift.",
+        reason: "This state believes the cost of hesitation is higher than the cost of a clean, expensive commitment. If the direction is already chosen, the webapp should reward speed and clarity.",
+        personaLens: "A decisive CFO will prefer a clear commitment over a hedge if the transformation direction is already public and central to the thesis.",
+        weights: { K1: 8, K2: 10, K3: 6, K4: 16, K5: 22, K6: 8, K7: 8, K8: 22 },
+        facts: [
+          "The board sign-off is due this month, so indecision itself has a cost.",
+          "A half-step can preserve optionality, but it can also dilute momentum if the program needs certainty now.",
+          "This state treats further analysis as refinement, not as the main decision gate."
+        ],
+        consequence: "This emotional state can lock in a high-cost path before rating, covenant, or portfolio knock-on effects are fully pressure-tested.",
+        blindSpots: "Net debt, WACC, and free cash flow remain underweighted. Fast commitment can crowd out broader financing discipline.",
+        nextStep: "Approve the bond, then set a hard follow-up checkpoint on financing and milestone slippage so decisive action does not become unexamined momentum."
+      },
+      {
+        code: "E",
+        name: "Analytical",
+        state: "Model-driven, sensitivity-aware",
+        stance: { label: "Split", tone: "accent" },
+        option: "C",
+        recommendation: "Default to the split until sensitivity testing shows either financing pain or milestone damage is clearly dominant.",
+        reason: "This state sees unresolved variables on pass-through, milestone critical path, and financing downside. The split is the most robust answer under uncertainty, not necessarily the most elegant one.",
+        personaLens: "An analytical CFO will not trust a pure thesis argument or a pure caution argument without a more defensible model of downside asymmetry.",
+        weights: { K1: 16, K2: 16, K3: 14, K4: 10, K5: 12, K6: 10, K7: 10, K8: 12 },
+        facts: [
+          "The key issue is not awareness of the problem; it is uncertainty about which downside is actually larger.",
+          "A full bond is correct only if milestone damage clearly outweighs financing drag.",
+          "A full deferment is correct only if pass-through and timeline stretch are materially safer than the scenario implies."
+        ],
+        consequence: "This emotional state can keep refining the model while the board window closes and the decision becomes time-constrained by default.",
+        blindSpots: "Because weights are relatively balanced, the main blind spot is delay itself. Analytical discipline can become a hidden action cost.",
+        nextStep: "Run one decision-grade sensitivity model on milestone slippage versus financing burden, then lock the call rather than extending analysis again."
+      },
+      {
+        code: "F",
+        name: "Pragmatic",
+        state: "Outcome-focused, operationally grounded",
+        stance: { label: "Split", tone: "good" },
+        option: "C",
+        recommendation: "Take the split because it is the most survivable real-world move: enough funding to keep momentum, enough deferral to preserve discipline.",
+        reason: "This state is comfortable with trade-offs and resists both all-in financing and all-in postponement. It prefers the path with the fewest ways to be wrong at once.",
+        personaLens: "A pragmatic CFO will prefer the answer that remains defensible if customer pushback, financing costs, and project execution all prove imperfect at the same time.",
+        weights: { K1: 14, K2: 12, K3: 14, K4: 12, K5: 12, K6: 10, K7: 12, K8: 14 },
+        facts: [
+          "The split does not solve every KPI cleanly, but it avoids creating a single dominant failure mode.",
+          "A full bond is too expensive to love; a full deferment is too risky to trust.",
+          "This state values a path that is hard to regret under real-world friction."
+        ],
+        consequence: "This emotional state can normalize compromise and drift into incrementalism even when one side of the trade-off eventually becomes clearly dominant.",
+        blindSpots: "Pragmatism can underreact to any KPI that is quietly becoming structurally red, especially if the compromise remains superficially stable.",
+        nextStep: "Approve the split with pre-agreed triggers for escalating to full funding or deeper deferment if customer pass-through or milestone performance deteriorates."
+      }
+    ];
+
+    const emotionGrid = document.getElementById("emotionGrid");
+    const recommendationTitle = document.getElementById("recommendationTitle");
+    const recommendationReason = document.getElementById("recommendationReason");
+    const personaLens = document.getElementById("personaLens");
+    const roleContext = document.getElementById("roleContext");
+    const stanceTag = document.getElementById("stanceTag");
+    const kpiGrid = document.getElementById("kpiGrid");
+    const kpiToggle = document.getElementById("kpiToggle");
+    const priorityFacts = document.getElementById("priorityFacts");
+    const emotionConsequence = document.getElementById("emotionConsequence");
+    const blindSpotText = document.getElementById("blindSpotText");
+    const nextStepText = document.getElementById("nextStepText");
+    const emotionRiskCard = document.getElementById("emotionRiskCard");
+    let kpisExpanded = false;
+
+    function buildEmotionPills() {
+      emotionGrid.innerHTML = emotionVariants.map((variant, index) => `
+        <button class="emotion-pill ${index === 0 ? "active" : ""}" data-code="${variant.code}">
+          <span class="emotion-code">Variant ${variant.code}</span>
+          <span class="emotion-name">${variant.name}</span>
+          <span class="emotion-type">${variant.state}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderList(container, items) {
+      container.innerHTML = items.map((item) => `
+        <div class="list-item">
+          <div class="list-dot"></div>
+          <p>${item}</p>
+        </div>
+      `).join("");
+    }
+
+    function priorityLabel(weight) {
+      if (weight >= 18) return "high priority";
+      if (weight >= 10) return "medium priority";
+      return "low priority";
+    }
+
+    function renderKPIs(variant) {
+      const { weights, option } = variant;
+      const ranked = Object.entries(weights)
+        .map(([id, weight]) => ({
+          id,
+          weight,
+          ...kpiCatalog[id],
+          risk: optionRiskMatrix[option][id]
+        }))
+        .sort((a, b) => b.weight - a.weight || a.id.localeCompare(b.id));
+
+      kpiGrid.innerHTML = ranked.map((kpi, index) => `
+        <div class="kpi ${index < 4 ? "priority" : "hidden"}" data-hidden="${index >= 4 ? "true" : "false"}">
+          <div class="kpi-top">
+            <div class="kpi-label">${kpi.label}</div>
+            <div class="kpi-chip risk-${kpi.risk.level}">${kpi.risk.text}</div>
+          </div>
+          <div class="kpi-value">${kpi.optionValues[option]}</div>
+          <div class="kpi-note">${kpi.current}</div>
+          <div class="kpi-meta">${priorityLabel(kpi.weight)} · ${kpi.metricLabel.toLowerCase()}: ${kpi.optionMeta[option]}</div>
+        </div>
+      `).join("");
+
+      updateKpiVisibility(false);
+    }
+
+    function updateKpiVisibility(expanded) {
+      kpisExpanded = expanded;
+      const hiddenCards = kpiGrid.querySelectorAll('[data-hidden="true"]');
+      hiddenCards.forEach((card) => {
+        card.classList.toggle("hidden", !expanded);
+      });
+
+      const hiddenCount = hiddenCards.length;
+      if (!hiddenCount) {
+        kpiToggle.hidden = true;
+        return;
+      }
+
+      kpiToggle.hidden = false;
+      kpiToggle.textContent = expanded ? "Show fewer KPIs" : `Show ${hiddenCount} more KPIs`;
+      kpiToggle.setAttribute("aria-expanded", String(expanded));
+    }
+
+    function activateEmotion(code) {
+      const variant = emotionVariants.find((entry) => entry.code === code) || emotionVariants[0];
+
+      document.querySelectorAll(".emotion-pill").forEach((pill) => {
+        pill.classList.toggle("active", pill.dataset.code === code);
+      });
+
+      recommendationTitle.textContent = variant.recommendation;
+      recommendationReason.textContent = variant.reason;
+      personaLens.textContent = variant.personaLens;
+      roleContext.textContent = roleContextText;
+      nextStepText.textContent = variant.nextStep;
+      stanceTag.textContent = variant.stance.label;
+      stanceTag.className = `tag ${variant.stance.tone}`;
+      emotionConsequence.textContent = variant.consequence;
+      blindSpotText.textContent = variant.blindSpots;
+      emotionRiskCard.className = `risk-card ${variant.stance.tone}`;
+
+      renderKPIs(variant);
+      renderList(priorityFacts, variant.facts);
+    }
+
+    buildEmotionPills();
+    activateEmotion("A");
+
+    emotionGrid.addEventListener("click", (event) => {
+      const pill = event.target.closest(".emotion-pill");
+      if (!pill) return;
+      activateEmotion(pill.dataset.code);
+    });
+
+    kpiToggle.addEventListener("click", () => {
+      updateKpiVisibility(!kpisExpanded);
+    });
+  </script>
+</body>
+</html>

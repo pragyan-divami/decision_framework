@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scenario 02 · Emotion-Sensitive Decision Webapp</title>
+  <style>
+    :root {
+      --bg: #f3f0e8;
+      --panel: rgba(251, 249, 244, 0.92);
+      --line: rgba(18, 32, 51, 0.12);
+      --text: #122033;
+      --muted: #596677;
+      --accent: #1c4b8c;
+      --accent-soft: rgba(28, 75, 140, 0.09);
+      --good: #1d6a4f;
+      --good-soft: rgba(29, 106, 79, 0.09);
+      --warn: #8a5a13;
+      --warn-soft: rgba(138, 90, 19, 0.09);
+      --danger: #b94d3e;
+      --danger-soft: rgba(185, 77, 62, 0.09);
+      --shadow: 0 30px 70px rgba(24, 31, 41, 0.08);
+      --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+      --font-body: "Avenir Next", "Segoe UI", sans-serif;
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(28, 75, 140, 0.08), transparent 24%),
+        radial-gradient(circle at 88% 0%, rgba(185, 77, 62, 0.08), transparent 18%),
+        linear-gradient(180deg, #f6f3ec 0%, #efe9dc 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image:
+        linear-gradient(rgba(18, 32, 51, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18, 32, 51, 0.03) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at center, black 32%, transparent 76%);
+    }
+
+    .page {
+      width: min(1280px, calc(100vw - 36px));
+      margin: 18px auto 36px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      display: grid;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -12%;
+      top: -35%;
+      width: 540px;
+      height: 540px;
+      background: radial-gradient(circle, rgba(28, 75, 140, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: none;
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .hero-copy {
+      margin: 0;
+      max-width: none;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.98rem;
+    }
+
+    .emotion-switcher {
+      display: grid;
+      gap: 12px;
+    }
+
+    .switcher-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+    }
+
+    .emotion-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .emotion-pill {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: #fffdf8;
+      color: var(--muted);
+      border-radius: 18px;
+      padding: 14px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 180ms ease, transform 180ms ease, background 180ms ease, color 180ms ease;
+    }
+
+    .emotion-pill:hover {
+      transform: translateY(-2px);
+      border-color: rgba(28, 75, 140, 0.22);
+      background: rgba(28, 75, 140, 0.04);
+    }
+
+    .emotion-pill.active {
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
+      border-color: rgba(28, 75, 140, 0.22);
+      color: var(--text);
+    }
+
+    .emotion-code {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      margin-bottom: 8px;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .emotion-name {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .emotion-type {
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .main,
+    .side {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.18rem;
+      letter-spacing: 0.01em;
+    }
+
+    .card-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      max-width: 560px;
+      white-space: nowrap;
+    }
+
+    .summary-box {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .summary-value {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 2.5vw, 2rem);
+      line-height: 1.06;
+      margin-bottom: 12px;
+    }
+
+    .summary-text {
+      color: var(--muted);
+      font-size: 0.96rem;
+      line-height: 1.65;
+    }
+
+    .decision-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .kpi {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .kpi.priority {
+      border-color: rgba(28, 75, 140, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(28, 75, 140, 0.04);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.03), #fffdf8 48%);
+    }
+
+    .kpi.hidden {
+      display: none;
+    }
+
+    .kpi-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .kpi-value {
+      font-size: clamp(1.45rem, 2.6vw, 2.2rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .kpi-note {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+
+    .kpi-chip {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+      white-space: normal;
+      width: fit-content;
+      max-width: 100%;
+      line-height: 1.2;
+    }
+
+    .kpi-chip.high {
+      background: rgba(185, 77, 62, 0.09);
+      color: #b15d4f;
+    }
+
+    .kpi-chip.medium {
+      background: rgba(138, 90, 19, 0.09);
+      color: #9c6c26;
+    }
+
+    .kpi-chip.low {
+      background: rgba(28, 75, 140, 0.09);
+      color: #476d99;
+    }
+
+    .kpi-chip.risk-red {
+      background: rgba(185, 77, 62, 0.09);
+      color: #b15d4f;
+    }
+
+    .kpi-chip.risk-yellow {
+      background: rgba(138, 90, 19, 0.09);
+      color: #9c6c26;
+    }
+
+    .kpi-chip.risk-green {
+      background: rgba(29, 106, 79, 0.09);
+      color: #2d7a5f;
+    }
+
+    .kpi-meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .show-more-btn {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.92);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 180ms ease, color 180ms ease, background 180ms ease;
+      flex-shrink: 0;
+    }
+
+    .show-more-btn:hover {
+      border-color: rgba(28, 75, 140, 0.18);
+      color: var(--text);
+      background: rgba(28, 75, 140, 0.04);
+    }
+
+    .list-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .list-item {
+      display: grid;
+      grid-template-columns: 12px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .list-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-top: 5px;
+      background: var(--accent);
+    }
+
+    .list-item p {
+      margin: 0;
+      line-height: 1.58;
+      color: var(--text);
+    }
+
+    .list-item strong {
+      color: var(--text);
+    }
+
+    .risk-card {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(185, 77, 62, 0.16);
+      background: linear-gradient(180deg, rgba(185, 77, 62, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.good {
+      border-color: rgba(29, 106, 79, 0.16);
+      background: linear-gradient(180deg, rgba(29, 106, 79, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.warn {
+      border-color: rgba(138, 90, 19, 0.16);
+      background: linear-gradient(180deg, rgba(138, 90, 19, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card.accent {
+      border-color: rgba(28, 75, 140, 0.16);
+      background: linear-gradient(180deg, rgba(28, 75, 140, 0.06), rgba(255, 253, 248, 0.96));
+    }
+
+    .risk-card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .risk-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .tag.good {
+      background: var(--good-soft);
+      color: var(--good);
+    }
+
+    .tag.warn {
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+
+    .tag.danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .tag.accent {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .support-box {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: #fffdf8;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+    }
+
+    .support-box h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .support-box p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1120px) {
+      .emotion-grid,
+      .kpi-grid,
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100vw - 18px, 100%);
+        margin: 10px auto 24px;
+      }
+
+      .hero,
+      .card {
+        padding: 18px;
+      }
+
+      h1 {
+        white-space: normal;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .card-note {
+        white-space: normal;
+      }
+
+      .kpi-label {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>Supply Risk &amp; Geopolitical Exposure Review</h1>
+      <p class="hero-copy">
+        Indonesia has announced a new export levy on nickel matte, immediately putting pressure on two exposed business lines: Tata Motors EV battery cathodes and Tata Chemicals catalysts. The current exposure is about $140M per year, and supply is concentrated across two Indonesian smelters. The available responses are not equally attractive: the Philippines route is 15% costlier and takes four months to qualify, Australia is 22% costlier but available now, and the strategic stockpile can cover roughly 90 days. The core decision is whether to trigger stockpile use and move quickly toward Australia, or absorb the levy and negotiate while staying exposed to the current source base.
+      </p>
+      <div class="emotion-switcher">
+        <div class="switcher-label">Select Emotional State</div>
+        <div class="emotion-grid" id="emotionGrid"></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="main">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Priority KPIs</h2>
+              <div class="card-note">The KPI strip changes order, count, and urgency depending on the selected emotion.</div>
+            </div>
+            <button class="show-more-btn" id="kpiToggle" type="button" aria-expanded="false">Show 4 more KPIs</button>
+          </div>
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Recommended Action</h2>
+              <div class="card-note">The primary recommendation changes with the selected emotion.</div>
+            </div>
+            <div class="tag" id="stanceTag">Adaptive</div>
+          </div>
+          <div class="decision-stack">
+            <div class="summary-box">
+              <div class="summary-value" id="recommendationTitle"></div>
+              <div class="summary-text" id="recommendationReason"></div>
+            </div>
+            <div class="list-grid" id="priorityFacts"></div>
+            <div class="two-col">
+              <div class="risk-card" id="emotionRiskCard">
+                <h3>Consequence Risk</h3>
+                <p id="emotionConsequence"></p>
+              </div>
+              <div class="support-box">
+                <h3>Blind Spots To Flag</h3>
+                <p id="blindSpotText"></p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const kpiCatalog = {
+      K1: {
+        label: "Landed Cost Per Tonne",
+        current: "$18,400/t baseline",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "$20,250/t",
+          B: "$22,500/t",
+          C: "$21,150/t"
+        },
+        optionMeta: {
+          A: "+₹117 cr annual impact",
+          B: "+₹260 cr annual impact",
+          C: "+₹174 cr annual impact"
+        }
+      },
+      K2: {
+        label: "Single-Country Concentration",
+        current: "100% Indonesia today",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "100% Indonesia",
+          B: "60% Indonesia",
+          C: "75% Indonesia"
+        },
+        optionMeta: {
+          A: "Still above group red line",
+          B: "Back within policy target",
+          C: "At the group red line"
+        }
+      },
+      K3: {
+        label: "Days Of Supply Cover",
+        current: "~90 days available",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "90 days",
+          B: "30-day floor",
+          C: "60-day floor"
+        },
+        optionMeta: {
+          A: "Comfort zone maintained",
+          B: "Transition drawdown risk",
+          C: "Below comfort band, still manageable"
+        }
+      },
+      K4: {
+        label: "Qualified Alternates",
+        current: "2 suppliers · 1 country",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "2 / 1 country",
+          B: "3 / 2 countries",
+          C: "3 / 2 countries"
+        },
+        optionMeta: {
+          A: "No structural diversification",
+          B: "Achievable within 6 months",
+          C: "Achievable within 9 months"
+        }
+      },
+      K5: {
+        label: "EV Line Fill Rate",
+        current: "99.2% trailing 90 days",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "99.0%",
+          B: "97.8%",
+          C: "98.5%"
+        },
+        optionMeta: {
+          A: "Line continuity preserved",
+          B: "Transition risk in months 2-4",
+          C: "Still above internal SLA"
+        }
+      },
+      K6: {
+        label: "Scope 3 Emissions",
+        current: "42 tCO2e/t today",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "42 tCO2e/t",
+          B: "27 tCO2e/t",
+          C: "33 tCO2e/t"
+        },
+        optionMeta: {
+          A: "Off-track for 2030 target",
+          B: "Ahead of the target curve",
+          C: "Improves meaningfully, not fully"
+        }
+      },
+      K7: {
+        label: "Qualification Time",
+        current: "No active alternate pipeline",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "Pipeline empty",
+          B: "60 days",
+          C: "90 days"
+        },
+        optionMeta: {
+          A: "No alternate underway",
+          B: "Fast-track target",
+          C: "At policy limit"
+        }
+      },
+      K8: {
+        label: "Cross-OpCo Coherence",
+        current: "3 / 5 today",
+        metricLabel: "Recommended path",
+        optionValues: {
+          A: "5 / 5",
+          B: "4 / 5",
+          C: "4 / 5"
+        },
+        optionMeta: {
+          A: "Simplest response to align",
+          B: "Needs CPO orchestration",
+          C: "Coordinated but more complex"
+        }
+      }
+    };
+
+    const optionRiskMatrix = {
+      A: {
+        K1: { level: "yellow", text: "Moderate risk" },
+        K2: { level: "red", text: "High risk" },
+        K3: { level: "green", text: "Low risk" },
+        K4: { level: "red", text: "High risk" },
+        K5: { level: "green", text: "Low risk" },
+        K6: { level: "red", text: "High risk" },
+        K7: { level: "red", text: "High risk" },
+        K8: { level: "green", text: "Low risk" }
+      },
+      B: {
+        K1: { level: "red", text: "High risk" },
+        K2: { level: "green", text: "Low risk" },
+        K3: { level: "red", text: "High risk" },
+        K4: { level: "green", text: "Low risk" },
+        K5: { level: "yellow", text: "Moderate risk" },
+        K6: { level: "green", text: "Low risk" },
+        K7: { level: "green", text: "Low risk" },
+        K8: { level: "green", text: "Low risk" }
+      },
+      C: {
+        K1: { level: "red", text: "High risk" },
+        K2: { level: "yellow", text: "Moderate risk" },
+        K3: { level: "yellow", text: "Moderate risk" },
+        K4: { level: "green", text: "Low risk" },
+        K5: { level: "green", text: "Low risk" },
+        K6: { level: "yellow", text: "Moderate risk" },
+        K7: { level: "green", text: "Low risk" },
+        K8: { level: "green", text: "Low risk" }
+      }
+    };
+
+    const emotionVariants = [
+      {
+        code: "A",
+        name: "Cautious",
+        state: "Risk-averse, protective",
+        stance: { label: "Protective", tone: "warn" },
+        option: "C",
+        recommendation: "Use stockpile cover for immediate protection, but do not commit to a full Australia move until 30-day downside and negotiation scenarios are quantified.",
+        reason: "This state sees premature commitment as the bigger risk. The page should support a reversible move first, then require enough evidence before locking in a higher-cost sourcing shift.",
+        weights: { K1: 5, K2: 12, K3: 30, K4: 13, K5: 25, K6: 3, K7: 5, K8: 7 },
+        facts: [
+          "The stockpile creates a reversible protection window without committing to a structural sourcing shift immediately.",
+          "Australia is available now, but its premium will feel expensive unless the levy proves durable.",
+          "The biggest fear in this state is moving too fast and discovering the shock was temporary."
+        ],
+        consequence: "This emotional state can underreact if it mistakes a live geopolitical concentration risk for a problem that can be studied a little longer without cost.",
+        blindSpots: "Scope 3 emissions, landed cost, and qualification time are all materially underweighted here. This state can protect continuity while quietly locking in expensive or high-carbon incumbents.",
+        tradeoff: "Preserve optionality versus losing time inside a supply shock that may harden faster than the analysis cycle.",
+        nextStep: "Approve immediate stockpile draw and request a rapid 30-day persistence model before signing a full alternate-source commitment."
+      },
+      {
+        code: "B",
+        name: "Strategic",
+        state: "Long-horizon, pattern-matching",
+        stance: { label: "Structural", tone: "good" },
+        option: "B",
+        recommendation: "Use the levy as the trigger to diversify now: draw stockpile, fast-track Australia, and open a second-stage pathway beyond Indonesia entirely.",
+        reason: "This state treats the levy as proof of a bigger China+1 and critical-minerals fragility. The page should elevate structural resilience over short-term cost minimization.",
+        weights: { K1: 5, K2: 25, K3: 5, K4: 22, K5: 7, K6: 22, K7: 12, K8: 2 },
+        facts: [
+          "Indonesia is not the whole problem; the deeper issue is remaining single-source-dependent in a strategic mineral.",
+          "Australia is expensive, but it creates immediate optionality and portfolio resilience.",
+          "This state values the move that makes the 2028 sourcing map safer, not just the next quarter cheaper."
+        ],
+        consequence: "This emotional state can over-index on structural correction and spend aggressively even when a narrower containment response may be enough.",
+        blindSpots: "Short-term supply cover, fill rate, and response coherence are underweighted here. A strategic lens can underplay today's continuity risk while chasing the long-horizon fix.",
+        tradeoff: "Pay a resilience premium now versus carrying recurring geopolitical fragility deeper into the portfolio.",
+        nextStep: "Authorize stockpile use, launch Australia immediately, and commission a longer-range diversification plan beyond this incident."
+      },
+      {
+        code: "C",
+        name: "Diplomatic",
+        state: "Relationship-first",
+        stance: { label: "Relationship", tone: "warn" },
+        option: "C",
+        recommendation: "Use stockpile cover first, open direct conversations with Indonesian suppliers immediately, and sequence any Australia move so relationships are preserved while continuity is protected.",
+        reason: "This state wants a path that keeps suppliers, JLR, and internal stakeholders engaged rather than forcing a purely transactional jump.",
+        weights: { K1: 12, K2: 5, K3: 10, K4: 5, K5: 22, K6: 4, K7: 5, K8: 37 },
+        facts: [
+          "JLR's CPO is already asking whether they are next, so signaling and communication matter.",
+          "The Indonesian supplier relationship is long-standing, which makes the tone of the response important.",
+          "This state still needs continuity protected, but it wants every door kept open while acting."
+        ],
+        consequence: "This emotional state can delay necessary moves by overweighting stakeholder comfort and preserving relationships that the market shock has already destabilized.",
+        blindSpots: "Concentration, alternates, and Scope 3 are materially underweighted. Diplomatic states often preserve the status quo because it offends no one in the room.",
+        tradeoff: "Preserve trust and communication pathways versus moving so slowly that supply resilience deteriorates underneath the diplomacy.",
+        nextStep: "Draw stockpile now, schedule supplier calls immediately, and prepare Australia as the contingency that becomes active if those conversations do not materially reduce risk."
+      },
+      {
+        code: "D",
+        name: "Decisive",
+        state: "Action-biased",
+        stance: { label: "Action", tone: "danger" },
+        option: "B",
+        recommendation: "Draw stockpile today and put Australia on a 60-day qualification sprint. Move now and refine after the risk is contained.",
+        reason: "This state believes the cost of delay exceeds the cost of acting with incomplete information. The page should reward speed, clarity, and irreversible reduction of exposure.",
+        weights: { K1: 8, K2: 15, K3: 5, K4: 22, K5: 20, K6: 3, K7: 22, K8: 5 },
+        facts: [
+          "There is already enough information to begin protecting continuity.",
+          "Australia is available now, so delay would be a choice, not a constraint.",
+          "This state treats further analysis as a refinement step, not a gate."
+        ],
+        consequence: "This emotional state can commit too fast, potentially overspending or narrowing future negotiating leverage before the full cost curve is understood.",
+        blindSpots: "Scope 3, supply cover, and coherence are weakly weighted. Fast execution can crowd out cleaner or more aligned responses.",
+        tradeoff: "Fast containment and clarity versus the risk of locking in a premium path before lower-cost alternatives are fully tested.",
+        nextStep: "Authorize stockpile deployment immediately, launch the Australia workstream, and set a near-term review checkpoint rather than waiting for full certainty."
+      },
+      {
+        code: "E",
+        name: "Analytical",
+        state: "Data-driven, methodical",
+        stance: { label: "Rigorous", tone: "accent" },
+        option: "C",
+        recommendation: "Do not choose the full path until the option economics are modeled in detail, but prepare stockpile and alternate-source mechanics in parallel so analysis does not become inertia.",
+        reason: "This state trusts frameworks over instinct. The page should show structured comparison inputs and make clear which data is still missing before a fully defended call is made.",
+        weights: { K1: 25, K2: 22, K3: 10, K4: 8, K5: 5, K6: 22, K7: 5, K8: 3 },
+        facts: [
+          "The key blocker is not awareness of the problem; it is confidence in the modeled trade-offs.",
+          "This state wants scenario modeling before it will trust a premium resilience move.",
+          "A purely intuitive recommendation will feel weak unless backed by explicit economics."
+        ],
+        consequence: "This emotional state can over-model a fast-moving issue and let rigor become a delay mechanism while the operational window closes.",
+        blindSpots: "Fill rate, qualification speed, and coherence are materially underweighted. Analytical states can wait for cleaner numbers while the operational window narrows.",
+        tradeoff: "Analytical confidence versus the time cost of waiting for a cleaner model in an unstable external environment.",
+        nextStep: "Start the option model immediately, but in parallel ready the stockpile and Australia workstream so execution can begin the moment the threshold is crossed."
+      },
+      {
+        code: "F",
+        name: "Pragmatic",
+        state: "Outcome-focused, unsentimental",
+        stance: { label: "Balanced", tone: "good" },
+        option: "C",
+        recommendation: "Absorb the levy for 90 days, start Australia qualification in parallel, and hold the stockpile as a real backup rather than touching it immediately.",
+        reason: "This state is comfortable with trade-offs and resists dramatic moves when a more balanced sequencing path can preserve flexibility.",
+        weights: { K1: 22, K2: 8, K3: 13, K4: 13, K5: 22, K6: 5, K7: 7, K8: 10 },
+        facts: [
+          "The stockpile is valuable because it exists, not because it must be used immediately.",
+          "Australia should begin in parallel so the backup path becomes real before conditions worsen.",
+          "This state prefers a sequenced response over either passivity or overreaction."
+        ],
+        consequence: "This emotional state can normalize risk and stay in a compromised position longer than is wise because the blended response feels sensible.",
+        blindSpots: "Concentration and Scope 3 remain underweighted here. Pragmatic states can drift into incrementalism when the real issue is structural exposure.",
+        tradeoff: "Preserve flexibility and avoid overreaction versus letting a temporary bridge become the default strategy.",
+        nextStep: "Start Australia in parallel, monitor the levy impact tightly for 90 days, and predefine the trigger that would force stockpile activation."
+      }
+    ];
+
+    const emotionGrid = document.getElementById("emotionGrid");
+    const recommendationTitle = document.getElementById("recommendationTitle");
+    const recommendationReason = document.getElementById("recommendationReason");
+    const stanceTag = document.getElementById("stanceTag");
+    const kpiGrid = document.getElementById("kpiGrid");
+    const kpiToggle = document.getElementById("kpiToggle");
+    const priorityFacts = document.getElementById("priorityFacts");
+    const emotionConsequence = document.getElementById("emotionConsequence");
+    const blindSpotText = document.getElementById("blindSpotText");
+    const emotionRiskCard = document.getElementById("emotionRiskCard");
+    let kpisExpanded = false;
+
+    function buildEmotionPills() {
+      emotionGrid.innerHTML = emotionVariants.map((variant, index) => `
+        <button class="emotion-pill ${index === 0 ? "active" : ""}" data-code="${variant.code}">
+          <span class="emotion-code">Variant ${variant.code}</span>
+          <span class="emotion-name">${variant.name}</span>
+          <span class="emotion-type">${variant.state}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderList(container, items) {
+      container.innerHTML = items.map((item) => `
+        <div class="list-item">
+          <div class="list-dot"></div>
+          <p>${item}</p>
+        </div>
+      `).join("");
+    }
+
+    function urgencyFromWeight(weight) {
+      if (weight >= 20) return "high";
+      if (weight >= 10) return "medium";
+      return "low";
+    }
+
+    function priorityLabel(weight) {
+      if (weight >= 20) return "high priority";
+      if (weight >= 10) return "medium priority";
+      return "low priority";
+    }
+
+    function renderKPIs(variant) {
+      const { weights, option } = variant;
+      const ranked = Object.entries(weights)
+        .map(([id, weight]) => ({
+          id,
+          weight,
+          ...kpiCatalog[id],
+          risk: optionRiskMatrix[option][id]
+        }))
+        .sort((a, b) => b.weight - a.weight || a.id.localeCompare(b.id));
+
+      kpiGrid.innerHTML = ranked.map((kpi, index) => `
+        <div class="kpi ${index < 4 ? "priority" : "hidden"}" data-hidden="${index >= 4 ? "true" : "false"}">
+          <div class="kpi-top">
+            <div class="kpi-label">${kpi.label}</div>
+            <div class="kpi-chip risk-${kpi.risk.level}">${kpi.risk.text}</div>
+          </div>
+          <div class="kpi-value">${kpi.optionValues[option]}</div>
+          <div class="kpi-note">${kpi.current}</div>
+          <div class="kpi-meta">${priorityLabel(kpi.weight)} · ${kpi.metricLabel.toLowerCase()}: ${kpi.optionMeta[option]}</div>
+        </div>
+      `).join("");
+
+      updateKpiVisibility(false);
+    }
+
+    function updateKpiVisibility(expanded) {
+      kpisExpanded = expanded;
+      const hiddenCards = kpiGrid.querySelectorAll('[data-hidden="true"]');
+      hiddenCards.forEach((card) => {
+        card.classList.toggle("hidden", !expanded);
+      });
+
+      const hiddenCount = hiddenCards.length;
+      if (!hiddenCount) {
+        kpiToggle.hidden = true;
+        return;
+      }
+
+      kpiToggle.hidden = false;
+      kpiToggle.textContent = expanded ? "Show fewer KPIs" : `Show ${hiddenCount} more KPIs`;
+      kpiToggle.setAttribute("aria-expanded", String(expanded));
+    }
+
+    function activateEmotion(code) {
+      const variant = emotionVariants.find((entry) => entry.code === code) || emotionVariants[0];
+
+      document.querySelectorAll(".emotion-pill").forEach((pill) => {
+        pill.classList.toggle("active", pill.dataset.code === code);
+      });
+
+      recommendationTitle.textContent = variant.recommendation;
+      recommendationReason.textContent = variant.reason;
+      stanceTag.textContent = variant.stance.label;
+      stanceTag.className = `tag ${variant.stance.tone}`;
+      emotionConsequence.textContent = variant.consequence;
+      blindSpotText.textContent = variant.blindSpots;
+      emotionRiskCard.className = `risk-card ${variant.stance.tone}`;
+
+      renderKPIs(variant);
+      renderList(priorityFacts, variant.facts);
+    }
+
+    buildEmotionPills();
+    activateEmotion("A");
+
+    emotionGrid.addEventListener("click", (event) => {
+      const pill = event.target.closest(".emotion-pill");
+      if (!pill) return;
+      activateEmotion(pill.dataset.code);
+    });
+
+    kpiToggle.addEventListener("click", () => {
+      updateKpiVisibility(!kpisExpanded);
+    });
+  </script>
+</body>
+</html>
