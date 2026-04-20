@@ -32,6 +32,9 @@ What Is Driving The Decision
 - Explicit: investor timing pressure.
 - Inferred: reputation risk seems more important than speed right now.
 
+Consequence Risk
+Cautious mode may push toward delay even when launching with a scoped demo would be stronger. Confirm whether the bugs affect the investor-critical path before anchoring on postponement.
+
 Missing But Important
 - Whether the bugs affect core demo flows.
 
@@ -75,6 +78,9 @@ Key Trade-Offs
 - The cheaper option lowers financial pressure but increases commute cost and time.
 - The better-located option improves daily life and family access but raises fixed cost.
 - Waiting preserves optionality but delays certainty.
+
+Consequence Risk
+Analytical mode may under-weight the relational value of proximity, which is harder to quantify. Ask explicitly: would I regret this choice in two years if the commute became a daily source of friction?
 
 Inferred Assumptions
 - You have enough stability to tolerate a longer decision cycle.
@@ -138,6 +144,13 @@ Key Trade-Offs
 - Reallocating now may reduce patient and operational risk but weakens planned improvement work.
 - Holding the current plan protects the elective roadmap but raises near-term strain and service risk.
 - A partial move spreads the pain but may under-solve the urgent problem.
+
+Consequence Risk
+Diplomatic mode may preserve the elective roadmap because stakeholder voices already invested in that plan carry weight. Verify that no internal coalition is blocking the structurally better answer.
+
+Blind Spots
+- Timeline KPI: temporary staffing takes days to onboard. If wait-time pressure is already critical, the relief window matters.
+- Customer KPI: patient and family trust erodes quickly under sustained wait-time pressure — this is under-weighted in a cost-focused frame.
 
 Inferred Assumptions
 - Inferred from scenario: immediate continuity risk appears more salient than elective improvement timing.
