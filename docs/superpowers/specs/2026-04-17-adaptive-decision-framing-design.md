@@ -3,6 +3,24 @@
 Date: 2026-04-17
 Status: Revised design draft for user review
 
+## 0. Current Product Direction
+
+This design now evolves beyond a simple adaptive recommendation app.
+
+The product should be restructured into a **wizard-first dynamic decision matrix app** where:
+
+- the backend decision framework remains the reasoning core
+- the UI becomes the primary interaction layer
+- users explore decisions through domain, platform, persona, perspectives, and emotional framework
+- the system renders a clickable matrix and a question-aware decision insight panel
+
+The target product shape is:
+
+`Context Builder -> Emotion + Perspective Matrix -> Question-Aware Highlighting -> Decision Insight`
+
+The first implementation should be grounded in the **Tata Steel UK Port Talbot EAF Transformation**
+project context.
+
 ## 1. Purpose
 
 Create a reusable decision-framing skill that can support any persona, in any role or life position, across any scenario, while adapting the framing of the decision to the user's emotional state using the existing emotion taxonomy already defined in the system.
@@ -17,6 +35,9 @@ The skill should:
 - help the decision-maker move toward action, delay, delegation, or clarification with less friction
 
 The skill is not a generic advice bot. Its job is to make the decision legible for the specific persona in the specific situation.
+
+For the current project, that legibility should be delivered through a decision matrix UI rather
+than only through a single recommendation view.
 
 ## 2. Problem Statement
 
@@ -40,6 +61,9 @@ This design addresses those failures by making persona handling universal, scena
 - Let persona influence how the same scenario is weighted and framed
 - Keep explicit facts, inferred signals, and uncertain assumptions separate
 - Stay interpretable, tunable, and auditable
+- Preserve the current backend reasoning engine while restructuring the front-end into a matrix app
+- Support clickable matrix cells and question-aware routing into a decision insight panel
+- Ground the first product version in the Tata Steel UK Port Talbot transformation programme
 
 ## 4. Non-Goals
 
@@ -66,8 +90,10 @@ Regardless of input depth, the system should normalize persona into a common int
 
 At minimum, the system needs:
 
+- `domain`
+- `platform` unless already inferable
 - `persona` or `persona_profile`
-- `scenario`
+- `scenario` or project decision question
 
 However, the interaction model should allow the user to provide these incrementally.
 
@@ -79,8 +105,23 @@ If scenario is provided but too incomplete to support decision mapping, ask one 
 
 If persona and scenario are both sufficient, proceed without asking unnecessary questions.
 
+For the matrix product, the full resolution order should be:
+
+1. `domain`
+2. `platform`
+3. `persona`
+4. `persona-dependent perspectives`
+5. `two recommended emotional frameworks`
+6. `selected emotional framework`
+
+However, if any of these are already present from uploaded content or previous state, the system
+should auto-fill and skip the prompt.
+
 ### 6.3 Accepted Inputs
 
+- `domain`
+- `platform`
+- `project`
 - `persona`: free-form string
 - `persona_profile`: structured object when available
 - `scenario`: free-form text
@@ -88,6 +129,8 @@ If persona and scenario are both sufficient, proceed without asking unnecessary 
 - `known_options`: optional
 - `emotion_signal`: optional only if supplied explicitly by the user
 - `role_enrichment_requested`: optional boolean for using public role research
+- `perspectives`: selected persona-dependent perspectives
+- `selected_emotional_framework`
 
 ### 6.4 Persona Profile Shape
 
@@ -131,6 +174,35 @@ The skill should use the supplied human decision-making map as its backbone:
 `context + trigger -> internal state -> salience -> valuation -> control mode -> threshold -> output`
 
 This model stays internal. The final response should not explain theory unless the user asks for it.
+
+For the matrix app, this conceptual model should feed a visible interaction model:
+
+`resolved context -> selected emotional framework -> emotional sub-mode × perspective matrix -> active cell insight`
+
+## 7.1 Matrix App Structure
+
+The product should be organized into three layers:
+
+1. `Context Builder`
+   - domain
+   - platform
+   - persona
+   - persona-dependent perspectives
+   - two recommended emotional frameworks
+   - one selected emotional framework
+
+2. `Decision Matrix`
+   - `X-axis = persona-dependent perspectives`
+   - `Y-axis = sub-modes inside the selected emotional framework`
+
+3. `Question-Aware Insight Panel`
+   - user clicks a cell or asks a question
+   - the system opens a cell-specific insight panel
+
+The matrix should support both:
+
+- `manual exploration`
+- `question-aware routing`
 
 ## 8. Internal Decision Map
 
@@ -181,6 +253,25 @@ Every important extracted item should be tagged as:
 - `inferred`
 - `uncertain`
 
+## 8.5 Matrix Cell Object
+
+The matrix UI should assemble each cell as a structured object. Recommended shape:
+
+- `emotion_framework`
+- `emotion_mode`
+- `perspective`
+- `kpi_cluster`
+- `data_requirements`
+- `chart_type`
+- `recommended_action_tendency`
+- `risk_pattern`
+- `consequence_pattern`
+- `blind_spot_pattern`
+- `supporting_backend_signals`
+
+Each cell should be clickable. Clicking a cell should open the exact decision insight for that
+intersection of emotional mode and persona perspective.
+
 ## 9. Emotion Handling
 
 ### 9.1 Taxonomy Constraint
@@ -199,6 +290,32 @@ The skill may infer emotional signals from language or context, but it must map 
 ### 9.3 Example
 
 If the scenario sounds like panic, shame, and defensiveness but the taxonomy only supports `fear` and `sadness`, the system must resolve to those existing states and label any nuance as interpretation, not as a new category.
+
+## 9.4 Emotional Framework Recommendation
+
+The app should not show a giant abstract list of emotional frameworks.
+
+Instead, once domain, platform, persona, and perspectives are resolved, it should recommend exactly
+two emotional frameworks and mark one as preferred.
+
+Example logic:
+
+- healthcare safety + ethics persona -> recommend `Cautious` and `Analytical`
+- crisis operations + operations head -> recommend `Pragmatic` and `Decisive`
+- board strategy + founder -> recommend `Strategic` and `Diplomatic`
+
+The user then chooses one framework. The matrix is built only after that choice.
+
+## 9.5 Framework Sub-Modes
+
+The selected emotional framework should expand into operational sub-modes that populate the matrix
+rows. These are not new taxonomy-level emotions. They are UI-operating dimensions within the chosen
+framework.
+
+Example:
+
+- `Cautious` -> downside containment, reversibility, safety threshold, regret minimization
+- `Strategic` -> long-horizon positioning, optionality preservation, institutional signaling, second-order effects
 
 ## 10. Persona Normalization
 
@@ -243,6 +360,42 @@ The purpose is to improve understanding of:
 
 The framework should not assume that public role norms fully describe the user's exact case.
 
+## 10.6 Persona-Dependent Perspectives
+
+Perspectives should be persona-dependent, not universal.
+
+Each persona should resolve to:
+
+- 4 to 8 perspectives
+- one recommended default perspective set
+- ability for the UI to toggle or compare perspectives
+
+Examples:
+
+- Chief Medical & Ethics Officer
+  - patient safety
+  - clinical continuity
+  - ethical disclosure
+  - regulatory defensibility
+  - institutional trust
+  - access equity
+
+- CFO
+  - cash preservation
+  - downside protection
+  - investor confidence
+  - regulatory exposure
+  - operating resilience
+  - capital efficiency
+
+- Product Manager
+  - user trust
+  - adoption
+  - retention
+  - execution speed
+  - technical feasibility
+  - business viability
+
 ### 10.5 Source Priority Rule
 
 When public role context is used, priority must be:
@@ -257,6 +410,45 @@ Public role context may sharpen interpretation, but it must never override direc
 ## 11. Processing Pipeline
 
 Use a six-stage pipeline.
+
+For the matrix app, the visible user flow should be:
+
+1. `domain / industry`
+2. `platform / context`
+3. `persona`
+4. `persona perspectives`
+5. `recommended emotional frameworks`
+6. `selected emotional framework`
+7. `matrix construction`
+8. `cell click or question routing`
+9. `decision insight panel`
+
+The backend reasoning engine should remain substantially intact. The major restructuring is in the
+UI layer and in the structured outputs needed for matrix construction.
+
+## 11.1 Tata Steel UK Grounding
+
+The first implementation should be grounded in the Tata Steel UK Port Talbot EAF Transformation.
+
+Default project context:
+
+- `domain`: industrial transformation / steel / heavy manufacturing
+- `project`: Tata Steel UK Port Talbot EAF Transformation
+- `platform`: Port Talbot transformation programme
+
+The first version should be optimized around Tata UK decision surfaces such as:
+
+- construction and commissioning
+- scrap supply and quality
+- energy and grid readiness
+- customer and grade capability
+- workforce transition
+- grant and milestone compliance
+- community and political legitimacy
+- decarbonization and strategic positioning
+
+The architecture should remain reusable, but the initial product should be a Tata UK-aware matrix,
+not a blank generic matrix.
 
 ### 11.1 Stage 1: Input Sufficiency Check
 

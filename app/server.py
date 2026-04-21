@@ -1,4 +1,4 @@
-import cgi
+import email.parser
 import json
 import os
 from http import HTTPStatus
@@ -6,10 +6,25 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from decision_engine import analyze_markdown
+from matrix_catalog import load_matrix_bootstrap
 
 
 ROOT = Path(__file__).resolve().parent
 STATIC_ROOT = ROOT / "static"
+
+
+def parse_upload(headers, rfile):
+    content_type = headers.get("Content-Type", "")
+    content_length = int(headers.get("Content-Length", 0))
+    body = rfile.read(content_length)
+    raw = b"Content-Type: " + content_type.encode() + b"\r\n\r\n" + body
+    msg = email.parser.BytesParser().parsebytes(raw)
+    for part in msg.walk():
+        if part.get_content_disposition() == "form-data":
+            params = dict(part.get_params(header="content-disposition") or [])
+            if params.get("name") == "file":
+                return params.get("filename", "upload.md"), part.get_payload(decode=True)
+    return None, None
 
 
 class DecisionAppHandler(BaseHTTPRequestHandler):
@@ -19,6 +34,9 @@ class DecisionAppHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/health":
             self.respond_json({"status": "ok"})
+            return
+        if self.path == "/matrix-bootstrap":
+            self.respond_json(load_matrix_bootstrap())
             return
         if self.path.startswith("/static/"):
             target = (ROOT / self.path.lstrip("/")).resolve()
@@ -39,25 +57,16 @@ class DecisionAppHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
 
-        form = cgi.FieldStorage(
-            fp=self.rfile,
-            headers=self.headers,
-            environ={
-                "REQUEST_METHOD": "POST",
-                "CONTENT_TYPE": self.headers.get("Content-Type", ""),
-            },
-        )
-        upload = form["file"] if "file" in form else None
-        if upload is None or not getattr(upload, "file", None):
+        filename, raw_bytes = parse_upload(self.headers, self.rfile)
+        if raw_bytes is None:
             self.respond_json(
                 {"status": "error", "message": "No markdown file was uploaded."},
                 status=HTTPStatus.BAD_REQUEST,
             )
             return
 
-        filename = os.path.basename(upload.filename or "upload.md")
         try:
-            payload = upload.file.read().decode("utf-8")
+            payload = raw_bytes.decode("utf-8")
         except UnicodeDecodeError:
             self.respond_json(
                 {"status": "error", "message": "The uploaded file must be UTF-8 markdown."},
@@ -65,7 +74,7 @@ class DecisionAppHandler(BaseHTTPRequestHandler):
             )
             return
 
-        result = analyze_markdown(payload, filename)
+        result = analyze_markdown(payload, os.path.basename(filename or "upload.md"))
         self.respond_json(result)
 
     def serve_file(self, path: Path, content_type: str) -> None:

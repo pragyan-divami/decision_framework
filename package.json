@@ -3,8 +3,9 @@
   "version": "0.3.0",
   "description": "An installable open agent skill for adaptive decision framing.",
   "scripts": {
-    "start": "python app/server.py",
-    "analyze": "python app/decision_engine.py"
+    "dev": "python3 app/server.py",
+    "start": "python3 app/server.py",
+    "analyze": "python3 app/decision_engine.py"
   },
   "keywords": [
     "agent-skill",

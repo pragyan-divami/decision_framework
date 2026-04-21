@@ -5,6 +5,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from .ml_interface import WeightPredictor  # type: ignore
+except Exception:  # pragma: no cover
+    try:
+        from ml_interface import WeightPredictor  # type: ignore
+    except Exception:  # pragma: no cover
+        WeightPredictor = None
+
 
 EMOTION_PROFILES: List[Dict[str, Any]] = [
     {
@@ -150,6 +158,34 @@ CONSEQUENCE_RISK_BY_EMOTION = {
     "F": "Pragmatic can pick good enough when right was available. Confirm you are not leaving a structurally better outcome on the table just because it requires more commitment.",
 }
 
+# (missed_class, favoured_class, failure_verb) — used to derive data-driven consequence risk copy
+EMOTION_FAILURE_MODES: Dict[str, Tuple[str, str, str]] = {
+    "A": ("structural fixes", "reversible moves", "deferring the underlying exposure"),
+    "B": ("near-term operational KPIs", "long-horizon thesis", "the 90-day path"),
+    "C": ("structural KPIs", "stakeholder relationships", "a structurally better answer being blocked"),
+    "D": ("qualitative and slow-signal KPIs", "fast-moving KPIs", "committing before all signals are in"),
+    "E": ("qualitative inputs", "what the model can quantify", "stakeholder fatigue or reputation risk"),
+    "F": ("structurally better options", "balanced outcome", "settling when a stronger path was available"),
+}
+
+EMOTION_POSTURE: Dict[str, str] = {
+    "A": "concentrates attention on continuity and reversibility",
+    "B": "weights structural and long-horizon KPIs",
+    "C": "prioritises coordination and stakeholder KPIs",
+    "D": "favours fast-feedback execution KPIs",
+    "E": "emphasises quantifiable and modelable KPIs",
+    "F": "balances immediate outcomes with optionality",
+}
+
+EMOTION_NEXT_STEP_ACTIONS: Dict[str, str] = {
+    "A": "run one downside stress-test (what breaks at -10%) and confirm before committing",
+    "B": "gather one fact about near-term execution risk and confirm the long-game bet",
+    "C": "pre-brief the two most affected stakeholders and ask each to pre-commit",
+    "D": "set a 72-hour checkpoint on the top two leading indicators; revert to runner-up if either moves wrong",
+    "E": "validate the sensitivity of the top-weighted KPI; widen the scenario range if it is high",
+    "F": "lock in the move, schedule a 30-day review to escalate or hold",
+}
+
 NEXT_STEP_NORMAL = {
     "A": "Run one downside scenario: what breaks if this option holds for 90 days and the situation worsens 10%? Confirm the answer before committing.",
     "B": "Gather one more decision-critical fact about near-term execution and confirm the current recommendation.",
@@ -206,6 +242,165 @@ SCENARIO_KPI_SIGNALS: Dict[str, List[str]] = {
     "emissions": ["emission", "carbon", "co2", "co₂", "green", "sustainab", "esg", "net zero", "climate", "scope", "trajectory"],
 }
 
+CATEGORY_BASELINE_NOTES: Dict[str, str] = {
+    "debt": "Measures how each option affects leverage and covenant headroom.",
+    "cost": "Captures the total cost burden each path would impose.",
+    "cash": "Assesses near-term liquidity impact and cash draw.",
+    "regulatory": "Tracks compliance and policy exposure across each path.",
+    "timeline": "Measures how quickly each option delivers observable outcomes.",
+    "customer": "Evaluates customer or stakeholder trust and acceptance risk.",
+    "rating": "Tracks external confidence and credit or reputation signals.",
+    "emissions": "Assesses ESG trajectory and sustainability commitment.",
+}
+
+FAMILY_BASELINE_NOTES: Dict[str, str] = {
+    "safety_harm": "Tracks direct harm, severity, and immediate downside if the scenario worsens.",
+    "financial_impact": "Measures cost, revenue, or economic burden created by each path.",
+    "resource_pressure": "Captures liquidity, staffing, or other near-term capacity pressure.",
+    "regulatory_legal": "Tracks compliance, disclosure, and legal exposure across options.",
+    "urgency_time": "Measures how delay changes the outcome and how quickly action matters.",
+    "stakeholder_trust": "Assesses trust, acceptance, and relationship strain among affected groups.",
+    "institutional_reputation": "Tracks credibility, reputation, and external confidence risk.",
+    "continuity_disruption": "Measures operational, clinical, or service continuity disruption.",
+    "evidence_quality": "Captures uncertainty, sufficiency of evidence, and confidence in the signal.",
+    "reversibility_optionality": "Measures how reversible the decision is and how much optionality remains.",
+    "ethics_disclosure": "Tracks ethical transparency and disclosure integrity.",
+    "equity_access": "Assesses affordability, access, and uneven downside across vulnerable groups.",
+}
+
+LEGACY_CATEGORY_TO_FAMILY: Dict[str, str] = {
+    "debt": "financial_impact",
+    "cost": "financial_impact",
+    "cash": "resource_pressure",
+    "regulatory": "regulatory_legal",
+    "timeline": "urgency_time",
+    "customer": "stakeholder_trust",
+    "rating": "institutional_reputation",
+    "emissions": "continuity_disruption",
+    "general": "continuity_disruption",
+}
+
+FAMILY_TO_LEGACY_CATEGORY: Dict[str, str] = {
+    "safety_harm": "regulatory",
+    "financial_impact": "cost",
+    "resource_pressure": "cash",
+    "regulatory_legal": "regulatory",
+    "urgency_time": "timeline",
+    "stakeholder_trust": "customer",
+    "institutional_reputation": "rating",
+    "continuity_disruption": "timeline",
+    "evidence_quality": "regulatory",
+    "reversibility_optionality": "timeline",
+    "ethics_disclosure": "regulatory",
+    "equity_access": "customer",
+}
+
+FAMILY_TO_TRAIT: Dict[str, str] = {
+    "safety_harm": "safety",
+    "financial_impact": "finance",
+    "resource_pressure": "finance",
+    "regulatory_legal": "governance",
+    "urgency_time": "execution",
+    "stakeholder_trust": "stakeholder",
+    "institutional_reputation": "stakeholder",
+    "continuity_disruption": "resilience",
+    "evidence_quality": "governance",
+    "reversibility_optionality": "resilience",
+    "ethics_disclosure": "governance",
+    "equity_access": "stakeholder",
+}
+
+EMOTION_FAMILY_WEIGHTS: Dict[str, Dict[str, float]] = {
+    "A": {"safety_harm": 18, "financial_impact": 12, "resource_pressure": 12, "regulatory_legal": 10, "urgency_time": 8, "stakeholder_trust": 6, "institutional_reputation": 6, "continuity_disruption": 8, "evidence_quality": 6, "reversibility_optionality": 8, "ethics_disclosure": 4, "equity_access": 2},
+    "B": {"safety_harm": 6, "financial_impact": 8, "resource_pressure": 6, "regulatory_legal": 10, "urgency_time": 10, "stakeholder_trust": 8, "institutional_reputation": 12, "continuity_disruption": 10, "evidence_quality": 8, "reversibility_optionality": 10, "ethics_disclosure": 4, "equity_access": 8},
+    "C": {"safety_harm": 8, "financial_impact": 6, "resource_pressure": 6, "regulatory_legal": 8, "urgency_time": 8, "stakeholder_trust": 16, "institutional_reputation": 14, "continuity_disruption": 8, "evidence_quality": 6, "reversibility_optionality": 6, "ethics_disclosure": 6, "equity_access": 8},
+    "D": {"safety_harm": 8, "financial_impact": 6, "resource_pressure": 6, "regulatory_legal": 10, "urgency_time": 18, "stakeholder_trust": 6, "institutional_reputation": 6, "continuity_disruption": 14, "evidence_quality": 6, "reversibility_optionality": 6, "ethics_disclosure": 4, "equity_access": 4},
+    "E": {"safety_harm": 8, "financial_impact": 10, "resource_pressure": 8, "regulatory_legal": 8, "urgency_time": 8, "stakeholder_trust": 6, "institutional_reputation": 6, "continuity_disruption": 8, "evidence_quality": 16, "reversibility_optionality": 8, "ethics_disclosure": 8, "equity_access": 6},
+    "F": {"safety_harm": 10, "financial_impact": 10, "resource_pressure": 8, "regulatory_legal": 8, "urgency_time": 10, "stakeholder_trust": 8, "institutional_reputation": 8, "continuity_disruption": 10, "evidence_quality": 6, "reversibility_optionality": 8, "ethics_disclosure": 6, "equity_access": 8},
+}
+
+DOMAIN_PACKS: Dict[str, Dict[str, Any]] = {
+    "healthcare_safety": {
+        "signals": ["medical", "clinical", "patient", "pharmacovigilance", "therapy", "drug", "hospital", "diagnostic", "adverse event"],
+        "familyBias": {"safety_harm": 4, "regulatory_legal": 4, "evidence_quality": 3, "ethics_disclosure": 4, "equity_access": 3, "continuity_disruption": 2},
+    },
+    "finance_balance_sheet": {
+        "signals": ["cfo", "debt", "bond", "ebitda", "capex", "rating", "cash flow", "financing"],
+        "familyBias": {"financial_impact": 4, "resource_pressure": 3, "institutional_reputation": 2, "regulatory_legal": 1},
+    },
+    "operations_supply_chain": {
+        "signals": ["supply", "stockpile", "plant", "shutdown", "qualification", "supplier", "inventory", "production"],
+        "familyBias": {"continuity_disruption": 4, "urgency_time": 3, "resource_pressure": 2, "stakeholder_trust": 1},
+    },
+    "hr_org_behavior": {
+        "signals": ["employee", "talent", "mobility", "attrition", "hiring", "compensation", "org"],
+        "familyBias": {"stakeholder_trust": 3, "continuity_disruption": 2, "institutional_reputation": 2, "equity_access": 1},
+    },
+    "strategy_governance": {
+        "signals": ["strategy", "governance", "board", "ipo", "target", "portfolio", "group strategy"],
+        "familyBias": {"institutional_reputation": 3, "reversibility_optionality": 3, "regulatory_legal": 2, "financial_impact": 1},
+    },
+    "ethics_public_trust": {
+        "signals": ["ethics", "disclosure", "trust", "public-interest", "transparency", "media", "philanthropic"],
+        "familyBias": {"ethics_disclosure": 4, "institutional_reputation": 3, "stakeholder_trust": 3, "equity_access": 2},
+    },
+}
+
+# (low_score, mid_score, high_score) phrase tiers for custom options
+SCORE_VALUE_PHRASES: Dict[str, Tuple[str, str, str]] = {
+    "debt": ("leverage strained", "leverage elevated", "leverage contained"),
+    "cost": ("cost burden is high", "cost burden is moderate", "cost well managed"),
+    "cash": ("cash constrained", "cash under pressure", "cash position solid"),
+    "regulatory": ("compliance risk is high", "moderate exposure", "well positioned"),
+    "timeline": ("timeline at risk", "timeline stretched", "timeline intact"),
+    "customer": ("trust at risk", "relationship strained", "stakeholder aligned"),
+    "rating": ("outlook under pressure", "perception mixed", "confidence strong"),
+    "emissions": ("trajectory exposed", "partial commitment", "trajectory protected"),
+}
+
+SCORE_META_PHRASES: Dict[str, Tuple[str, str, str]] = {
+    "debt": (
+        "balance-sheet pressure is high on this path",
+        "moderate balance-sheet impact across this path",
+        "leverage risk is well contained here",
+    ),
+    "cost": (
+        "cost burden is material and will need active management",
+        "cost impact is moderate and manageable with monitoring",
+        "cost profile is favourable relative to other paths",
+    ),
+    "cash": (
+        "liquidity is constrained — cash headroom needs watching",
+        "cash draw is moderate and within expected tolerance",
+        "cash position remains healthy on this path",
+    ),
+    "regulatory": (
+        "compliance exposure is significant and should be tracked",
+        "regulatory risk is present but manageable",
+        "regulatory position is sound on this path",
+    ),
+    "timeline": (
+        "timeline pressure is high — slippage risk is real",
+        "some timeline stretch is likely but recoverable",
+        "execution timeline is intact on this path",
+    ),
+    "customer": (
+        "stakeholder trust is at risk and needs proactive management",
+        "relationship strain is possible — monitor closely",
+        "stakeholder alignment is solid on this path",
+    ),
+    "rating": (
+        "external confidence is under pressure",
+        "market perception is mixed — signal carefully",
+        "rating outlook is stable on this path",
+    ),
+    "emissions": (
+        "sustainability trajectory is in doubt on this path",
+        "ESG commitment is partially maintained",
+        "emissions trajectory is protected on this path",
+    ),
+}
+
 
 @dataclass
 class ParseResult:
@@ -221,6 +416,17 @@ class ParseResult:
     kpis: List[str]
     enrichment_requested: bool
     metadata: Dict[str, Any]
+
+
+@lru_cache(maxsize=1)
+def get_ml_predictor():
+    if WeightPredictor is None:
+        return None
+    try:
+        predictor = WeightPredictor.load()
+    except Exception:
+        return None
+    return predictor if getattr(predictor, "available", False) else None
 
 
 def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
@@ -247,10 +453,15 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
 
     normalized_persona = normalize_persona(parsed.persona)
     normalized_persona["personaId"] = parsed.persona_id
+    domain_pack = classify_domain_pack(parsed, normalized_persona)
+    normalized_persona["domainPack"] = domain_pack
     enrichment = maybe_enrich_role(normalized_persona, parsed.enrichment_requested)
     options = extract_options(parsed)
+    urgency_profile = classify_urgency_and_bandwidth(parsed, normalized_persona)
     kpis = normalize_kpis(parsed.kpis, parsed.scenario, normalized_persona)
-    emotion_weights_by_kpi = build_emotion_weights_for_persona(kpis, normalized_persona, parsed)
+    emotion_weights_by_kpi, ml_metadata = build_emotion_weights_for_persona(
+        kpis, normalized_persona, parsed, len(options)
+    )
     hard_priority_kpis = build_hard_priority_kpis(parsed, normalized_persona, kpis)
     scenario_salience = compute_scenario_salience(parsed.scenario, kpis)
     option_analysis = analyze_options(options, kpis, parsed, normalized_persona)
@@ -284,10 +495,12 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
                 scenario_salience,
                 emotion_weights_by_kpi,
                 hard_priority_kpis,
+                option_analysis,
+                urgency_profile,
             )
         )
 
-    confidence = compute_confidence(parsed, enrichment, len(options))
+    confidence = compute_confidence(parsed, enrichment, len(options), ml_metadata)
     return {
         "status": "ok",
         "fileName": filename,
@@ -301,6 +514,17 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
             "timeHorizon": parsed.time_horizon,
             "stakeholders": parsed.stakeholders,
             "kpis": [k["label"] for k in kpis],
+            "nativeKpis": [
+                {
+                    "code": k["code"],
+                    "label": k["label"],
+                    "nativeLabel": k.get("nativeLabel", k["label"]),
+                    "family": k.get("family"),
+                    "unit": k.get("unit"),
+                    "nativeScale": k.get("nativeScale"),
+                }
+                for k in kpis
+            ],
         },
         "normalizedPersona": normalized_persona,
         "enrichment": enrichment,
@@ -315,9 +539,15 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
         "kpiCatalog": build_kpi_catalog(kpis, option_analysis, parsed, normalized_persona),
         "metadata": {
             "confidence": confidence,
+            "confidenceBreakdown": confidence,
             "analysisMode": "local-role-library" if enrichment["used"] else "scenario-first",
             "scenarioSalience": scenario_salience,
             "hardPriorityKpis": hard_priority_kpis,
+            "selectedFamilies": sorted({k.get("family") for k in kpis if k.get("family")}),
+            "domainPack": domain_pack,
+            "urgency": urgency_profile,
+            "ml": ml_metadata,
+            "topKpisNow": [item["code"] for item in emotions[0]["kpiOrdering"][: urgency_profile["topKpiCount"]]] if emotions else [],
         },
     }
 
@@ -331,23 +561,34 @@ def parse_markdown(markdown_text: str, filename: str) -> ParseResult:
     persona_id = persona_id_match.group(1) if persona_id_match else None
 
     persona = None
-    persona_match = re.search(r"^\*\*(.+?)\*\*$", markdown_text, re.MULTILINE)
+    persona_match = re.search(r"(?m)^\s*\*\*(.+?)\*\*\s*$", markdown_text)
     if persona_match:
         persona = persona_match.group(1).strip()
     persona_label_match = re.search(r"(?im)^persona\s*:\s*(.+)$", markdown_text)
     if persona_label_match:
         persona = persona_label_match.group(1).strip()
+    if not persona:
+        persona = extract_persona_from_role_section(markdown_text)
 
     scenario = extract_section(markdown_text, "Scenario")
     scenario_title = extract_scenario_title(markdown_text)
     call = extract_section(markdown_text, "The call")
+    if not call:
+        call = extract_section(markdown_text, "Option Set")
     tension = extract_section(markdown_text, "Tension")
+    if not tension:
+        tension = extract_core_tensions(markdown_text)
 
     time_horizon = extract_table_value(markdown_text, "Time horizon")
     stakeholders_raw = extract_table_value(markdown_text, "Key stakeholders") or ""
     stakeholders = [item.strip() for item in re.split(r";|,", stakeholders_raw) if item.strip()]
 
     kpi_lines = extract_bullet_section(markdown_text, "KPI families for this scenario")
+    option_blocks = extract_option_blocks(markdown_text)
+    if option_blocks:
+        call = "Should the decision-maker choose " + ", ".join(
+            f"{block['code']}. {block['label']}" for block in option_blocks
+        ) + "?"
     enrichment_requested = bool(
         re.search(r"(?im)(role enrichment requested\s*:\s*true|use role enrichment|enrichment requested)", markdown_text)
     )
@@ -364,42 +605,66 @@ def parse_markdown(markdown_text: str, filename: str) -> ParseResult:
         stakeholders=stakeholders,
         kpis=kpi_lines,
         enrichment_requested=enrichment_requested,
-        metadata={},
+        metadata={"optionBlocks": option_blocks},
     )
 
 
 def extract_scenario_title(markdown_text: str) -> Optional[str]:
-    scenario_anchor = re.search(r"(?im)^###\s+Scenario\s*$", markdown_text)
-    if not scenario_anchor:
-        return None
+    scenario_block = extract_section_block(markdown_text, "Scenario")
+    if scenario_block:
+        title_match = re.search(r"(?im)^\s*#+\s+(.+?)\s*$", scenario_block)
+        if title_match:
+            label = title_match.group(1).strip()
+            if label.lower() != "scenario":
+                return label
 
-    headings = list(re.finditer(r"(?im)^(##+)\s+(.+?)\s*$", markdown_text))
-    excluded = {
-        "about this scenario",
-        "decision context",
-        "kpi families for this scenario",
-        "how to use this scenario",
-        "scenario",
-        "the call",
-        "tension",
-    }
-    for heading in reversed(headings):
-        if heading.start() >= scenario_anchor.start():
-            continue
-        if len(heading.group(1)) != 2:
-            continue
-        label = heading.group(2).strip()
-        if label.lower() in excluded:
-            continue
-        return label
+    scenario_anchor = re.search(r"(?im)^#+\s+Scenario\s*$", markdown_text)
+    if scenario_anchor:
+        headings = list(re.finditer(r"(?im)^(##+)\s+(.+?)\s*$", markdown_text))
+        excluded = {
+            "about this scenario",
+            "decision context",
+            "kpi families for this scenario",
+            "how to use this scenario",
+            "scenario",
+            "the call",
+            "tension",
+        }
+        for heading in reversed(headings):
+            if heading.start() >= scenario_anchor.start():
+                continue
+            if len(heading.group(1)) != 2:
+                continue
+            label = heading.group(2).strip()
+            if label.lower() in excluded:
+                continue
+            return label
     return None
 
 
+def extract_option_blocks(markdown_text: str) -> List[Dict[str, str]]:
+    section = extract_section_block(markdown_text, "Options in play") or extract_section_block(markdown_text, "Option Set")
+    if not section:
+        return []
+    pattern = r"(?ms)^##+\s+([A-Z])\s+[—\-·]\s+(.+?)\n+(.*?)(?=^##+\s+[A-Z]\s+[—\-·]\s+|\Z)"
+    blocks = []
+    for match in re.finditer(pattern, section):
+        blocks.append(
+            {
+                "code": match.group(1).strip(),
+                "label": clean_inline(match.group(2)),
+                "description": clean_block(match.group(3)),
+            }
+        )
+    return blocks
+
+
 def extract_section(markdown_text: str, heading: str) -> Optional[str]:
-    pattern = rf"(?ims)^#+\s+{re.escape(heading)}\s*$\n+(.*?)(?=^\s*#|\Z)"
-    match = re.search(pattern, markdown_text)
-    if match:
-        return clean_block(match.group(1))
+    block = extract_section_block(markdown_text, heading)
+    if block is not None:
+        cleaned = clean_block(block)
+        if cleaned:
+            return cleaned
     inline_match = re.search(rf"(?im)^{re.escape(heading)}\s*:\s*(.+)$", markdown_text)
     if inline_match:
         return inline_match.group(1).strip()
@@ -407,11 +672,9 @@ def extract_section(markdown_text: str, heading: str) -> Optional[str]:
 
 
 def extract_bullet_section(markdown_text: str, heading: str) -> List[str]:
-    pattern = rf"(?ims)^#+\s+{re.escape(heading)}\s*$\n+(.*?)(?=^\s*#|\Z)"
-    match = re.search(pattern, markdown_text)
-    if not match:
+    block = extract_section_block(markdown_text, heading)
+    if not block:
         return []
-    block = match.group(1)
     items = []
     for line in block.splitlines():
         stripped = line.strip()
@@ -428,6 +691,62 @@ def extract_table_value(markdown_text: str, label: str) -> Optional[str]:
     if match:
         return clean_inline(match.group(1))
     return None
+
+
+def extract_section_block(markdown_text: str, heading: str) -> Optional[str]:
+    heading_match = re.search(rf"(?im)^(\#+)\s+{re.escape(heading)}\s*$", markdown_text)
+    if not heading_match:
+        return None
+    level = len(heading_match.group(1))
+    remainder = markdown_text[heading_match.end():]
+    lines = remainder.splitlines()
+    collected: List[str] = []
+    seen_substantive = False
+
+    for line in lines:
+        stripped = line.strip()
+        heading_line = re.match(r"^(#+)\s+(.+?)\s*$", stripped)
+        if heading_line:
+            next_level = len(heading_line.group(1))
+            heading_text = heading_line.group(2).strip()
+            is_option_subheading = heading.lower() == "option set" and bool(re.match(r"^[A-Z]\s+[—\-·]", heading_text))
+            if next_level <= level and seen_substantive and not is_option_subheading:
+                break
+            collected.append(line)
+            seen_substantive = True
+            continue
+        if stripped:
+            seen_substantive = True
+        collected.append(line)
+
+    block = "\n".join(collected).strip()
+    return block or None
+
+
+def extract_persona_from_role_section(markdown_text: str) -> Optional[str]:
+    role_block = extract_section_block(markdown_text, "Role")
+    if not role_block:
+        return None
+    lines = [line.strip() for line in role_block.splitlines() if line.strip() and not re.fullmatch(r"-{3,}", line.strip())]
+    if not lines:
+        return None
+    role_line = clean_inline(lines[0])
+    org_line = clean_inline(lines[1]) if len(lines) > 1 else ""
+    if role_line and org_line:
+        return f"{role_line}, {org_line}"
+    return role_line or None
+
+
+def extract_core_tensions(markdown_text: str) -> Optional[str]:
+    block = extract_section_block(markdown_text, "Core internal tensions")
+    if not block:
+        return None
+    tensions = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            tensions.append(clean_inline(re.sub(r"^\-\s+", "", stripped)))
+    return "; ".join(tensions) if tensions else clean_block(block)
 
 
 def clean_block(text: str) -> str:
@@ -478,6 +797,30 @@ def normalize_persona(persona_text: str) -> Dict[str, Any]:
         "riskOrientation": infer_risk_orientation(lower),
         "inferredFields": ["responsibilityScope", "decisionAuthority", "riskOrientation"],
     }
+
+
+def classify_domain_pack(parsed: "ParseResult", normalized_persona: Dict[str, Any]) -> str:
+    combined = " ".join(
+        filter(
+            None,
+            [
+                normalized_persona.get("raw"),
+                parsed.title,
+                parsed.scenario_title,
+                parsed.scenario,
+                parsed.tension,
+                parsed.call,
+            ],
+        )
+    ).lower()
+    ranked: List[Tuple[str, int]] = []
+    for name, config in DOMAIN_PACKS.items():
+        score = sum(1 for signal in config["signals"] if signal in combined)
+        ranked.append((name, score))
+    ranked.sort(key=lambda item: item[1], reverse=True)
+    if ranked and ranked[0][1] > 0:
+        return ranked[0][0]
+    return "strategy_governance"
 
 
 def infer_responsibility_scope(lower: str) -> str:
@@ -533,6 +876,27 @@ def load_reference_personas() -> Dict[str, Any]:
 
 
 def extract_options(parsed: ParseResult) -> List[Dict[str, Any]]:
+    option_blocks = parsed.metadata.get("optionBlocks") if parsed.metadata else None
+    if option_blocks:
+        normalized = []
+        seen = set()
+        for block in option_blocks:
+            label = f"{block['code']}. {block['label']}"
+            option_id = option_id_for_text(label.lower())
+            if option_id in seen:
+                continue
+            seen.add(option_id)
+            normalized.append(
+                {
+                    "id": option_id,
+                    "label": label,
+                    "description": block.get("description", ""),
+                    "code": block.get("code"),
+                }
+            )
+        if normalized:
+            return normalized
+
     option_text = parsed.call or ""
     options: List[str] = []
     if option_text:
@@ -544,7 +908,7 @@ def extract_options(parsed: ParseResult) -> List[Dict[str, Any]]:
         if lowered in seen:
             continue
         seen.add(lowered)
-        normalized.append({"id": option_id_for_text(lowered), "label": item})
+        normalized.append({"id": option_id_for_text(lowered), "label": item, "description": ""})
     if normalized:
         return normalized
     return [
@@ -579,20 +943,128 @@ def normalize_kpis(
             else:
                 code = f"K{idx + 1}"
                 label = item.strip()
+            native_fields = parse_native_kpi_fields(label)
+            family = native_fields["family"]
+            legacy_category = map_family_to_legacy_category(family)
             result.append(
                 {
                     "code": code,
-                    "label": label,
-                    "category": infer_kpi_category(label),
-                    "baselineNote": baseline_note_for_kpi(label, infer_kpi_category(label), scenario_text, normalized_persona),
+                    "label": native_fields["displayLabel"],
+                    "nativeLabel": native_fields["nativeLabel"],
+                    "category": legacy_category,
+                    "family": family,
+                    "unit": native_fields["unit"],
+                    "nativeScale": native_fields["nativeScale"],
+                    "thresholdHints": native_fields["thresholdHints"],
+                    "baselineNote": baseline_note_for_kpi(
+                        native_fields["displayLabel"],
+                        legacy_category,
+                        scenario_text,
+                        normalized_persona,
+                        family=family,
+                    ),
                 }
             )
         return result
     return derive_kpis_from_context(scenario_text, normalized_persona)
 
 
+def parse_native_kpi_fields(label: str) -> Dict[str, Any]:
+    native_label = label.strip()
+    unit = None
+    native_scale = "qualitative"
+    threshold_hints: List[str] = []
+    paren_match = re.search(r"\(([^)]+)\)\s*$", native_label)
+    display_label = native_label
+    if paren_match:
+        unit = clean_inline(paren_match.group(1))
+        display_label = native_label[:paren_match.start()].strip()
+        native_scale = infer_native_scale(unit)
+        threshold_hints = infer_threshold_hints(display_label, unit)
+    family = map_native_kpi_to_family(native_label)
+    return {
+        "displayLabel": display_label,
+        "nativeLabel": native_label,
+        "unit": unit,
+        "nativeScale": native_scale,
+        "thresholdHints": threshold_hints,
+        "family": family,
+    }
+
+
+def infer_native_scale(unit: str) -> str:
+    lower = unit.lower()
+    if any(token in lower for token in ("count", "patients", "outlets", "days", "weeks", "months", "hours")):
+        return "count_or_duration"
+    if any(token in lower for token in ("%", "percent", "per 10,000", "per 1000", "yoy")):
+        return "rate_or_percent"
+    if any(token in lower for token in ("₹", "$", "€", "cr", "crore", "million", "bn")):
+        return "currency"
+    if any(token in lower for token in ("1–5", "1-5", "score", "low / medium / high")):
+        return "ordinal"
+    return "qualitative"
+
+
+def infer_threshold_hints(label: str, unit: str) -> List[str]:
+    hints: List[str] = []
+    combined = f"{label} {unit}".lower()
+    if "days" in combined or "weeks" in combined or "months" in combined:
+        hints.append("time-sensitive")
+    if "low / medium / high" in combined:
+        hints.append("tiered-risk")
+    if "1–5" in combined or "1-5" in combined or "score" in combined:
+        hints.append("ordinal-scale")
+    if "per 10,000" in combined or "%" in combined:
+        hints.append("rate-threshold")
+    if any(token in combined for token in ("₹", "$", "€", "cr", "crore", "million")):
+        hints.append("financial-threshold")
+    return hints
+
+
+def map_native_kpi_to_family(label: str) -> str:
+    lower = label.lower()
+    if any(word in lower for word in ("adverse", "harm", "injury", "cardiac", "safety", "severity", "exposed")):
+        return "safety_harm"
+    if any(word in lower for word in ("cost", "revenue", "gmv", "commercial exposure", "valuation", "margin", "financial")):
+        return "financial_impact"
+    if any(word in lower for word in ("cash", "liquidity", "headroom", "resource", "burnout", "staffing", "runway")):
+        return "resource_pressure"
+    if any(word in lower for word in ("regulatory", "legal", "litigation", "liability", "compliance", "exposure level")):
+        return "regulatory_legal"
+    if any(word in lower for word in ("time", "timeline", "deadline", "urgency", "days", "weeks", "months")):
+        return "urgency_time"
+    if any(word in lower for word in ("customer", "stakeholder", "trust", "clinician", "relationship", "alignment")):
+        return "stakeholder_trust"
+    if any(word in lower for word in ("reputation", "reputational", "institutional trust", "confidence", "credibility")):
+        return "institutional_reputation"
+    if any(word in lower for word in ("continuity", "protocol disruption", "operational disruption", "disruption", "wash-out")):
+        return "continuity_disruption"
+    if any(word in lower for word in ("evidence", "confidence", "sample size", "uncertainty", "signal")):
+        return "evidence_quality"
+    if any(word in lower for word in ("reversibility", "optionality", "flexibility", "hybrid", "split")):
+        return "reversibility_optionality"
+    if any(word in lower for word in ("ethical", "ethics", "disclosure", "transparency", "defensible disclosure")):
+        return "ethics_disclosure"
+    if any(word in lower for word in ("affordable", "access", "vulnerable", "equity", "alternatives")):
+        return "equity_access"
+    legacy_category = infer_kpi_category(label)
+    return LEGACY_CATEGORY_TO_FAMILY.get(legacy_category, "continuity_disruption")
+
+
+def map_family_to_legacy_category(family: str) -> str:
+    return FAMILY_TO_LEGACY_CATEGORY.get(family, "general")
+
+
 def infer_kpi_category(label: str) -> str:
     lower = label.lower()
+    if any(word in lower for word in ("adverse", "cardiac", "patient exposed", "wash-out", "transition harm", "clinical protocol", "safety")):
+        return "regulatory"
+    if any(word in lower for word in ("statistical confidence", "evidence sufficiency", "defensible disclosure", "ethical transparency", "litigation", "liability")):
+        return "regulatory"
+    if any(word in lower for word in ("trust", "reputational", "patient", "affordable alternatives", "clinician")):
+        return "customer"
+    if any(word in lower for word in ("commercial exposure", "revenue at risk", "₹", "gmv", "revenue")):
+        return "cost"
     if any(word in lower for word in ("debt", "leverage", "ebitda")):
         return "debt"
     if any(word in lower for word in ("cost", "wacc", "capital")):
@@ -617,11 +1089,17 @@ def baseline_note_for_kpi(
     category: str,
     scenario_text: str,
     normalized_persona: Dict[str, Any],
+    family: Optional[str] = None,
 ) -> str:
     sentence = scenario_sentence_for_category(scenario_text, category)
     if sentence:
         return sentence
-    return f"Derived for the {normalized_persona['roleLabel']} lens from the uploaded scenario."
+    if family and family in FAMILY_BASELINE_NOTES:
+        return FAMILY_BASELINE_NOTES[family]
+    return CATEGORY_BASELINE_NOTES.get(
+        category,
+        f"{label} is a key decision dimension for the {normalized_persona['roleLabel']}.",
+    )
 
 
 def detect_scenario_kpi_domains(scenario_text: str, persona_raw: str) -> Dict[str, int]:
@@ -665,12 +1143,18 @@ def derive_kpis_from_context(scenario_text: str, normalized_persona: Dict[str, A
             continue
         seen.add(category)
         label = fallback_label_for_category(category, normalized_persona)
+        family = LEGACY_CATEGORY_TO_FAMILY.get(category, "continuity_disruption")
         result.append(
             {
                 "code": f"K{idx}",
                 "label": label,
+                "nativeLabel": label,
                 "category": category,
-                "baselineNote": baseline_note_for_kpi(label, category, scenario_text, normalized_persona),
+                "family": family,
+                "unit": None,
+                "nativeScale": "qualitative",
+                "thresholdHints": [],
+                "baselineNote": baseline_note_for_kpi(label, category, scenario_text, normalized_persona, family=family),
             }
         )
     return result
@@ -712,13 +1196,20 @@ def analyze_options(
     for option in options:
         option_id = option["id"]
         scores = {}
-        traits = infer_option_traits(option["label"], parsed, normalized_persona)
+        effects = {}
+        risks = {}
+        traits = infer_option_traits(option["label"], option.get("description", ""), parsed, normalized_persona)
         for kpi in kpis:
-            scores[kpi["code"]] = score_option_for_kpi(option, kpi, traits, parsed, normalized_persona)
+            effect = score_option_action_effect(option, kpi, traits, parsed, normalized_persona)
+            effects[kpi["code"]] = effect
+            scores[kpi["code"]] = action_effect_to_score(effect)
+            risks[kpi["code"]] = build_risk_object(effect, kpi, parsed, normalized_persona)
         results[option_id] = {
             "id": option_id,
             "label": option["label"],
             "scores": scores,
+            "effects": effects,
+            "risks": risks,
             "traits": traits,
         }
     return results
@@ -740,13 +1231,70 @@ def compute_scenario_salience(scenario_text: str, kpis: List[Dict[str, Any]]) ->
     return salience
 
 
+def classify_urgency_and_bandwidth(parsed: ParseResult, normalized_persona: Dict[str, Any]) -> Dict[str, Any]:
+    combined = " ".join(filter(None, [parsed.scenario, parsed.tension, parsed.time_horizon])).lower()
+    urgency_score = 1
+    if any(token in combined for token in ("today", "immediate", "urgent", "month-end", "11 days", "72-hour")):
+        urgency_score += 2
+    if any(token in combined for token in ("days", "week", "weeks", "quarter")):
+        urgency_score += 1
+    bandwidth_score = 3
+    if normalized_persona.get("riskOrientation") == "conservative":
+        bandwidth_score -= 1
+    if urgency_score >= 4:
+        level = "immediate"
+        top_kpis = 3
+        max_options = 2
+    elif urgency_score == 3:
+        level = "moderate"
+        top_kpis = 5
+        max_options = 3
+    else:
+        level = "analytical"
+        top_kpis = 8
+        max_options = 4
+    return {
+        "level": level,
+        "urgencyScore": urgency_score,
+        "bandwidthScore": bandwidth_score,
+        "topKpiCount": top_kpis,
+        "maxOptionsToShow": max_options,
+    }
+
+
+def blend_weight_rows(
+    rule_rows: Dict[str, Dict[str, float]],
+    ml_rows: Dict[str, Dict[str, float]],
+    ml_confidence: float,
+) -> Dict[str, Dict[str, float]]:
+    if not ml_rows:
+        return rule_rows
+    ratio = max(0.15, min(0.45, round(ml_confidence * 0.4, 2)))
+    blended: Dict[str, Dict[str, float]] = {}
+    for emotion_code, rule_row in rule_rows.items():
+        ml_row = ml_rows.get(emotion_code, {})
+        merged: Dict[str, float] = {}
+        for code, value in rule_row.items():
+            merged[code] = ((1.0 - ratio) * value) + (ratio * ml_row.get(code, value))
+        blended[emotion_code] = normalize_weight_row(merged)
+    return blended
+
+
 def build_emotion_weights_for_persona(
     kpis: List[Dict[str, Any]],
     normalized_persona: Dict[str, Any],
     parsed: Optional["ParseResult"] = None,
-) -> Dict[str, Dict[str, float]]:
+    option_count: int = 3,
+) -> Tuple[Dict[str, Dict[str, float]], Dict[str, Any]]:
     persona_id = normalized_persona.get("personaId")
     reference_personas = load_reference_personas()
+    ml_metadata = {
+        "used": False,
+        "mode": "rules-only",
+        "weightConfidence": 0.0,
+        "optionConfidence": 0.0,
+        "summary": "ML advisory layer unavailable",
+    }
     if persona_id and persona_id in reference_personas:
         reference = reference_personas[persona_id]
         rows: Dict[str, Dict[str, float]] = {}
@@ -755,88 +1303,114 @@ def build_emotion_weights_for_persona(
                 kpi["code"]: float(row.get(kpi["code"], 100.0 / max(1, len(kpis))))
                 for kpi in kpis
             }
-        return rows
+        predictor = get_ml_predictor()
+        if predictor is not None:
+            ml_rows = predictor.predict_weights(normalized_persona, kpis, option_count)
+            rows = blend_weight_rows(rows, ml_rows, predictor.weight_confidence())
+            ml_metadata = {
+                "used": True,
+                "mode": "reference-plus-ml-blend",
+                "weightConfidence": round(predictor.weight_confidence(), 3),
+                "optionConfidence": round(predictor.option_confidence(), 3),
+                "summary": predictor.summary(),
+            }
+        return rows, ml_metadata
 
     rows: Dict[str, Dict[str, float]] = {}
-    archetype_profiles = {
-        "A": {"finance": 22, "execution": 8, "stakeholder": 10, "safety": 20, "sustainability": 6, "talent": 12, "governance": 12, "resilience": 10},
-        "B": {"finance": 8, "execution": 18, "stakeholder": 8, "safety": 8, "sustainability": 18, "talent": 10, "governance": 12, "resilience": 18},
-        "C": {"finance": 8, "execution": 10, "stakeholder": 24, "safety": 10, "sustainability": 10, "talent": 14, "governance": 14, "resilience": 10},
-        "D": {"finance": 6, "execution": 24, "stakeholder": 8, "safety": 8, "sustainability": 12, "talent": 8, "governance": 10, "resilience": 24},
-        "E": {"finance": 18, "execution": 14, "stakeholder": 8, "safety": 10, "sustainability": 10, "talent": 12, "governance": 14, "resilience": 14},
-        "F": {"finance": 14, "execution": 16, "stakeholder": 10, "safety": 12, "sustainability": 10, "talent": 12, "governance": 12, "resilience": 14},
-    }
-    role_bias = role_archetype_bias(normalized_persona)
+    role_bias = role_family_bias(normalized_persona)
     orient_bias = risk_orientation_bias(normalized_persona.get("riskOrientation", "moderate"))
-    tension_bias = scenario_tension_archetype_bias(
+    tension_bias = scenario_tension_family_bias(
         parsed.tension if parsed else None,
         parsed.time_horizon if parsed else None,
     )
+    domain_bias = DOMAIN_PACKS.get(normalized_persona.get("domainPack", ""), {}).get("familyBias", {})
     combined_bias: Dict[str, int] = {}
-    for source in (role_bias, orient_bias, tension_bias):
+    for source in (role_bias, orient_bias, tension_bias, domain_bias):
         for k, v in source.items():
             combined_bias[k] = combined_bias.get(k, 0) + v
 
-    for emotion_code, profile in archetype_profiles.items():
+    for emotion_code, profile in EMOTION_FAMILY_WEIGHTS.items():
         raw = {}
         for kpi in kpis:
-            archetype = infer_kpi_archetype(kpi["label"], normalized_persona)
-            raw[kpi["code"]] = float(profile.get(archetype, 8) + combined_bias.get(archetype, 0))
+            family = kpi.get("family", LEGACY_CATEGORY_TO_FAMILY.get(kpi.get("category", "general"), "continuity_disruption"))
+            raw[kpi["code"]] = float(profile.get(family, 8) + combined_bias.get(family, 0))
         rows[emotion_code] = normalize_weight_row(raw)
-    return rows
+    predictor = get_ml_predictor()
+    if predictor is not None:
+        ml_rows = predictor.predict_weights(normalized_persona, kpis, option_count)
+        rows = blend_weight_rows(rows, ml_rows, predictor.weight_confidence())
+        ml_metadata = {
+            "used": True,
+            "mode": "rules-plus-ml-blend",
+            "weightConfidence": round(predictor.weight_confidence(), 3),
+            "optionConfidence": round(predictor.option_confidence(), 3),
+            "summary": predictor.summary(),
+        }
+    return rows, ml_metadata
 
 
 def risk_orientation_bias(orientation: str) -> Dict[str, int]:
     if orientation == "conservative":
-        return {"finance": 3, "safety": 2, "governance": 2, "execution": -2, "sustainability": -1}
+        return {"financial_impact": 2, "safety_harm": 3, "regulatory_legal": 2, "reversibility_optionality": 2, "urgency_time": -1}
     if orientation == "growth_oriented":
-        return {"execution": 3, "sustainability": 2, "stakeholder": 1, "finance": -1, "safety": -1}
+        return {"urgency_time": 2, "continuity_disruption": 2, "reversibility_optionality": 1, "financial_impact": -1, "safety_harm": -1}
     return {}
 
 
-def scenario_tension_archetype_bias(tension: Optional[str], time_horizon: Optional[str]) -> Dict[str, int]:
+def scenario_tension_family_bias(tension: Optional[str], time_horizon: Optional[str]) -> Dict[str, int]:
     bias: Dict[str, int] = {}
     if tension:
         lower = tension.lower()
         if any(w in lower for w in ("deadline", "urgency", "immediate", "now", "today", "month-end")):
-            bias["execution"] = bias.get("execution", 0) + 2
+            bias["urgency_time"] = bias.get("urgency_time", 0) + 2
         if any(w in lower for w in ("compliance", "regulatory", "penalty", "fine", "legal")):
-            bias["governance"] = bias.get("governance", 0) + 2
+            bias["regulatory_legal"] = bias.get("regulatory_legal", 0) + 2
         if any(w in lower for w in ("customer", "client", "relationship", "trust")):
-            bias["stakeholder"] = bias.get("stakeholder", 0) + 2
+            bias["stakeholder_trust"] = bias.get("stakeholder_trust", 0) + 2
         if any(w in lower for w in ("cost", "budget", "financial", "cash", "debt")):
-            bias["finance"] = bias.get("finance", 0) + 2
-        if any(w in lower for w in ("safety", "accident", "injury")):
-            bias["safety"] = bias.get("safety", 0) + 2
-        if any(w in lower for w in ("sustainability", "emission", "carbon", "green")):
-            bias["sustainability"] = bias.get("sustainability", 0) + 2
+            bias["financial_impact"] = bias.get("financial_impact", 0) + 2
+            bias["resource_pressure"] = bias.get("resource_pressure", 0) + 1
+        if any(w in lower for w in ("safety", "accident", "injury", "harm", "adverse")):
+            bias["safety_harm"] = bias.get("safety_harm", 0) + 2
+        if any(w in lower for w in ("disclosure", "ethical", "ethics", "transparency")):
+            bias["ethics_disclosure"] = bias.get("ethics_disclosure", 0) + 2
+        if any(w in lower for w in ("access", "affordable", "equity", "vulnerable")):
+            bias["equity_access"] = bias.get("equity_access", 0) + 2
     if time_horizon:
         if any(w in time_horizon.lower() for w in ("week", "days", "30", "60", "90")):
-            bias["execution"] = bias.get("execution", 0) + 1
+            bias["urgency_time"] = bias.get("urgency_time", 0) + 1
     return bias
 
 
-def role_archetype_bias(normalized_persona: Dict[str, Any]) -> Dict[str, int]:
+def role_family_bias(normalized_persona: Dict[str, Any]) -> Dict[str, int]:
     role_lower = normalized_persona["raw"].lower()
+    if any(term in role_lower for term in ("medical", "clinical", "ethics", "pharmacovigilance", "healthcare")):
+        return {"safety_harm": 5, "regulatory_legal": 4, "evidence_quality": 3, "ethics_disclosure": 4, "equity_access": 2, "stakeholder_trust": 2}
     if "procurement" in role_lower or "sales" in role_lower:
-        return {"stakeholder": 3, "resilience": 3, "finance": 1}
+        return {"stakeholder_trust": 3, "continuity_disruption": 3, "financial_impact": 1}
     if "cfo" in role_lower or "financial" in role_lower:
-        return {"finance": 5, "governance": 3, "resilience": 2}
+        return {"financial_impact": 5, "resource_pressure": 3, "institutional_reputation": 2, "regulatory_legal": 2}
     if "operating officer" in role_lower or "plant head" in role_lower:
-        return {"execution": 5, "safety": 4, "resilience": 2}
+        return {"urgency_time": 4, "continuity_disruption": 5, "safety_harm": 4, "resource_pressure": 2}
     if "sustainability" in role_lower:
-        return {"sustainability": 6, "governance": 3, "stakeholder": 1}
+        return {"institutional_reputation": 2, "regulatory_legal": 2, "continuity_disruption": 3, "reversibility_optionality": 2}
     if "delivery" in role_lower or "platform" in role_lower:
-        return {"talent": 4, "execution": 4, "finance": 2}
+        return {"continuity_disruption": 4, "urgency_time": 4, "financial_impact": 2, "stakeholder_trust": 1}
     if "human resources" in role_lower or "talent" in role_lower:
-        return {"talent": 6, "stakeholder": 3, "governance": 2}
-    return {"finance": 1, "execution": 1, "stakeholder": 1, "safety": 1, "sustainability": 1, "talent": 1, "governance": 1, "resilience": 1}
+        return {"stakeholder_trust": 4, "continuity_disruption": 2, "institutional_reputation": 2, "equity_access": 2}
+    return {"financial_impact": 1, "urgency_time": 1, "stakeholder_trust": 1, "safety_harm": 1, "regulatory_legal": 1, "continuity_disruption": 1}
 
 
 def infer_kpi_archetype(label: str, normalized_persona: Dict[str, Any]) -> str:
     lower = label.lower()
     if any(word in lower for word in ("cash", "cost", "margin", "gmv", "valuation", "debt", "ebitda", "billing", "roi", "payback", "dividend")):
         return "finance"
+    if any(word in lower for word in ("adverse", "cardiac", "patient exposed", "wash-out", "transition harm", "clinical protocol", "safety", "harm")):
+        return "safety"
+    if any(word in lower for word in ("patient", "affordable alternatives", "trust", "reputational", "clinicians", "media ecosystem", "access")):
+        return "stakeholder"
+    if any(word in lower for word in ("statistical confidence", "evidence sufficiency", "defensible disclosure", "ethical transparency", "regulatory", "litigation", "liability", "pharmacovigilance")):
+        return "governance"
     if any(word in lower for word in ("volume", "output", "yield", "oee", "adherence", "time-to-ready", "time-to-hire", "milestone", "coverage", "utilization", "delivery")):
         return "execution"
     if any(word in lower for word in ("customer", "client", "nps", "community", "union", "channel", "response coherence", "credibility", "engagement")):
@@ -851,6 +1425,8 @@ def infer_kpi_archetype(label: str, normalized_persona: Dict[str, Any]) -> str:
         return "governance"
     if any(word in lower for word in ("concentration", "alternate", "supplier", "resilience", "stockpile", "headroom", "continuity")):
         return "resilience"
+    if any(term in normalized_persona["raw"].lower() for term in ("medical", "clinical", "ethics")):
+        return "governance"
     if "procurement" in normalized_persona["raw"].lower():
         return "resilience"
     return "execution"
@@ -908,6 +1484,9 @@ def build_hard_priority_kpis(
     elif "administrator" in role_lower:
         target_tokens = ["regulatory", "continuity", "patient"]
         target_categories = ["regulatory", "timeline"]
+    elif any(term in role_lower for term in ("medical", "clinical", "ethics", "pharmacovigilance")):
+        target_tokens = ["adverse", "wash-out", "disclosure", "ethical", "regulatory", "liability", "patient"]
+        target_categories = ["regulatory", "customer"]
 
     selected = []
     for kpi in kpis:
@@ -962,10 +1541,11 @@ def score_option_for_category(option_id: str, category: str) -> int:
 
 def infer_option_traits(
     option_label: str,
+    option_description: str,
     parsed: ParseResult,
     normalized_persona: Dict[str, Any],
 ) -> Dict[str, float]:
-    lower = option_label.lower()
+    lower = f"{option_label} {option_description}".lower()
     traits = {
         "finance": 1.0,
         "execution": 1.0,
@@ -1022,6 +1602,39 @@ def infer_option_traits(
     if any(word in lower for word in ("stockpile", "alternate", "qualification", "cross-fund", "carve out")):
         traits["resilience"] += 1.0
 
+    if any(word in lower for word in ("suspend", "pull the drug", "transition protocol")):
+        traits["safety"] += 1.2
+        traits["governance"] += 0.8
+        traits["stakeholder"] -= 0.4
+        traits["finance"] -= 0.6
+        traits["resilience"] -= 0.4
+
+    if any(word in lower for word in ("enhanced monitoring", "screening", "independent 25,000-patient study", "continue with enhanced monitoring")):
+        traits["execution"] += 0.4
+        traits["stakeholder"] += 0.2
+        traits["safety"] -= 0.5
+        traits["governance"] -= 0.2
+
+    if any(word in lower for word in ("restrict new starts", "existing patients continue", "maintaining existing patients")):
+        traits["balance"] += 0.8
+        traits["safety"] += 0.2
+        traits["stakeholder"] += 0.3
+        traits["governance"] -= 0.5
+
+    if any(word in lower for word in ("escalate urgently", "joint review", "cdsco", "expedited safety report", "regulator")):
+        traits["governance"] += 1.2
+        traits["stakeholder"] += 0.5
+        traits["execution"] += 0.2
+        traits["finance"] -= 0.2
+
+    if any(word in lower for word in ("quietly", "no public disclosure")):
+        traits["governance"] -= 1.0
+        traits["stakeholder"] -= 0.8
+
+    if any(word in lower for word in ("disclose the signal", "full-disclosure", "notify regulator proactively")):
+        traits["governance"] += 0.8
+        traits["stakeholder"] += 0.4
+
     role_lower = normalized_persona["raw"].lower()
     if "sustainability" in role_lower:
         traits["sustainability"] += 0.4
@@ -1029,47 +1642,161 @@ def infer_option_traits(
         traits["talent"] += 0.3
     if "cfo" in role_lower or "financial" in role_lower:
         traits["finance"] += 0.2
+    if any(term in role_lower for term in ("medical", "clinical", "ethics", "pharmacovigilance")):
+        traits["safety"] += 0.3
+        traits["governance"] += 0.3
 
     return traits
 
 
-def score_option_for_kpi(
+def score_option_action_effect(
     option: Dict[str, Any],
     kpi: Dict[str, Any],
     traits: Dict[str, float],
     parsed: ParseResult,
     normalized_persona: Dict[str, Any],
 ) -> float:
+    special_case_effect = score_special_case_option_effect(option, kpi, parsed, normalized_persona)
+    if special_case_effect is not None:
+        return special_case_effect
+
     if option["id"] in {"fund", "defer", "split"}:
-        return float(score_option_for_category(option["id"], kpi["category"]))
+        return legacy_score_to_action_effect(float(score_option_for_category(option["id"], kpi["category"])))
 
-    archetype = infer_kpi_archetype(kpi["label"], normalized_persona)
+    family = kpi.get("family", LEGACY_CATEGORY_TO_FAMILY.get(kpi.get("category", "general"), "continuity_disruption"))
+    archetype = FAMILY_TO_TRAIT.get(family, infer_kpi_archetype(kpi["label"], normalized_persona))
     label_lower = option["label"].lower()
-    value = traits.get(archetype, 1.0)
+    value = (traits.get(archetype, 1.0) - 1.0) * 2.0
 
-    if archetype == "safety" and any(word in label_lower for word in ("force", "restart", "variance")):
+    if family == "safety_harm" and any(word in label_lower for word in ("force", "restart", "variance")):
         value -= 1.0
-    if archetype == "stakeholder" and any(word in label_lower for word in ("exclusive", "de-list", "force", "mandate")):
+    if family in {"stakeholder_trust", "institutional_reputation"} and any(word in label_lower for word in ("exclusive", "de-list", "force", "mandate")):
         value -= 0.8
     if archetype == "talent" and any(word in label_lower for word in ("force", "mandate", "redeploying")):
         value -= 1.0
-    if archetype == "finance" and any(word in label_lower for word in ("invest", "acceleration", "fund", "tooling", "bonus")):
+    if family in {"financial_impact", "resource_pressure"} and any(word in label_lower for word in ("invest", "acceleration", "fund", "tooling", "bonus")):
         value -= 0.6
-    if archetype == "execution" and any(word in label_lower for word in ("delay", "decline", "shutdown", "full repair", "slow-roll")):
+    if family in {"urgency_time", "continuity_disruption"} and any(word in label_lower for word in ("delay", "decline", "shutdown", "full repair", "slow-roll")):
         value -= 0.9
-    if archetype == "sustainability" and any(word in label_lower for word in ("lower the public target", "rebase accounting", "delay")):
+    if family == "continuity_disruption" and any(word in label_lower for word in ("lower the public target", "rebase accounting", "delay")):
         value -= 0.9
-    if archetype == "governance" and any(word in label_lower for word in ("rebase accounting", "cross-fund")):
+    if family in {"regulatory_legal", "ethics_disclosure", "evidence_quality"} and any(word in label_lower for word in ("rebase accounting", "cross-fund")):
         value -= 0.5
 
-    if traits.get("balance", 0.0) > 0 and archetype in {"stakeholder", "resilience", "governance", "talent"}:
+    if traits.get("balance", 0.0) > 0 and family in {"stakeholder_trust", "continuity_disruption", "regulatory_legal", "reversibility_optionality", "equity_access"}:
         value += 0.3
 
-    return clip_score(value)
+    if normalized_persona.get("domainPack") == "healthcare_safety":
+        if family in {"ethics_disclosure", "regulatory_legal"} and any(word in label_lower for word in ("disclose", "escalate", "notify", "review")):
+            value += 0.3
+        if family == "equity_access" and any(word in label_lower for word in ("suspend", "pull the drug")):
+            value -= 0.4
+
+    return clip_action_effect(value)
 
 
-def clip_score(value: float) -> float:
-    return max(0.0, min(2.0, value))
+def score_special_case_option_effect(
+    option: Dict[str, Any],
+    kpi: Dict[str, Any],
+    parsed: ParseResult,
+    normalized_persona: Dict[str, Any],
+) -> Optional[float]:
+    role_lower = normalized_persona["raw"].lower()
+    scenario_lower = (parsed.scenario or "").lower()
+    if not any(term in role_lower for term in ("medical", "clinical", "ethics", "pharmacovigilance")):
+        return None
+    if not any(term in scenario_lower for term in ("monoclonal", "adverse event", "pharmacovigilance", "cdsco", "wash-out")):
+        return None
+
+    option_text = f"{option['label']} {option.get('description', '')}".lower()
+    label = kpi["label"].lower()
+
+    if "suspend" in option_text or "pull the drug" in option_text:
+        mode = "suspend"
+    elif "enhanced monitoring" in option_text or "screening" in option_text:
+        mode = "monitor"
+    elif "restrict new starts" in option_text or "existing patients continue" in option_text:
+        mode = "restrict"
+    elif "cdsco" in option_text or "joint review" in option_text or "expedited safety report" in option_text:
+        mode = "escalate"
+    else:
+        return None
+
+    score_map = {
+        "suspend": {
+            "adverse cardiac event signal": 2.0,
+            "statistical confidence / evidence sufficiency": 0.8,
+            "active patients exposed": 2.0,
+            "vulnerable patients without affordable alternatives": 0.0,
+            "wash-out transition harm risk": 0.2,
+            "time to defensible disclosure": 2.0,
+            "regulatory exposure level": 1.6,
+            "ethical transparency integrity": 2.0,
+            "institutional trust / reputational downside": 1.3,
+            "commercial exposure": 0.0,
+            "clinical protocol disruption severity": 0.2,
+            "litigation / liability exposure": 1.4,
+        },
+        "monitor": {
+            "adverse cardiac event signal": 0.2,
+            "statistical confidence / evidence sufficiency": 1.6,
+            "active patients exposed": 0.0,
+            "vulnerable patients without affordable alternatives": 2.0,
+            "wash-out transition harm risk": 2.0,
+            "time to defensible disclosure": 1.2,
+            "regulatory exposure level": 0.6,
+            "ethical transparency integrity": 1.1,
+            "institutional trust / reputational downside": 0.7,
+            "commercial exposure": 2.0,
+            "clinical protocol disruption severity": 2.0,
+            "litigation / liability exposure": 0.2,
+        },
+        "restrict": {
+            "adverse cardiac event signal": 1.2,
+            "statistical confidence / evidence sufficiency": 1.4,
+            "active patients exposed": 1.0,
+            "vulnerable patients without affordable alternatives": 1.5,
+            "wash-out transition harm risk": 1.8,
+            "time to defensible disclosure": 0.8,
+            "regulatory exposure level": 0.7,
+            "ethical transparency integrity": 0.2,
+            "institutional trust / reputational downside": 0.4,
+            "commercial exposure": 1.3,
+            "clinical protocol disruption severity": 1.5,
+            "litigation / liability exposure": 0.4,
+        },
+        "escalate": {
+            "adverse cardiac event signal": 1.4,
+            "statistical confidence / evidence sufficiency": 1.8,
+            "active patients exposed": 1.0,
+            "vulnerable patients without affordable alternatives": 1.4,
+            "wash-out transition harm risk": 1.2,
+            "time to defensible disclosure": 1.9,
+            "regulatory exposure level": 2.0,
+            "ethical transparency integrity": 1.8,
+            "institutional trust / reputational downside": 1.6,
+            "commercial exposure": 1.0,
+            "clinical protocol disruption severity": 1.0,
+            "litigation / liability exposure": 1.7,
+        },
+    }
+
+    for key, value in score_map[mode].items():
+        if key in label:
+            return legacy_score_to_action_effect(value)
+    return None
+
+
+def clip_action_effect(value: float) -> float:
+    return max(-2.0, min(2.0, value))
+
+
+def action_effect_to_score(effect: float) -> float:
+    return max(0.0, min(2.0, round((effect + 2.0) / 2.0, 2)))
+
+
+def legacy_score_to_action_effect(score: float) -> float:
+    return clip_action_effect((score - 1.0) * 2.0)
 
 
 def flag_for_score(score: float) -> str:
@@ -1082,6 +1809,126 @@ def flag_for_score(score: float) -> str:
 
 def severity_for_score(score: float) -> float:
     return max(1.0, 3.0 - score)
+
+
+def build_risk_object(
+    action_effect: float,
+    kpi: Dict[str, Any],
+    parsed: ParseResult,
+    normalized_persona: Dict[str, Any],
+) -> Dict[str, Any]:
+    family = kpi.get("family", "continuity_disruption")
+    combined = " ".join(filter(None, [parsed.scenario, parsed.tension, parsed.time_horizon])).lower()
+    downside = max(0.0, -action_effect)
+
+    probability = 2.0 + downside
+    if any(token in combined for token in ("uncertain", "not yet", "signal", "reviewing", "confidence")) and family in {"evidence_quality", "regulatory_legal", "safety_harm"}:
+        probability += 0.5
+
+    impact_defaults = {
+        "safety_harm": 5.0,
+        "financial_impact": 3.0,
+        "resource_pressure": 3.0,
+        "regulatory_legal": 4.0,
+        "urgency_time": 3.0,
+        "stakeholder_trust": 4.0,
+        "institutional_reputation": 4.0,
+        "continuity_disruption": 4.0,
+        "evidence_quality": 3.0,
+        "reversibility_optionality": 4.0,
+        "ethics_disclosure": 5.0,
+        "equity_access": 4.0,
+    }
+    impact = impact_defaults.get(family, 3.0) + (1.0 if downside >= 1.0 else 0.0)
+
+    exposure = 2.5
+    if re.search(r"\b\d[\d,\.]*\b", combined):
+        exposure += 1.0
+    if family in {"stakeholder_trust", "institutional_reputation", "equity_access", "safety_harm"}:
+        exposure += 0.5
+
+    irreversibility_defaults = {
+        "safety_harm": 5.0,
+        "financial_impact": 3.0,
+        "resource_pressure": 3.0,
+        "regulatory_legal": 4.0,
+        "urgency_time": 3.0,
+        "stakeholder_trust": 4.0,
+        "institutional_reputation": 4.0,
+        "continuity_disruption": 4.0,
+        "evidence_quality": 3.0,
+        "reversibility_optionality": 5.0,
+        "ethics_disclosure": 4.0,
+        "equity_access": 4.0,
+    }
+    irreversibility = irreversibility_defaults.get(family, 3.0)
+
+    time_pressure = 2.0
+    if any(token in combined for token in ("11 days", "days", "weeks", "quarter", "month-end", "urgent", "immediate")):
+        time_pressure += 2.0
+    elif any(token in combined for token in ("months", "year", "years")):
+        time_pressure += 1.0
+
+    uncertainty_penalty = 0.0
+    if family in {"evidence_quality", "regulatory_legal", "safety_harm", "ethics_disclosure"} and any(
+        token in combined for token in ("not yet statistically significant", "not yet", "uncertain", "private confidence", "not publishable")
+    ):
+        uncertainty_penalty += 8.0
+    if family in {"institutional_reputation", "ethics_disclosure"} and any(token in combined for token in ("media", "leak", "misrepresentation")):
+        uncertainty_penalty += 6.0
+
+    base = probability * impact * exposure * irreversibility * time_pressure
+    normalized = min(100.0, round((base / 31.25), 1))
+    risk_score = min(100.0, round(normalized + uncertainty_penalty, 1))
+    return {
+        "probability": round(min(probability, 5.0), 1),
+        "impact": round(min(impact, 5.0), 1),
+        "exposure": round(min(exposure, 5.0), 1),
+        "irreversibility": round(min(irreversibility, 5.0), 1),
+        "timePressure": round(min(time_pressure, 5.0), 1),
+        "uncertaintyPenalty": round(uncertainty_penalty, 1),
+        "riskScore": risk_score,
+        "band": risk_band_for_value(risk_score),
+        "level": risk_level_for_value(risk_score),
+        "text": risk_text_for_value(risk_score),
+    }
+
+
+def risk_band_for_value(value: float) -> str:
+    if value <= 20:
+        return "Low"
+    if value <= 40:
+        return "Moderate"
+    if value <= 60:
+        return "High"
+    if value <= 80:
+        return "Very High"
+    return "Critical"
+
+
+def risk_level_for_value(value: float) -> str:
+    if value <= 20:
+        return "green"
+    if value <= 60:
+        return "yellow"
+    return "red"
+
+
+def risk_text_for_value(value: float) -> str:
+    return f"{risk_band_for_value(value)} risk"
+
+
+def risk_penalty_for_object(risk: Dict[str, Any], emotion_code: str) -> float:
+    sensitivity = {
+        "BASELINE": 0.10,
+        "A": 0.18,
+        "B": 0.10,
+        "C": 0.12,
+        "D": 0.11,
+        "E": 0.14,
+        "F": 0.12,
+    }.get(emotion_code, 0.10)
+    return round((risk.get("riskScore", 0.0) / 10.0) * sensitivity, 2)
 
 
 def equal_weights_by_kpi(kpis: List[Dict[str, Any]]) -> Dict[str, float]:
@@ -1111,8 +1958,11 @@ def recommend_option(
         green_count = 0
         category_scores: Dict[str, List[int]] = {}
         for kpi_code, score in option["scores"].items():
-            weighted_value = score_to_utility(score) * weights.get(kpi_code, 0)
+            effect = option["effects"][kpi_code]
+            risk = option["risks"][kpi_code]
+            weighted_value = effect * weights.get(kpi_code, 0)
             total += weighted_value
+            total -= risk_penalty_for_object(risk, emotion_code)
             category = kpi_categories.get(kpi_code, infer_kpi_category_from_code(kpi_code, option_analysis, "general"))
             category_scores.setdefault(category, []).append(score)
             if score == 0:
@@ -1121,15 +1971,6 @@ def recommend_option(
                 yellow_count += 1
             else:
                 green_count += 1
-        total += emotion_bonus(
-            emotion_code,
-            option_id,
-            category_scores,
-            red_count,
-            yellow_count,
-            green_count,
-        )
-        total += persona_emotion_option_bias(persona_id, emotion_code, option["label"])
         totals.append((option_id, total))
     totals.sort(key=lambda item: item[1], reverse=True)
     return {"optionId": totals[0][0], "score": totals[0][1], "ranking": totals}
@@ -1330,6 +2171,89 @@ def infer_kpi_category_from_code(_kpi_code: str, _option_analysis: Dict[str, Dic
     return mapping.get(_kpi_code, "general")
 
 
+def compute_kpi_contributions(
+    option: Dict[str, Any],
+    kpis: List[Dict[str, Any]],
+    weights: Dict[str, float],
+) -> List[Dict[str, Any]]:
+    """Per-KPI weighted contributions for one option, sorted by contribution descending."""
+    kpi_by_code = {kpi["code"]: kpi for kpi in kpis}
+    contributions = []
+    for kpi_code, score in option["scores"].items():
+        kpi = kpi_by_code.get(kpi_code, {})
+        weight = weights.get(kpi_code, 0.0)
+        effect = option["effects"].get(kpi_code, legacy_score_to_action_effect(score))
+        risk = option["risks"].get(kpi_code, risk_for_score(score))
+        contrib = effect * weight
+        contributions.append({
+            "kpi_code": kpi_code,
+            "kpi_label": kpi.get("label", kpi_code),
+            "category": kpi.get("category", "general"),
+            "family": kpi.get("family"),
+            "effect": round(effect, 2),
+            "score": score,
+            "weight": weight,
+            "contribution": round(contrib, 2),
+            "flag": risk.get("level", "yellow"),
+        })
+    return sorted(contributions, key=lambda c: c["contribution"], reverse=True)
+
+
+def derive_snapshot_subtitle(
+    emotion_code: str,
+    winner_label: str,
+    runner_up_label: str,
+    margin: float,
+    top_drivers: List[Dict[str, Any]],
+) -> str:
+    emotion_name = EMOTION_LABELS.get(emotion_code, emotion_code)
+    driver_names = [d["kpi_label"] for d in top_drivers[:2]]
+    driver_str = " and ".join(driver_names) if driver_names else "the top-weighted KPIs"
+    if margin < 5:
+        return (
+            f"{emotion_name} weighting narrowly prefers this over \"{runner_up_label}\" "
+            f"(margin of {margin:.1f} pts). The tilt comes from {driver_str}."
+        )
+    return (
+        f"{emotion_name} weighting prefers this option by {margin:.1f} pts over "
+        f"\"{runner_up_label}\". Driven primarily by {driver_str}."
+    )
+
+
+def explain_divergence(
+    emotion_code: str,
+    recommended_label: str,
+    baseline_label: str,
+    top_drivers: List[Dict[str, Any]],
+) -> str:
+    if recommended_label == baseline_label:
+        return "This emotion converges with baseline. The lens changes which KPIs dominate the explanation, not the winner."
+    driver_labels = ", ".join(item["kpi_label"] for item in top_drivers[:3]) or "the top weighted KPIs"
+    emotion_name = EMOTION_LABELS.get(emotion_code, emotion_code)
+    return (
+        f"{emotion_name} diverges from baseline because it gives more decision weight to {driver_labels}. "
+        f"This is a useful lens if those KPIs are truly dominant; it is a risky bias if they crowd out slower but higher-downside signals."
+    )
+
+
+def derive_flip_condition(
+    parsed: ParseResult,
+    recommended_label: str,
+    runner_up_label: str,
+    top_drivers: List[Dict[str, Any]],
+) -> str:
+    top_driver = top_drivers[0]["kpi_label"] if top_drivers else "the top KPI"
+    if parsed.time_horizon and any(token in parsed.time_horizon.lower() for token in ("day", "week", "month")):
+        return (
+            f"If new evidence changes {top_driver} materially inside the current decision window, "
+            f"the recommendation can flip from \"{recommended_label}\" to \"{runner_up_label}\"."
+        )
+    return (
+        f"Watch {top_driver}. If it moves against the current assumptions or reversibility drops faster than expected, "
+        f"re-test \"{runner_up_label}\" as the stronger path."
+    )
+
+
 def build_emotion_output(
     profile: Dict[str, Any],
     recommended: Dict[str, Any],
@@ -1342,21 +2266,37 @@ def build_emotion_output(
     scenario_salience: Dict[str, int],
     emotion_weights_by_kpi: Dict[str, Dict[str, float]],
     hard_priority_kpis: List[str],
+    full_option_analysis: Dict[str, Dict[str, Any]],
+    urgency_profile: Dict[str, Any],
 ) -> Dict[str, Any]:
     option = option_analysis[recommended["optionId"]]
     kpi_ordering = order_kpis_for_emotion(
         emotion_code=profile["code"],
         kpis=kpis,
         option_scores=option["scores"],
+        option_analysis=full_option_analysis,
+        normalized_persona=normalized_persona,
+        parsed=parsed,
         emotion_weights=emotion_weights_by_kpi[profile["code"]],
         hard_priority_kpis=hard_priority_kpis,
         scenario_salience=scenario_salience,
+        top_kpi_count=urgency_profile["topKpiCount"],
     )
+    emotion_weights = emotion_weights_by_kpi[profile["code"]]
     margin = compute_margin(recommended["ranking"])
     close_call = margin < close_call_threshold(normalized_persona.get("personaId"))
+
+    winner_contributions = compute_kpi_contributions(option, kpis, emotion_weights)
+    top_drivers = winner_contributions[:3]
+
+    ranking = recommended["ranking"]
+    runner_up_label = option_analysis[ranking[1][0]]["label"] if len(ranking) > 1 else option["label"]
+
     facts = build_context_bullets(profile["code"], parsed, normalized_persona)
+    blind_spot_items = [item for item in kpi_ordering if item["slotType"] == "blind_spot_warning"]
     blind_spots = build_blind_spots_from_slots(kpi_ordering, profile["code"], len(kpis))
-    blind_spot_labels = [item["label"] for item in kpi_ordering if item["slotType"] == "blind_spot_warning"]
+    blind_spot_labels = [item["label"] for item in blind_spot_items]
+
     return {
         "code": profile["code"],
         "name": profile["name"],
@@ -1366,18 +2306,35 @@ def build_emotion_output(
         "recommendedOptionLabel": option["label"],
         "headerBadge": option["label"].upper(),
         "decisionSnapshot": option["label"],
-        "snapshotSubtitle": snapshot_rationale(profile["code"]),
-        "reason": snapshot_rationale(profile["code"]),
-        "personaLens": persona_lens(profile["code"], normalized_persona, emotion_weights_by_kpi[profile["code"]], kpis),
+        "snapshotSubtitle": derive_snapshot_subtitle(
+            profile["code"], option["label"], runner_up_label, margin, top_drivers
+        ),
+        "reason": derive_snapshot_subtitle(
+            profile["code"], option["label"], runner_up_label, margin, top_drivers
+        ),
+        "personaLens": persona_lens(profile["code"], normalized_persona, emotion_weights, kpis, top_drivers),
         "priorityFacts": facts,
-        "consequenceRisk": consequence_risk(profile["code"], parsed, option["label"], blind_spot_labels),
+        "consequenceRisk": consequence_risk(
+            profile["code"], parsed, option["label"], blind_spot_labels,
+            winner_contributions, emotion_weights,
+        ),
         "blindSpots": blind_spots,
-        "nextStep": next_step(profile["code"], close_call, parsed, option["label"]),
+        "divergenceExplanation": explain_divergence(
+            profile["code"], option["label"], option_analysis[baseline_option_id]["label"], top_drivers
+        ),
+        "flipCondition": derive_flip_condition(parsed, option["label"], runner_up_label, top_drivers),
+        "nextStep": next_step(
+            profile["code"], close_call, parsed, option["label"],
+            runner_up_label=runner_up_label,
+            margin=margin,
+            blind_spot_items=blind_spot_items,
+            top_drivers=top_drivers,
+        ),
         "divergesFromBaseline": option["id"] != baseline_option_id,
         "publicRoleContext": enrichment["summary"] if enrichment["used"] else None,
-        "weights": emotion_weights_by_kpi[profile["code"]],
+        "weights": emotion_weights,
         "kpiOrdering": kpi_ordering,
-        "scores": {option_id: round(score, 1) for option_id, score in recommended["ranking"]},
+        "scores": {option_id: round(score, 1) for option_id, score in ranking},
         "margin": round(margin, 1),
         "closeCall": close_call,
     }
@@ -1388,7 +2345,7 @@ def build_baseline_output(
     option_analysis: Dict[str, Dict[str, Any]],
     normalized_persona: Dict[str, Any],
     parsed: ParseResult,
-    confidence: str,
+    confidence: Dict[str, str],
 ) -> Dict[str, Any]:
     option = option_analysis[baseline["optionId"]]
     margin = compute_margin(baseline["ranking"])
@@ -1399,7 +2356,8 @@ def build_baseline_output(
         "reason": "Baseline weighting prefers the strongest composite option under the current KPI balance.",
         "personaLens": f"Baseline mode reads this through the {normalized_persona['roleLabel']} lens.",
         "priorityFacts": build_context_bullets("F", parsed, normalized_persona),
-        "confidence": confidence,
+        "confidence": confidence.get("overall", "Medium"),
+        "confidenceBreakdown": confidence,
         "scores": {option_id: round(score, 1) for option_id, score in baseline["ranking"]},
         "margin": round(margin, 1),
     }
@@ -1419,6 +2377,7 @@ def build_kpi_catalog(
         option_risks = {}
         for option_id in option_order:
             score = option_analysis[option_id]["scores"][kpi["code"]]
+            risk = option_analysis[option_id]["risks"][kpi["code"]]
             option_values[option_id] = score_value_label(score, kpi["category"], option_id, kpi["label"])
             option_meta[option_id] = score_meta_label(
                 score,
@@ -1427,13 +2386,19 @@ def build_kpi_catalog(
                 kpi["label"],
                 normalized_persona,
                 parsed,
+                risk,
             )
-            option_risks[option_id] = risk_for_score(score)
+            option_risks[option_id] = risk
         catalog.append(
             {
                 "code": kpi["code"],
                 "label": kpi["label"],
+                "nativeLabel": kpi.get("nativeLabel", kpi["label"]),
                 "category": kpi["category"],
+                "family": kpi.get("family", LEGACY_CATEGORY_TO_FAMILY.get(kpi["category"], "continuity_disruption")),
+                "unit": kpi.get("unit"),
+                "nativeScale": kpi.get("nativeScale"),
+                "thresholdHints": kpi.get("thresholdHints", []),
                 "baselineNote": kpi["baselineNote"],
                 "optionValues": option_values,
                 "optionMeta": option_meta,
@@ -1443,13 +2408,67 @@ def build_kpi_catalog(
     return catalog
 
 
+def compute_kpi_priority_inputs(
+    kpi: Dict[str, Any],
+    option_analysis: Dict[str, Dict[str, Any]],
+    normalized_persona: Dict[str, Any],
+    parsed: ParseResult,
+    scenario_relevance: int,
+) -> Dict[str, float]:
+    code = kpi["code"]
+    effects = [option["effects"].get(code, 0.0) for option in option_analysis.values()]
+    spread = (max(effects) - min(effects)) if effects else 0.0
+    family = kpi.get("family", "continuity_disruption")
+    authority = str(normalized_persona.get("decisionAuthority", "")).lower()
+    horizon = " ".join(filter(None, [parsed.time_horizon, parsed.tension, parsed.scenario])).lower()
+
+    relevance = min(5.0, max(1.0, float(scenario_relevance + 1)))
+    sensitivity = min(5.0, max(1.0, 1.0 + (spread * 1.5)))
+    if any(token in authority for token in ("board", "executive", "full")):
+        actionability = 4.5
+    elif family in {"financial_impact", "resource_pressure", "continuity_disruption", "urgency_time"}:
+        actionability = 4.0
+    elif family in {"institutional_reputation", "stakeholder_trust", "regulatory_legal"}:
+        actionability = 3.5
+    else:
+        actionability = 3.0
+    urgency_link = 1.0
+    if family == "urgency_time":
+        urgency_link += 2.5
+    if any(token in horizon for token in ("today", "urgent", "11 days", "month-end", "next quarter", "weeks")):
+        urgency_link += 1.5
+    elif any(token in horizon for token in ("months", "year", "years")):
+        urgency_link += 0.5
+
+    return {
+        "relevance": round(min(5.0, relevance), 2),
+        "sensitivity": round(min(5.0, sensitivity), 2),
+        "actionability": round(min(5.0, actionability), 2),
+        "urgencyLink": round(min(5.0, urgency_link), 2),
+    }
+
+
+def compute_kpi_priority_score(priority_inputs: Dict[str, float]) -> float:
+    return round(
+        (priority_inputs.get("relevance", 1.0) * 0.4)
+        + (priority_inputs.get("sensitivity", 1.0) * 0.3)
+        + (priority_inputs.get("actionability", 1.0) * 0.2)
+        + (priority_inputs.get("urgencyLink", 1.0) * 0.1),
+        3,
+    )
+
+
 def order_kpis_for_emotion(
     emotion_code: str,
     kpis: List[Dict[str, Any]],
     option_scores: Dict[str, float],
+    option_analysis: Dict[str, Dict[str, Any]],
+    normalized_persona: Dict[str, Any],
+    parsed: ParseResult,
     emotion_weights: Dict[str, float],
     hard_priority_kpis: List[str],
     scenario_salience: Dict[str, int],
+    top_kpi_count: int,
 ) -> List[Dict[str, Any]]:
     baseline = round(100.0 / len(kpis), 1) if kpis else 12.5
     placed: Dict[str, Dict[str, Any]] = {}
@@ -1484,17 +2503,37 @@ def order_kpis_for_emotion(
             }
 
     remaining = [k for k in kpis if k["code"] not in placed]
-    remaining.sort(key=lambda item: emotion_weights[item["code"]], reverse=True)
-    for kpi in remaining[:4]:
+    priority_inputs = {
+        kpi["code"]: compute_kpi_priority_inputs(
+            kpi,
+            option_analysis,
+            normalized_persona,
+            parsed,
+            scenario_salience.get(kpi["code"], 1),
+        )
+        for kpi in kpis
+    }
+    remaining.sort(
+        key=lambda item: (
+            -compute_kpi_priority_score(priority_inputs[item["code"]]),
+            -emotion_weights[item["code"]],
+        )
+    )
+    for kpi in remaining[:top_kpi_count]:
         code = kpi["code"]
         score = option_scores.get(code, 1.0)
+        priority_score = compute_kpi_priority_score(priority_inputs[code])
         placed[code] = {
             "code": code,
             "slotType": "primary",
             "flag": flag_for_score(score),
             "weightPct": round(emotion_weights[code], 1),
-            "reason": f"Primary focus for {emotion_code}; {emotion_weights[code]:.1f}% attention weight",
-            "rankScore": round(emotion_weights[code] * severity_for_score(score), 1),
+            "reason": (
+                f"Priority score {priority_score:.2f} from relevance {priority_inputs[code]['relevance']}, "
+                f"sensitivity {priority_inputs[code]['sensitivity']}, actionability {priority_inputs[code]['actionability']}, "
+                f"urgency {priority_inputs[code]['urgencyLink']}"
+            ),
+            "rankScore": round(priority_score * emotion_weights[code] * severity_for_score(score), 1),
         }
 
     for kpi in kpis:
@@ -1502,13 +2541,14 @@ def order_kpis_for_emotion(
         if code in placed:
             continue
         score = option_scores.get(code, 1.0)
+        priority_score = compute_kpi_priority_score(priority_inputs[code])
         placed[code] = {
             "code": code,
             "slotType": "secondary",
             "flag": flag_for_score(score),
             "weightPct": round(emotion_weights[code], 1),
-            "reason": f"Secondary for {emotion_code}; {emotion_weights[code]:.1f}% attention weight",
-            "rankScore": round(emotion_weights[code] * severity_for_score(score), 1),
+            "reason": f"Secondary priority {priority_score:.2f} for {emotion_code}",
+            "rankScore": round(priority_score * emotion_weights[code] * severity_for_score(score), 1),
         }
 
     slot_order = {
@@ -1525,6 +2565,7 @@ def order_kpis_for_emotion(
     for item in ordered:
         item["label"] = by_code[item["code"]]["label"]
         item["scenarioSalience"] = scenario_salience.get(item["code"], 1)
+        item["priorityInputs"] = priority_inputs.get(item["code"], {})
     return ordered
 
 
@@ -1545,7 +2586,34 @@ def build_blind_spots_from_slots(
     return "\n".join(lines)
 
 
-def score_value_label(score: int, category: str, option_id: str, label: str) -> str:
+def score_based_value_phrase(score: float, category: str) -> str:
+    tiers = SCORE_VALUE_PHRASES.get(category)
+    if not tiers:
+        if score < 0.5:
+            return "high impact"
+        if score < 1.5:
+            return "moderate impact"
+        return "well managed"
+    if score < 0.5:
+        return tiers[0]
+    if score < 1.5:
+        return tiers[1]
+    return tiers[2]
+
+
+def generic_meta(category: str, score: float) -> str:
+    tiers = SCORE_META_PHRASES.get(category)
+    if not tiers:
+        tier = "high" if score < 0.5 else "moderate" if score < 1.5 else "low"
+        return f"{tier} impact on this dimension"
+    if score < 0.5:
+        return tiers[0]
+    if score < 1.5:
+        return tiers[1]
+    return tiers[2]
+
+
+def score_value_label(score: float, category: str, option_id: str, label: str) -> str:
     phrases = scenario_value_phrases(category, label)
     if option_id == "fund":
         return phrases["fund"]
@@ -1553,26 +2621,30 @@ def score_value_label(score: int, category: str, option_id: str, label: str) -> 
         return phrases["defer"]
     if option_id == "split":
         return phrases["split"]
-    return phrases["generic"]
+    return score_based_value_phrase(score, category)
 
 
 def score_meta_label(
-    score: int,
+    score: float,
     category: str,
     option_id: str,
     label: str,
     normalized_persona: Dict[str, Any],
     parsed: ParseResult,
+    risk: Optional[Dict[str, Any]] = None,
 ) -> str:
-    risk = risk_for_score(score)["text"]
+    risk_text = (risk or risk_for_score(score)).get("text", "Moderate risk")
     role = normalized_persona["roleLabel"]
-    if option_id == "fund":
+    lower_label = label.lower()
+    if option_id == "fund" or any(w in lower_label for w in ("fund", "full bond", "raise", "launch", "commit", "proceed")):
         action = fund_meta(category, label, parsed)
-    elif option_id == "defer":
+    elif option_id == "defer" or any(w in lower_label for w in ("defer", "delay", "postpone", "wait", "hold")):
         action = defer_meta(category, label, parsed)
-    else:
+    elif option_id == "split" or any(w in lower_label for w in ("split", "partial", "hybrid", "mixed")):
         action = split_meta(category, label, parsed)
-    return f"{risk}: {action} for the {role} lens."
+    else:
+        action = generic_meta(category, score)
+    return f"{risk_text}: {action} for the {role} lens."
 
 
 def scenario_value_phrases(category: str, label: str) -> Dict[str, str]:
@@ -1715,10 +2787,21 @@ def persona_lens(
     normalized_persona: Dict[str, Any],
     weights: Dict[str, float],
     kpis: List[Dict[str, Any]],
+    top_drivers: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
-    return LENS_TEMPLATE.get(emotion_code, "{role} lens").format(
-        role=normalized_persona["roleLabel"],
-        top_kpis=top_weighted_kpis(emotion_code, weights, kpis),
+    emotion_name = EMOTION_LABELS.get(emotion_code, emotion_code)
+    role = normalized_persona["roleLabel"]
+    posture = EMOTION_POSTURE.get(emotion_code, "weights the available KPIs")
+    if top_drivers:
+        kpi_list = ", ".join(d["kpi_label"] for d in top_drivers[:3])
+        return (
+            f"{emotion_name} mode reads this through the {role} lens. "
+            f"It {posture}, which is why the top drivers here are: {kpi_list}."
+        )
+    top_kpis_str = top_weighted_kpis(emotion_code, weights, kpis)
+    return (
+        f"{emotion_name} mode reads this through the {role} lens. "
+        f"It {posture}: {top_kpis_str}."
     )
 
 
@@ -1746,18 +2829,35 @@ def consequence_risk(
     parsed: "ParseResult",
     recommended_label: str,
     blind_spot_labels: List[str],
+    winner_contributions: Optional[List[Dict[str, Any]]] = None,
+    emotion_weights: Optional[Dict[str, float]] = None,
 ) -> str:
-    base = CONSEQUENCE_RISK_BY_EMOTION.get(
-        emotion_code,
-        "This reading may under-weight hidden downside. Pressure-test the current winner before committing.",
+    missed, favoured, failure_verb = EMOTION_FAILURE_MODES.get(
+        emotion_code, ("hidden downside", "visible signals", "incomplete information")
     )
-    parts = [base]
+    emotion_name = EMOTION_LABELS.get(emotion_code, emotion_code)
+    base = (
+        f"{emotion_name} can over-weight {favoured} at the cost of {missed}. "
+        f"This recommendation is vulnerable to {failure_verb}."
+    )
+
+    if winner_contributions and emotion_weights:
+        avg_weight = sum(emotion_weights.values()) / max(len(emotion_weights), 1)
+        under_weighted_reds = [
+            c for c in winner_contributions
+            if c["flag"] == "red" and c["weight"] < avg_weight
+        ]
+        if under_weighted_reds:
+            names = ", ".join(c["kpi_label"] for c in under_weighted_reds[:2])
+            is_are = "is" if len(under_weighted_reds) == 1 else "are"
+            it_them = "it" if len(under_weighted_reds) == 1 else "them"
+            return base + f" Specifically, {names} {is_are} red under the winner — watch {it_them} closely."
+
     if parsed.tension:
-        tension = parsed.tension.rstrip(".")
-        parts.append(f"The active tension is: {tension}.")
+        base += f" Active tension: {parsed.tension.rstrip('.')}."
     if blind_spot_labels:
-        parts.append(f"Watch: {', '.join(blind_spot_labels[:2])}.")
-    return " ".join(parts)
+        base += f" Watch: {', '.join(blind_spot_labels[:2])}."
+    return base
 
 
 def next_step(
@@ -1765,33 +2865,95 @@ def next_step(
     close_call: bool,
     parsed: "ParseResult",
     recommended_label: str,
+    runner_up_label: Optional[str] = None,
+    margin: float = 0.0,
+    blind_spot_items: Optional[List[Dict[str, Any]]] = None,
+    top_drivers: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
-    base = NEXT_STEP_CLOSE.get(emotion_code, NEXT_STEP_NORMAL["F"]) if close_call else NEXT_STEP_NORMAL.get(emotion_code, "Gather one more decision-critical fact and confirm the current recommendation.")
-    parts = [base]
-    if parsed.time_horizon and not close_call:
-        parts.append(f"Decision window: {parsed.time_horizon}.")
-    return " ".join(parts)
+    emotion_name = EMOTION_LABELS.get(emotion_code, emotion_code)
+    runner_up = runner_up_label or "the runner-up option"
+
+    if close_call:
+        top_driver_name = top_drivers[0]["kpi_label"] if top_drivers else "the top-weighted KPI"
+        text = (
+            f"Close margin ({margin:.1f} pts) between \"{recommended_label}\" and "
+            f"\"{runner_up}\". Before committing, test both options "
+            f"head-to-head on {top_driver_name} — the KPI that produced the tilt."
+        )
+        if parsed.time_horizon:
+            text += f" Decision window: {parsed.time_horizon}."
+        return text
+
+    if blind_spot_items:
+        top_blind = blind_spot_items[0]
+        blind_label = top_blind.get("label", "the blind-spot KPI")
+        blind_flag = top_blind.get("flag", "flagged")
+        return (
+            f"Commit to \"{recommended_label}\" but add a 72-hour checkpoint on "
+            f"{blind_label} — currently {blind_flag} and under-weighted by {emotion_name} mode. "
+            f"If it degrades further, fall back to \"{runner_up}\"."
+        )
+
+    action = EMOTION_NEXT_STEP_ACTIONS.get(emotion_code, "confirm before committing")
+    text = f"Commit to \"{recommended_label}\" — {action}."
+    if parsed.time_horizon:
+        text += f" Decision window: {parsed.time_horizon}."
+    return text
 
 
-def compute_confidence(parsed: ParseResult, enrichment: Dict[str, Any], option_count: int) -> str:
-    score = 0
-    if parsed.persona:
-        score += 1
-    if parsed.scenario:
-        score += 1
-    if parsed.call:
-        score += 1
-    if parsed.kpis:
-        score += 1
-    if option_count >= 2:
-        score += 1
-    if enrichment["used"]:
-        score += 1
-    if score >= 5:
+def band_confidence(score: float) -> str:
+    if score >= 0.85:
         return "High"
-    if score >= 3:
+    if score >= 0.7:
+        return "Medium-High"
+    if score >= 0.5:
         return "Medium"
+    if score >= 0.3:
+        return "Low-Medium"
     return "Low"
+
+
+def compute_confidence(
+    parsed: ParseResult,
+    enrichment: Dict[str, Any],
+    option_count: int,
+    ml_metadata: Optional[Dict[str, Any]] = None,
+) -> Dict[str, str]:
+    score = 0.0
+    if parsed.persona:
+        score += 1.0
+    if parsed.scenario:
+        score += 1.0
+    if parsed.call:
+        score += 0.8
+    if parsed.kpis:
+        score += 1.0
+    if option_count >= 2:
+        score += 0.8
+    if enrichment["used"]:
+        score += 0.4
+
+    recommendation_conf = band_confidence(min(1.0, score / 5.0))
+    evidence_score = 0.4
+    if parsed.scenario:
+        evidence_score += 0.2
+    if parsed.kpis:
+        evidence_score += 0.2
+    if parsed.time_horizon or parsed.tension:
+        evidence_score += 0.1
+    if parsed.call:
+        evidence_score += 0.1
+    evidence_conf = band_confidence(min(1.0, evidence_score))
+    divergence_conf = band_confidence(float((ml_metadata or {}).get("weightConfidence", 0.45)))
+    blind_spot_conf = "Medium" if parsed.kpis else "Low"
+
+    return {
+        "overall": recommendation_conf,
+        "recommendationConfidence": recommendation_conf,
+        "evidenceConfidence": evidence_conf,
+        "emotionDivergenceSeverity": divergence_conf,
+        "blindSpotExposure": blind_spot_conf,
+    }
 
 
 def build_missing_message(missing: List[str]) -> str:

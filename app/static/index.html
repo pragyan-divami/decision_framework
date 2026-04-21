@@ -3,40 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adaptive Decision Framing Console</title>
+  <title>Tata UK Decision Matrix</title>
   <style>
     :root {
-      --bg: #f3f0e8;
-      --panel: rgba(251, 249, 244, 0.94);
-      --line: rgba(18, 32, 51, 0.12);
+      --bg: #f4f0e8;
+      --panel: rgba(255, 252, 246, 0.84);
+      --panel-strong: rgba(255, 253, 249, 0.94);
+      --line: rgba(18, 32, 51, 0.08);
+      --line-strong: rgba(18, 32, 51, 0.12);
       --text: #122033;
-      --muted: #596677;
-      --accent: #1c4b8c;
-      --accent-soft: rgba(28, 75, 140, 0.09);
-      --good: #1d6a4f;
-      --good-soft: rgba(29, 106, 79, 0.09);
-      --warn: #8a5a13;
-      --warn-soft: rgba(138, 90, 19, 0.09);
-      --danger: #b94d3e;
-      --danger-soft: rgba(185, 77, 62, 0.09);
-      --shadow: 0 30px 70px rgba(24, 31, 41, 0.08);
+      --muted: #5b6777;
+      --accent: #1e4f90;
+      --accent-soft: rgba(30, 79, 144, 0.1);
+      --good: #1f7055;
+      --good-soft: rgba(31, 112, 85, 0.1);
+      --warn: #9b691c;
+      --warn-soft: rgba(155, 105, 28, 0.11);
+      --danger: #b54a3b;
+      --danger-soft: rgba(181, 74, 59, 0.1);
+      --shadow: 0 18px 44px rgba(18, 32, 51, 0.06);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
       --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
       --font-body: "Avenir Next", "Segoe UI", sans-serif;
-      --radius-xl: 28px;
-      --radius-lg: 20px;
-      --radius-md: 14px;
     }
 
     * { box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; }
     body {
       margin: 0;
       min-height: 100vh;
       color: var(--text);
       font-family: var(--font-body);
       background:
-        radial-gradient(circle at 12% 10%, rgba(28, 75, 140, 0.08), transparent 24%),
-        radial-gradient(circle at 86% 2%, rgba(185, 77, 62, 0.08), transparent 18%),
-        linear-gradient(180deg, #f6f3ec 0%, #efe9dc 100%);
+        radial-gradient(circle at 8% 0%, rgba(30, 79, 144, 0.08), transparent 28%),
+        radial-gradient(circle at 92% 12%, rgba(181, 74, 59, 0.07), transparent 20%),
+        linear-gradient(180deg, #f7f3ec 0%, #efe8db 100%);
     }
     body::before {
       content: "";
@@ -47,579 +50,1443 @@
       background-image:
         linear-gradient(rgba(18, 32, 51, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(18, 32, 51, 0.03) 1px, transparent 1px);
-      background-size: 46px 46px;
-      mask-image: radial-gradient(circle at center, black 32%, transparent 76%);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black 30%, transparent 78%);
     }
     .page {
-      width: min(1280px, calc(100vw - 36px));
-      margin: 18px auto 36px;
+      width: min(1360px, calc(100vw - 36px));
+      margin: 18px auto 32px;
       display: grid;
       gap: 18px;
     }
-    .hero, .card {
+    .surface {
       background: var(--panel);
       border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
       border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
     }
     .hero {
-      padding: 18px 24px;
-      display: grid;
-      gap: 12px;
-    }
-    .hero-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      gap: 16px;
-    }
-    .hero-heading {
+      padding: 20px 24px;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(250, 246, 238, 0.82)),
+        radial-gradient(circle at top left, rgba(30, 79, 144, 0.09), transparent 34%);
       display: grid;
       gap: 10px;
+    }
+    .hero-top {
+      display: grid;
+      gap: 8px;
+    }
+    .hero-copy-wrap {
+      display: grid;
+      gap: 6px;
       min-width: 0;
     }
     .eyebrow {
-      color: var(--accent);
       font-size: 0.75rem;
-      text-transform: uppercase;
       letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
       font-weight: 800;
     }
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      font-size: clamp(1.55rem, 2.6vw, 2.35rem);
-      line-height: 0.98;
-      letter-spacing: -0.02em;
-    }
-    .hero-copy, .card-note, .status-line, .summary-text, .support-box p, .risk-card p, .list-item p {
-      color: var(--muted);
-      line-height: 1.6;
+      font-size: clamp(1.7rem, 3vw, 2.8rem);
+      line-height: 0.96;
+      letter-spacing: -0.025em;
     }
     .hero-copy {
       margin: 0;
-      max-width: 1080px;
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-    .upload-box, .summary-box, .support-box, .risk-card, .list-item, .kpi {
-      background: #fffdf8;
-      border: 1px solid rgba(18, 32, 51, 0.08);
-      border-radius: 18px;
-    }
-    .upload-trigger {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 48px;
-      padding: 0 18px;
-      white-space: nowrap;
-    }
-    .hero-status {
-      min-height: 1.5em;
-      margin: 0;
-      font-size: 0.92rem;
+      max-width: 920px;
       color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.58;
+      text-wrap: pretty;
+    }
+    .hero-route-note {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+    .button, .ghost-button, .chip-button, select, textarea, input {
+      font: inherit;
     }
     .button {
       appearance: none;
-      border: 1px solid rgba(18, 32, 51, 0.08);
-      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
+      border: 1px solid rgba(18, 32, 51, 0.06);
+      background: linear-gradient(180deg, rgba(30, 79, 144, 0.1), rgba(255, 253, 248, 0.94));
       color: var(--text);
-      border-radius: 16px;
-      padding: 14px 18px;
-      font: inherit;
+      border-radius: 999px;
+      padding: 10px 16px;
       font-weight: 700;
       cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 10px 24px rgba(18, 32, 51, 0.05);
+      white-space: nowrap;
     }
-    .button:disabled { opacity: 0.6; cursor: wait; }
-    .status-line { font-size: 0.92rem; }
-    .card { padding: 24px; display: none; }
-    .card.visible { display: block; }
-    .grid { display: grid; gap: 18px; }
-    .hero-stats, .emotion-grid, .kpi-grid, .two-col, .compact-grid, .fact-grid, .support-grid { display: grid; gap: 12px; }
-    .hero-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .emotion-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .two-col, .compact-grid, .support-grid { grid-template-columns: 1fr 1fr; }
-    .fact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .stat, .summary-box, .support-box, .risk-card, .kpi { padding: 18px; }
-    .stat-label, .summary-label, .switcher-label, .kpi-label {
-      color: var(--muted);
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .stat-value, .summary-value, .kpi-value {
-      line-height: 1.05;
-      letter-spacing: -0.02em;
-    }
-    .stat-value {
-      font-size: clamp(1.05rem, 1.8vw, 1.4rem);
-      font-weight: 700;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-    .stat-note {
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      line-height: 1.35;
-    }
-    .summary-value { font-family: var(--font-display); font-size: clamp(1.2rem, 2vw, 1.65rem); line-height: 1.05; margin-bottom: 8px; }
-    .summary-headline {
-      font-size: clamp(1.1rem, 1.8vw, 1.45rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.08;
-      margin-bottom: 8px;
-      overflow-wrap: anywhere;
-    }
-    .summary-subtext {
-      color: var(--muted);
-      font-size: 0.9rem;
-      line-height: 1.45;
-    }
-    .emotion-pill {
+    .button:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(18, 32, 51, 0.07); }
+    .ghost-button {
       appearance: none;
       border: 1px solid rgba(18, 32, 51, 0.08);
-      background: #fffdf8;
+      background: rgba(255, 253, 248, 0.72);
       color: var(--muted);
-      border-radius: 18px;
-      padding: 14px 12px;
-      text-align: left;
+      border-radius: 999px;
+      padding: 9px 14px;
       cursor: pointer;
     }
-    .emotion-pill.active {
-      background: linear-gradient(180deg, rgba(28, 75, 140, 0.1), rgba(255, 253, 248, 0.96));
-      border-color: rgba(28, 75, 140, 0.22);
-      color: var(--text);
-    }
-    .emotion-code {
-      display: block;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      margin-bottom: 8px;
-      color: var(--accent);
-      font-weight: 800;
-    }
-    .emotion-name { display: block; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
-    .emotion-type { font-size: 0.82rem; line-height: 1.4; }
-    .tag, .kpi-chip {
+    .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 999px;
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      font-weight: 700;
-      width: fit-content;
+      border: 1px solid rgba(18, 32, 51, 0.06);
+      background: rgba(255, 253, 248, 0.75);
+      color: var(--muted);
+      font-size: 0.82rem;
+      white-space: nowrap;
     }
-    .tag.good, .kpi-chip.risk-green { background: var(--good-soft); color: var(--good); }
-    .tag.warn, .kpi-chip.risk-yellow { background: var(--warn-soft); color: var(--warn); }
-    .tag.danger, .kpi-chip.risk-red { background: var(--danger-soft); color: var(--danger); }
-    .tag.accent { background: var(--accent-soft); color: var(--accent); }
+    .workspace {
+      display: grid;
+      gap: 18px;
+    }
+    .card {
+      padding: 22px;
+      background: rgba(252, 250, 245, 0.66);
+    }
     .card-header {
       display: flex;
       justify-content: space-between;
-      gap: 16px;
       align-items: start;
-      margin-bottom: 18px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
-    .card-title { margin: 0; font-size: 1.18rem; letter-spacing: 0.01em; }
-    .list-grid { display: grid; gap: 10px; }
-    .list-item {
-      display: grid;
-      grid-template-columns: 10px 1fr;
-      gap: 10px;
-      align-items: start;
-      padding: 12px 14px;
-    }
-    .list-item p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
-    .list-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; background: var(--accent); }
-    .fact-item {
-      background: #fffdf8;
-      border: 1px solid rgba(18, 32, 51, 0.08);
-      border-radius: 16px;
-      padding: 12px 14px;
-      display: grid;
-      grid-template-columns: 10px 1fr;
-      gap: 10px;
-      align-items: start;
-      min-height: 84px;
-    }
-    .fact-item p {
+    .card-title {
       margin: 0;
+      font-size: 1.08rem;
+      letter-spacing: 0.01em;
+    }
+    .card-note {
+      margin: 6px 0 0;
       color: var(--muted);
-      font-size: 0.94rem;
-      line-height: 1.45;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      text-wrap: pretty;
     }
-    .fact-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-top: 4px;
-      background: var(--accent);
+    .builder-bar {
+      padding: 12px 16px;
     }
-    .kpi.priority {
-      border-color: rgba(28, 75, 140, 0.16);
-      box-shadow: inset 0 0 0 1px rgba(28, 75, 140, 0.04);
-      background: linear-gradient(180deg, rgba(28, 75, 140, 0.03), #fffdf8 48%);
+    .builder-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 10px;
     }
-    .kpi.hidden { display: none; }
-    .kpi-value { font-size: clamp(1.35rem, 2.3vw, 2rem); font-weight: 600; }
-    .kpi-note, .kpi-meta { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
-    .show-more-btn {
-      appearance: none;
+    .builder-header .card-note {
+      margin: 0;
+      max-width: 620px;
+      font-size: 0.82rem;
+    }
+    .builder-grid {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1fr) minmax(220px, 1fr) minmax(360px, 1.35fr);
+      gap: 10px;
+      align-items: start;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+    .field label {
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    select, textarea, input {
+      width: 100%;
+      border-radius: 14px;
       border: 1px solid rgba(18, 32, 51, 0.08);
       background: rgba(255, 253, 248, 0.92);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(18, 32, 51, 0.01);
+    }
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+      line-height: 1.48;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .framework-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .framework-field {
+      grid-column: 1 / -1;
+    }
+    .chip-button {
+      appearance: none;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.74);
       color: var(--muted);
       border-radius: 999px;
       padding: 10px 14px;
-      font: inherit;
-      font-size: 0.9rem;
       cursor: pointer;
+      transition: transform 150ms ease, background-color 150ms ease, border-color 150ms ease;
+      min-height: 40px;
     }
-    .risk-card.warn { border-color: rgba(138, 90, 19, 0.16); background: linear-gradient(180deg, rgba(138, 90, 19, 0.06), rgba(255, 253, 248, 0.96)); }
-    .risk-card.good { border-color: rgba(29, 106, 79, 0.16); background: linear-gradient(180deg, rgba(29, 106, 79, 0.06), rgba(255, 253, 248, 0.96)); }
-    .risk-card.danger { border-color: rgba(185, 77, 62, 0.16); background: linear-gradient(180deg, rgba(185, 77, 62, 0.06), rgba(255, 253, 248, 0.96)); }
-    .risk-card.accent { border-color: rgba(28, 75, 140, 0.16); background: linear-gradient(180deg, rgba(28, 75, 140, 0.06), rgba(255, 253, 248, 0.96)); }
-    .support-box h3, .risk-card h3 { margin: 0 0 8px; font-size: 0.95rem; }
-    .support-box p, .risk-card p { margin: 0; font-size: 0.95rem; }
-    .recommendation-layout { display: grid; gap: 12px; }
-    .recommendation-card { padding: 16px; }
-    @media (max-width: 1120px) {
-      .hero-stats, .emotion-grid, .kpi-grid, .two-col, .compact-grid, .fact-grid, .support-grid { grid-template-columns: 1fr; }
+    .chip-button.active {
+      border-color: rgba(30, 79, 144, 0.18);
+      background: linear-gradient(180deg, rgba(30, 79, 144, 0.11), rgba(255, 253, 248, 0.94));
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px rgba(30, 79, 144, 0.08);
     }
-    @media (max-width: 720px) {
-      .page { width: min(100vw - 18px, 100%); margin: 10px auto 24px; }
-      .hero, .card { padding: 16px; }
-      .card-header { flex-direction: column; align-items: start; }
-      .hero-top { flex-direction: column; align-items: stretch; }
+    .framework-card {
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(18, 32, 51, 0.07);
+      background: rgba(255, 253, 248, 0.75);
+      cursor: pointer;
+      display: grid;
+      gap: 2px;
+      transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+      align-content: start;
+      min-height: 58px;
+    }
+    .framework-card.recommended {
+      border-color: rgba(31, 112, 85, 0.18);
+      background: linear-gradient(180deg, rgba(31, 112, 85, 0.09), rgba(255, 253, 248, 0.93));
+    }
+    .framework-card.active {
+      border-color: rgba(30, 79, 144, 0.2);
+      box-shadow: 0 10px 20px rgba(30, 79, 144, 0.08);
+      transform: translateY(-1px);
+    }
+    .builder-grid .field:last-child {
+      min-width: 0;
+    }
+    .framework-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .framework-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .framework-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+    .framework-desc {
+      color: var(--muted);
+      font-size: 0.69rem;
+      line-height: 1.22;
+      text-wrap: pretty;
+    }
+    .scenario-question-field {
+      grid-column: 1 / -1;
+      gap: 4px;
+    }
+    .question-inline {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .question-inline input {
+      min-height: 42px;
+      padding: 10px 12px;
+    }
+    .route-icon-button {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: linear-gradient(180deg, rgba(30, 79, 144, 0.1), rgba(255, 253, 248, 0.94));
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(18, 32, 51, 0.05);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      flex: 0 0 auto;
+    }
+    .route-icon-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(18, 32, 51, 0.07);
+      border-color: rgba(30, 79, 144, 0.16);
+    }
+    .route-icon-button svg {
+      width: 16px;
+      height: 16px;
+      display: block;
+    }
+    .matrix-shell {
+      display: grid;
+      gap: 18px;
+    }
+    .question-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .matrix-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+    .matrix-panel {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+    }
+    .matrix-grid {
+      display: grid;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+    .matrix-row {
+      display: grid;
+      grid-template-columns: 180px repeat(var(--perspective-count), minmax(150px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+      min-width: 860px;
+    }
+    .matrix-head {
+      padding: 14px 12px;
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.82);
+      border: 1px solid rgba(18, 32, 51, 0.06);
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      line-height: 1.25;
+      text-wrap: balance;
+    }
+    .mode-card {
+      padding: 15px 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(30, 79, 144, 0.06), rgba(255, 253, 248, 0.95));
+      border: 1px solid rgba(30, 79, 144, 0.12);
+      display: grid;
+      gap: 6px;
+    }
+    .mode-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      line-height: 1.18;
+    }
+    .mode-copy {
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.42;
+    }
+    .matrix-cell {
+      appearance: none;
+      text-align: left;
+      padding: 14px 14px 13px;
+      border-radius: 18px;
+      border: 1px solid rgba(18, 32, 51, 0.07);
+      background: rgba(255, 253, 248, 0.8);
+      display: grid;
+      gap: 8px;
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+      min-height: 144px;
+    }
+    .matrix-cell:hover {
+      transform: translateY(-1px);
+      border-color: rgba(30, 79, 144, 0.16);
+      box-shadow: 0 10px 24px rgba(18, 32, 51, 0.05);
+    }
+    .matrix-cell.active {
+      background: linear-gradient(180deg, rgba(30, 79, 144, 0.1), rgba(255, 253, 248, 0.96));
+      border-color: rgba(30, 79, 144, 0.18);
+      box-shadow: 0 14px 28px rgba(30, 79, 144, 0.09);
+    }
+    .matrix-cell.routed {
+      outline: 2px solid rgba(31, 112, 85, 0.22);
+      outline-offset: 0;
+    }
+    .cell-title {
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+    .cell-kpis {
+      font-size: 0.92rem;
+      line-height: 1.25;
+      font-weight: 700;
+      text-wrap: balance;
+    }
+    .cell-meta {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.38;
+      text-wrap: pretty;
+    }
+    .insight-panel {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(249, 244, 235, 0.8)),
+        radial-gradient(circle at top right, rgba(30, 79, 144, 0.08), transparent 32%);
+    }
+    .insight-title {
+      font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+    .insight-copy, .insight-list li, .chart-caption, .panel-note {
+      color: var(--muted);
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .panel-block {
+      padding: 14px 15px;
+      border-radius: 18px;
+      background: rgba(255, 253, 248, 0.76);
+      border: 1px solid rgba(18, 32, 51, 0.06);
+      box-shadow: 0 10px 22px rgba(18, 32, 51, 0.03);
+    }
+    .panel-block h3 {
+      margin: 0 0 8px;
+      font-size: 0.94rem;
+    }
+    .insight-list {
+      margin: 0;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    .chart-wrap {
+      display: grid;
+      gap: 8px;
+    }
+    .panel-span-2 {
+      grid-column: 1 / -1;
+    }
+    .bar {
+      display: grid;
+      gap: 5px;
+    }
+    .bar-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.77rem;
+    }
+    .bar-track {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(18, 32, 51, 0.06);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(30, 79, 144, 0.78), rgba(31, 112, 85, 0.78));
+    }
+    .route-note {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(31, 112, 85, 0.14);
+      background: linear-gradient(180deg, rgba(31, 112, 85, 0.06), rgba(255, 253, 248, 0.92));
+      font-size: 0.86rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .banner {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(181, 74, 59, 0.09);
+      border: 1px solid rgba(181, 74, 59, 0.14);
+      color: var(--danger);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .banner.visible { display: block; }
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 1220px) {
+      .builder-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 860px) {
+      .page {
+        width: min(100vw - 18px, 100%);
+        margin: 10px auto 24px;
+      }
+      .hero, .card {
+        padding: 18px;
+      }
+      .hero-top,
+      .card-header {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .builder-header,
+      .builder-grid {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .builder-grid,
+      .framework-grid {
+        grid-template-columns: 1fr;
+      }
+      .question-inline {
+        grid-template-columns: 1fr;
+      }
+      .insight-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel-span-2 {
+        grid-column: auto;
+      }
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="hero">
+    <section class="surface hero">
       <div class="hero-top">
-        <div class="hero-heading">
-          <div class="eyebrow">Decision Framework</div>
-          <h1 id="heroTitle">Upload the Persona and Scenario</h1>
+        <div class="hero-copy-wrap">
+          <div class="eyebrow">Decision Matrix</div>
+          <h1 id="heroTitle">Tata Steel UK Dynamic Decision Matrix</h1>
           <p class="hero-copy" id="heroCopy">
-            Upload one markdown file containing both persona and scenario. The app parses it, runs the backend analysis, and shows the result here.
+            Build a Tata UK decision context step by step, choose the best-fit emotional framework, and explore how emotional sub-modes and persona perspectives change the action, evidence, risk, and consequence profile.
           </p>
         </div>
-        <label class="button upload-trigger" for="fileInput">Upload Markdown</label>
       </div>
-      <input id="fileInput" type="file" accept=".md,text/markdown" hidden />
-      <p class="hero-status" id="statusLine">No file analyzed yet.</p>
+      <div class="banner" id="banner"></div>
     </section>
 
-    <section class="card" id="clarificationCard">
-      <div class="card-header">
-        <div>
-          <h2 class="card-title">Clarification Required</h2>
-          <div class="card-note">The backend will stop and ask for one targeted missing piece instead of pretending a full analysis exists.</div>
-        </div>
-      </div>
-      <div class="summary-box">
-        <div class="summary-value" id="clarificationMessage"></div>
-      </div>
-    </section>
+    <section class="workspace">
+        <section class="surface card builder-bar">
+          <div class="builder-header">
+            <h2 class="card-title">Context Builder</h2>
+              <p class="card-note">Resolve domain, platform, persona, and framework, then use the matrix as the main workspace.</p>
+          </div>
+          <div class="builder-grid">
+            <div class="field">
+              <label for="domainSelect">1. Domain / Industry</label>
+              <select id="domainSelect"></select>
+            </div>
+            <div class="field">
+              <label for="platformSelect">2. Platform / Context</label>
+              <select id="platformSelect"></select>
+            </div>
+            <div class="field">
+              <label for="personaSelect">3. Persona</label>
+              <select id="personaSelect"></select>
+            </div>
+            <div class="field">
+              <label for="scenarioSelect">4. Scenario</label>
+              <select id="scenarioSelect"></select>
+            </div>
+            <div class="field framework-field">
+              <label>5. Recommended Emotional Frameworks</label>
+              <div class="framework-grid" id="frameworkGrid"></div>
+            </div>
+            <div class="field scenario-question-field">
+              <label for="questionInput">6. Scenario Question</label>
+              <div class="question-inline">
+                <input id="questionInput" type="text" placeholder="Which cell best handles grant clawback risk if National Grid slips into 2028?">
+                <button class="route-icon-button" id="routeQuestionButton" type="button" aria-label="Route question to the matrix">
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M5 10h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M10 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="hero-route-note" id="routeNote">No question routed yet. You can also click any matrix cell directly.</div>
+            </div>
+          </div>
+        </section>
 
-    <section class="card" id="resultCard">
-      <div class="grid">
-        <div class="hero-stats" id="heroStats"></div>
-        <article>
+      <section class="matrix-shell">
+        <section class="surface card matrix-panel">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Emotion Variants</h2>
-              <div class="card-note">Switch between all 6 emotions without re-uploading the file.</div>
+              <h2 class="card-title">Decision Matrix</h2>
+              <p class="card-note">X-axis uses persona-dependent perspectives. Y-axis uses sub-modes inside the selected emotional framework. Every cell is clickable.</p>
             </div>
           </div>
-          <div class="emotion-grid" id="emotionGrid"></div>
-        </article>
-        <article class="card visible" style="padding:0; background:transparent; border:none; box-shadow:none; backdrop-filter:none;">
+          <div class="matrix-grid" id="matrixGrid"></div>
+        </section>
+
+        <section class="surface insight-panel">
           <div class="card-header">
             <div>
-              <h2 class="card-title">Priority KPIs</h2>
-              <div class="card-note">The KPI strip changes order based on the selected emotion, while risk flags stay tied to the recommended path.</div>
+              <h2 class="card-title">Decision Insight</h2>
+              <p class="card-note" id="insightReason">Click a matrix cell or route a question to inspect one emotion-mode × perspective intersection.</p>
             </div>
-            <button class="show-more-btn" id="kpiToggle" type="button" aria-expanded="false">Show more KPIs</button>
+            <div class="framework-tag" id="insightTag">Tata UK</div>
           </div>
-          <div class="kpi-grid" id="kpiGrid"></div>
-        </article>
-        <article>
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Recommended Action</h2>
-              <div class="card-note">Server-side analysis output rendered in a reusable client view.</div>
+          <div class="insight-grid">
+            <div class="panel-block">
+              <div class="summary-label">Active Cell</div>
+              <div class="insight-title" id="insightTitle">Awaiting selection</div>
+              <div class="insight-copy" id="insightSummary">The matrix will explain what this cell means, what data it needs, which action it leans toward, and what downside it creates.</div>
             </div>
-            <div class="tag accent" id="stanceTag">Adaptive</div>
-          </div>
-          <div class="recommendation-layout">
-            <div class="compact-grid">
-              <div class="summary-box recommendation-card">
-                <div class="summary-label">Recommended Action</div>
-                <div class="summary-headline" id="recommendationTitle"></div>
-                <div class="summary-subtext" id="recommendationSnapshot"></div>
-              </div>
-              <div class="summary-box recommendation-card">
-                <div class="summary-label">Persona Lens</div>
-                <div class="summary-subtext" id="personaLens"></div>
-              </div>
+            <div class="panel-block">
+              <h3>Recommended Action</h3>
+              <p class="panel-note" id="insightAction"></p>
             </div>
-            <div class="fact-grid" id="priorityFacts"></div>
-            <div class="support-grid">
-              <div class="risk-card" id="emotionRiskCard">
-                <h3>Consequence Risk</h3>
-                <p id="emotionConsequence"></p>
-              </div>
-              <div class="support-box">
-                <h3>Blind Spots To Flag</h3>
-                <p id="blindSpotText"></p>
-              </div>
+            <div class="panel-block">
+              <h3>Primary Risk</h3>
+              <p class="panel-note" id="insightRisk"></p>
             </div>
-            <div class="support-box">
-              <h3>Suggested Next Step</h3>
-              <p id="nextStepText"></p>
+            <div class="panel-block">
+              <h3>Likely Consequence</h3>
+              <p class="panel-note" id="insightConsequence"></p>
+            </div>
+            <div class="panel-block chart-wrap panel-span-2">
+              <h3 id="chartTitle">Evidence Signal</h3>
+              <div id="chartBars"></div>
+              <div class="chart-caption" id="chartCaption">The chart block changes with the selected cell.</div>
+            </div>
+            <div class="panel-block">
+              <h3>Top KPIs</h3>
+              <ul class="insight-list" id="insightKpis"></ul>
+            </div>
+            <div class="panel-block">
+              <h3>Data To Inspect</h3>
+              <ul class="insight-list" id="insightData"></ul>
+            </div>
+            <div class="panel-block">
+              <h3>Blind Spot And Next Step</h3>
+              <p class="panel-note" id="insightBlind"></p>
             </div>
           </div>
-        </article>
-      </div>
+        </section>
+      </section>
     </section>
   </main>
 
   <script>
-    const fileInput = document.getElementById("fileInput");
-    const heroTitle = document.getElementById("heroTitle");
-    const heroCopy = document.getElementById("heroCopy");
-    const statusLine = document.getElementById("statusLine");
-    const clarificationCard = document.getElementById("clarificationCard");
-    const clarificationMessage = document.getElementById("clarificationMessage");
-    const resultCard = document.getElementById("resultCard");
-    const heroStats = document.getElementById("heroStats");
-    const emotionGrid = document.getElementById("emotionGrid");
-    const kpiGrid = document.getElementById("kpiGrid");
-    const kpiToggle = document.getElementById("kpiToggle");
-    const stanceTag = document.getElementById("stanceTag");
-    const recommendationTitle = document.getElementById("recommendationTitle");
-    const recommendationSnapshot = document.getElementById("recommendationSnapshot");
-    const personaLens = document.getElementById("personaLens");
-    const priorityFacts = document.getElementById("priorityFacts");
-    const emotionConsequence = document.getElementById("emotionConsequence");
-    const blindSpotText = document.getElementById("blindSpotText");
-    const nextStepText = document.getElementById("nextStepText");
-    const emotionRiskCard = document.getElementById("emotionRiskCard");
+    const MODEL = {
+      project: {
+        name: "Tata Steel UK Port Talbot EAF Transformation",
+        domain: "industrial-transformation",
+        description: "A Tata UK transformation workspace grounded in commissioning, scrap, energy, workforce, customer, grant, and decarbonization decisions."
+      },
+      domains: [
+        { id: "industrial-transformation", label: "Industrial Transformation / Steel", note: "Port Talbot EAF programme context" }
+      ],
+      platforms: [
+        { id: "programme-core", label: "Port Talbot Transformation Programme", note: "Integrated programme view across construction, workforce, customer, and grant dependencies." },
+        { id: "commissioning-delivery", label: "Construction / Commissioning", note: "Delivery, contractor, and readiness decisions." },
+        { id: "commercial-transition", label: "Customer / Grade Capability", note: "Transition-gap margin, customer retention, and grade suitability." },
+        { id: "grid-energy", label: "Energy / Grid Readiness", note: "National Grid timing, power cost, and energy competitiveness." },
+        { id: "scrap-supply", label: "Scrap Supply / Quality", note: "Scrap sourcing, quality, and processing readiness." },
+        { id: "workforce-transition", label: "Workforce / Community Transition", note: "Reskilling, community legitimacy, and labour continuity." }
+      ],
+      frameworks: {
+        A: {
+          code: "A",
+          name: "Cautious",
+          note: "Risk-first, downside-protective",
+          recommendedCopy: "Best when Tata UK faces irreversible downside or weak reversibility.",
+          modes: [
+            { id: "downside-containment", label: "Downside Containment", focus: "What breaks first if the programme slips?", keywords: ["risk", "downside", "clawback", "breach", "miss"] },
+            { id: "reversibility", label: "Reversibility", focus: "Which move preserves room to recover?", keywords: ["reversible", "fallback", "optionality", "recover"] },
+            { id: "safety-threshold", label: "Safety Threshold", focus: "Where does the risk become unacceptable?", keywords: ["safety", "harm", "threshold", "stop"] },
+            { id: "regret-minimization", label: "Regret Minimization", focus: "Which path creates the least irreversible regret?", keywords: ["regret", "least bad", "protect"] }
+          ]
+        },
+        B: {
+          code: "B",
+          name: "Strategic",
+          note: "Long-horizon, thesis-protective",
+          recommendedCopy: "Best when Tata UK must protect programme logic, institutional positioning, and long-cycle competitiveness.",
+          modes: [
+            { id: "long-horizon-positioning", label: "Long-Horizon Positioning", focus: "What preserves the 2027+ transformation thesis?", keywords: ["long-term", "2030", "2045", "future"] },
+            { id: "optionality-preservation", label: "Optionality Preservation", focus: "What keeps future pathways open?", keywords: ["optionality", "dri", "future expansion", "preserve"] },
+            { id: "institutional-signaling", label: "Institutional Signaling", focus: "What message does Tata UK send to government, unions, and customers?", keywords: ["signal", "government", "union", "trust", "market"] },
+            { id: "second-order-effects", label: "Second-Order Effects", focus: "What downstream effects compound later?", keywords: ["second order", "later", "compounding", "knock-on"] }
+          ]
+        },
+        C: {
+          code: "C",
+          name: "Diplomatic",
+          note: "Stakeholder-balancing, coalition-sensitive",
+          recommendedCopy: "Best when the decision has to survive union, government, customer, and community scrutiny at once.",
+          modes: [
+            { id: "stakeholder-alignment", label: "Stakeholder Alignment", focus: "Who needs to stay aligned for this move to stick?", keywords: ["stakeholder", "alignment", "coalition", "support"] },
+            { id: "relationship-preservation", label: "Relationship Preservation", focus: "Which path protects long-term relationships?", keywords: ["relationship", "union", "customer", "community"] },
+            { id: "escalation-management", label: "Escalation Management", focus: "How do we keep the conflict from hardening?", keywords: ["escalation", "pushback", "crisis", "political"] },
+            { id: "signaling-risk", label: "Signaling Risk", focus: "What unintended signal might the decision send?", keywords: ["signal", "headline", "reputation", "message"] }
+          ]
+        },
+        D: {
+          code: "D",
+          name: "Decisive",
+          note: "Action-biased, commitment-oriented",
+          recommendedCopy: "Best when a late decision creates more damage than an imperfect one.",
+          modes: [
+            { id: "command-clarity", label: "Command Clarity", focus: "What should Tata UK commit to now?", keywords: ["decide", "commit", "now", "call"] },
+            { id: "execution-speed", label: "Execution Speed", focus: "Which move compresses time-to-action?", keywords: ["fast", "speed", "accelerate", "immediate"] },
+            { id: "leading-indicator-check", label: "Leading Indicator Check", focus: "Which early signals should govern the next checkpoint?", keywords: ["indicator", "checkpoint", "trigger", "monitor"] },
+            { id: "responsibility-lock", label: "Responsibility Lock", focus: "Who owns the next move and what must they deliver?", keywords: ["owner", "responsible", "delivery", "execute"] }
+          ]
+        },
+        E: {
+          code: "E",
+          name: "Analytical",
+          note: "Model-driven, sensitivity-aware",
+          recommendedCopy: "Best when Tata UK needs defensible evidence and sensitivity checks before committing.",
+          modes: [
+            { id: "evidence-sufficiency", label: "Evidence Sufficiency", focus: "Do we have enough evidence to decide?", keywords: ["evidence", "confidence", "sufficiency", "data"] },
+            { id: "scenario-sensitivity", label: "Scenario Sensitivity", focus: "Which variable flips the recommendation first?", keywords: ["sensitivity", "if", "assumption", "variable"] },
+            { id: "comparability", label: "Comparability", focus: "How do the options compare on the same basis?", keywords: ["compare", "comparison", "trade-off", "matrix"] },
+            { id: "threshold-logic", label: "Threshold Logic", focus: "What threshold should Tata UK watch before switching paths?", keywords: ["threshold", "watch", "trigger", "flip"] }
+          ]
+        },
+        F: {
+          code: "F",
+          name: "Pragmatic",
+          note: "Outcome-focused, operationally grounded",
+          recommendedCopy: "Best when Tata UK needs a workable move that survives real-world friction.",
+          modes: [
+            { id: "feasibility-grounding", label: "Feasibility Grounding", focus: "What can Tata UK actually execute with today’s constraints?", keywords: ["feasible", "practical", "can we", "realistic"] },
+            { id: "continuity-balance", label: "Continuity Balance", focus: "Which path keeps the programme moving with minimal disruption?", keywords: ["continuity", "minimal disruption", "keep moving"] },
+            { id: "burden-tradeoff", label: "Burden Trade-Off", focus: "Which option spreads pain most safely across the system?", keywords: ["tradeoff", "burden", "cost", "pressure"] },
+            { id: "minimum-viable-move", label: "Minimum Viable Move", focus: "What smallest move preserves optionality?", keywords: ["minimum", "smallest", "good enough", "optionality"] }
+          ]
+        }
+      },
+      scenarios: [],
+      personas: [
+        {
+          id: "owen-griffiths",
+          label: "Owen Griffiths",
+          role: "Construction & Commissioning Lead",
+          platformBias: ["programme-core", "commissioning-delivery", "grid-energy"],
+          perspectives: [
+            {
+              id: "commissioning-readiness",
+              label: "Commissioning Readiness",
+              kpis: ["Critical path variance", "Contractor milestone hit rate", "EAF readiness index"],
+              data: ["Tenova and ABB milestone slippage", "brownfield live-site safety holds", "National Grid energization readiness"],
+              chart: "Programme milestone burn-up",
+              action: "Protect the commissioning path and remove sequencing blockers early.",
+              risk: "Late-stage dependency compression can hide rework until it becomes schedule-critical.",
+              consequence: "A slip here cascades into grant, customer, and workforce timing pressure.",
+              blind: "Focusing on visible construction progress can hide commissioning-system integration risk.",
+              keywords: ["commissioning", "construction", "contractor", "milestone", "schedule", "site"]
+            },
+            {
+              id: "grid-power-readiness",
+              label: "Grid And Power Readiness",
+              kpis: ["National Grid delivery confidence", "peak power readiness", "industrial power cost exposure"],
+              data: ["National Grid infrastructure delivery", "ABB power distribution dependencies", "energy-discount negotiation status"],
+              chart: "Readiness vs dependency curve",
+              action: "Escalate power readiness and lock fallback plans before commissioning hardens.",
+              risk: "Power dependency delays can nullify otherwise successful site delivery.",
+              consequence: "If grid readiness slips, the EAF cannot commission even if civil work finishes on time.",
+              blind: "Construction teams can overestimate what site readiness means without live power.",
+              keywords: ["grid", "power", "energy", "abb", "national grid", "electricity"]
+            },
+            {
+              id: "site-safety",
+              label: "Site Safety Threshold",
+              kpis: ["Live-site incident exposure", "permit-to-work integrity", "lost-time incident risk"],
+              data: ["near-miss logs", "brownfield interface incidents", "high-risk task windows"],
+              chart: "Safety threshold heatmap",
+              action: "Protect stoppage thresholds before schedule pressure normalizes unsafe variance.",
+              risk: "Action bias can normalize temporary safety variance on a live brownfield site.",
+              consequence: "A serious safety halt would erase schedule credibility and political goodwill at once.",
+              blind: "Programme pressure can make near-misses look acceptable if no lost-time incident has occurred yet.",
+              keywords: ["safety", "incident", "halt", "near miss", "brownfield", "permit"]
+            },
+            {
+              id: "capital-discipline",
+              label: "Capital Discipline",
+              kpis: ["Cost overrun exposure", "contingency burn rate", "change-order pressure"],
+              data: ["change-order log", "contingency drawdown", "contract milestone payments"],
+              chart: "Contingency burn waterfall",
+              action: "Protect contingency against low-discipline scope creep.",
+              risk: "Small delivery concessions can accumulate into overruns without a visible single trigger.",
+              consequence: "Cost erosion weakens grant confidence and future DRI optionality.",
+              blind: "Teams may rationalize one more contractor concession because the strategic thesis is strong.",
+              keywords: ["capital", "cost", "overrun", "contingency", "budget", "change order"]
+            }
+          ],
+          frameworks: ["B", "F"],
+          recommendedFramework: "F"
+        },
+        {
+          id: "sian-morgan",
+          label: "Sian Morgan",
+          role: "Finance, Grant & Milestone Lead",
+          platformBias: ["programme-core", "commercial-transition", "grid-energy"],
+          perspectives: [
+            {
+              id: "grant-defensibility",
+              label: "Grant Defensibility",
+              kpis: ["Milestone compliance confidence", "clawback exposure", "drawdown defensibility"],
+              data: ["DBET milestone status", "evidence pack completeness", "variance against grant conditions"],
+              chart: "Grant milestone confidence ladder",
+              action: "Over-document milestone evidence and pre-empt grant breach risk.",
+              risk: "A milestone miss can create reputational and capital stress simultaneously.",
+              consequence: "Clawback or weak drawdown credibility would damage the whole transformation story.",
+              blind: "Operational progress can be mistaken for evidentiary sufficiency.",
+              keywords: ["grant", "clawback", "dbet", "drawdown", "milestone", "evidence"]
+            },
+            {
+              id: "transition-gap-margin",
+              label: "Transition-Gap Margin",
+              kpis: ["Imported slab premium", "cash compression", "transition-year EBITDA pressure"],
+              data: ["Netherlands and India slab cost", "customer price recovery", "gap-period contribution margins"],
+              chart: "Transition-gap margin bridge",
+              action: "Protect the margin bridge while the EAF is still pre-revenue.",
+              risk: "Margin compression can look manageable until several commercial concessions land together.",
+              consequence: "Persistent gap erosion weakens faith in the post-2027 payoff.",
+              blind: "People underweight gap-period economics because the long-term thesis is compelling.",
+              keywords: ["margin", "slab", "cash", "ebitda", "transition gap", "premium"]
+            },
+            {
+              id: "energy-competitiveness",
+              label: "Energy Competitiveness",
+              kpis: ["UK power premium", "discount support confidence", "green power contract readiness"],
+              data: ["industrial electricity spreads", "government support status", "PPA pipeline"],
+              chart: "Energy competitiveness spread",
+              action: "Treat energy economics as a first-order competitiveness issue, not a later optimization.",
+              risk: "The EAF can technically commission and still remain strategically uncompetitive.",
+              consequence: "High power costs would undermine the financial sustainability case even after carbon reduction.",
+              blind: "Technical teams can assume energy issues are finance-only when they shape the business case.",
+              keywords: ["energy", "electricity", "ppa", "discount", "competitiveness", "cost"]
+            },
+            {
+              id: "future-optionality",
+              label: "Future Optionality",
+              kpis: ["DRI pathway viability", "future capex capacity", "investor confidence in next phase"],
+              data: ["post-EAF free cash outlook", "gas and hydrogen assumptions", "customer grade demand mix"],
+              chart: "Optionality scenario fan",
+              action: "Preserve room for DRI or grade-enabling follow-on moves.",
+              risk: "Over-optimizing for today can trap Tata UK in a narrower capability set later.",
+              consequence: "Weak optionality increases exposure if high-grade automotive demand hardens.",
+              blind: "Short-term capital discipline can quietly close the path to higher-grade expansion.",
+              keywords: ["dri", "future", "optionality", "hydrogen", "capex", "next phase"]
+            }
+          ],
+          frameworks: ["A", "E"],
+          recommendedFramework: "A"
+        },
+        {
+          id: "priya-mehta",
+          label: "Priya Mehta",
+          role: "Commercial & Customer Transition Lead",
+          platformBias: ["commercial-transition", "programme-core"],
+          perspectives: [
+            {
+              id: "customer-retention",
+              label: "Customer Retention",
+              kpis: ["Top-customer retention risk", "Stellantis pushback intensity", "offtake conversion confidence"],
+              data: ["customer pushback log", "pricing acceptance", "MOU conversion pipeline"],
+              chart: "Customer risk concentration",
+              action: "Protect key customers during the transition gap before price and grade pressure hardens.",
+              risk: "Short-term margin defense can trigger longer-term customer erosion.",
+              consequence: "A lost anchor customer weakens the post-commissioning ramp story.",
+              blind: "Teams can mistake related-party strength with JLR for broader customer security.",
+              keywords: ["customer", "jlr", "stellantis", "offtake", "pricing", "retention"]
+            },
+            {
+              id: "grade-capability",
+              label: "Grade Capability",
+              kpis: ["grade fit confidence", "high-strength grade exposure", "DRI dependency pressure"],
+              data: ["customer grade mix", "residual sensitivity", "ladle metallurgy capability map"],
+              chart: "Grade capability coverage",
+              action: "Avoid overpromising grade capability before scrap quality and downstream stability are real.",
+              risk: "Commercial optimism can outrun metallurgical capability.",
+              consequence: "Capability mismatch damages trust exactly when Tata UK needs green-steel credibility.",
+              blind: "The headline EAF capacity can obscure residual and grade-quality constraints.",
+              keywords: ["grade", "automotive", "dri", "quality", "residual", "packaging"]
+            },
+            {
+              id: "green-steel-signaling",
+              label: "Green Steel Signaling",
+              kpis: ["green premium credibility", "customer willingness to sign", "institutional brand lift"],
+              data: ["carbon reduction evidence", "customer green-steel willingness", "competitive benchmark offers"],
+              chart: "Green-steel value ladder",
+              action: "Convert the decarbonization narrative into defendable customer value, not just reputation.",
+              risk: "Brand narrative can get ahead of operational deliverability.",
+              consequence: "If the signal fails, Tata UK loses both premium potential and trust capital.",
+              blind: "Teams often underweight what evidence customers need before paying a green premium.",
+              keywords: ["green steel", "premium", "signal", "brand", "customer value", "carbon"]
+            },
+            {
+              id: "transition-service-continuity",
+              label: "Transition Service Continuity",
+              kpis: ["slab continuity reliability", "order-service confidence", "downstream disruption exposure"],
+              data: ["slab supply continuity", "downstream line health", "service-level misses"],
+              chart: "Service continuity watchlist",
+              action: "Stabilize service continuity during the imported-slab period.",
+              risk: "An otherwise sound transformation can lose credibility through repeated customer service misses.",
+              consequence: "Service disruption amplifies price resistance and churn risk together.",
+              blind: "Strategy-first narratives can underweight order-book irritation and service fatigue.",
+              keywords: ["service", "slab", "continuity", "order", "delivery", "transition"]
+            }
+          ],
+          frameworks: ["B", "C"],
+          recommendedFramework: "B"
+        },
+        {
+          id: "chris-jaques",
+          label: "Chris Jaques",
+          role: "Workforce & Transition Lead",
+          platformBias: ["workforce-transition", "programme-core"],
+          perspectives: [
+            {
+              id: "reskilling-readiness",
+              label: "Reskilling Readiness",
+              kpis: ["EAF-critical skill coverage", "training completion confidence", "operator redeployment readiness"],
+              data: ["training throughput", "role-mapping against commissioning needs", "critical skill gaps"],
+              chart: "Reskilling readiness ladder",
+              action: "Close the EAF skill gap early enough that commissioning does not depend on heroic hiring.",
+              risk: "Training volume can look strong while the actual commissioning-critical roles remain undercovered.",
+              consequence: "A late skills gap turns workforce strategy into a commissioning risk.",
+              blind: "Headline training counts can hide role-specific capability gaps.",
+              keywords: ["reskilling", "training", "skills", "operators", "commissioning", "workforce"]
+            },
+            {
+              id: "community-legitimacy",
+              label: "Community Legitimacy",
+              kpis: ["community backlash intensity", "transition fund trust", "political support durability"],
+              data: ["transition board issues", "community sentiment", "fund uptake and complaints"],
+              chart: "Community legitimacy pulse",
+              action: "Show visible transition fairness, not just a future jobs promise.",
+              risk: "A technically successful transformation can still suffer legitimacy collapse locally.",
+              consequence: "Weak legitimacy increases political friction and media hostility at the worst time.",
+              blind: "Internal teams can overestimate how much future investment offsets present pain.",
+              keywords: ["community", "backlash", "political", "union", "transition fund", "legitimacy"]
+            },
+            {
+              id: "labour-stability",
+              label: "Labour Stability",
+              kpis: ["union temperature", "critical talent retention", "internal redeployment confidence"],
+              data: ["union dialogue status", "voluntary redundancy pattern", "retention of critical operators"],
+              chart: "Labour stability map",
+              action: "Protect enough capability and trust so the workforce transition remains governable.",
+              risk: "Over-rotating on headcount reduction can hollow out the operating core.",
+              consequence: "If labour stability breaks, the programme pays in speed, trust, and delivery quality.",
+              blind: "Voluntary redundancy success can hide the loss of exactly the people needed later.",
+              keywords: ["union", "redundancy", "retention", "labour", "redeployment", "talent"]
+            },
+            {
+              id: "town-economy",
+              label: "Town Economic Resilience",
+              kpis: ["earnings-loss exposure", "supply-chain business stress", "visible transition outcomes"],
+              data: ["town employment indicators", "fund disbursement", "supplier business distress"],
+              chart: "Town resilience tracker",
+              action: "Treat local economic resilience as a programme risk, not a CSR side-stream.",
+              risk: "If the town feels abandoned, every operational setback gets politically amplified.",
+              consequence: "Weak local resilience erodes the social licence underpinning Tata UK’s transformation.",
+              blind: "Programme teams often separate local economic pain from delivery risk when they are linked.",
+              keywords: ["town", "economic", "supply chain fund", "local", "earnings", "port talbot"]
+            }
+          ],
+          frameworks: ["C", "F"],
+          recommendedFramework: "C"
+        }
+      ]
+    };
 
-    let analysisState = null;
-    let kpisExpanded = false;
-    let activeEmotionCode = "A";
+    const state = {
+      domain: MODEL.project.domain,
+      platform: "programme-core",
+      personaId: "sian-morgan",
+      scenarioId: "",
+      selectedPerspectives: [],
+      selectedFramework: "A",
+      question: "",
+      analysis: null,
+      activeCellId: null,
+      routedCellId: null,
+      routeExplanation: ""
+    };
 
-    function setStatus(text) {
-      statusLine.textContent = text;
+    const els = {
+      banner: document.getElementById("banner"),
+      heroTitle: document.getElementById("heroTitle"),
+      heroCopy: document.getElementById("heroCopy"),
+      domainSelect: document.getElementById("domainSelect"),
+      platformSelect: document.getElementById("platformSelect"),
+      personaSelect: document.getElementById("personaSelect"),
+      scenarioSelect: document.getElementById("scenarioSelect"),
+      frameworkGrid: document.getElementById("frameworkGrid"),
+      matrixGrid: document.getElementById("matrixGrid"),
+      questionInput: document.getElementById("questionInput"),
+      routeQuestionButton: document.getElementById("routeQuestionButton"),
+      routeNote: document.getElementById("routeNote"),
+      insightTag: document.getElementById("insightTag"),
+      insightReason: document.getElementById("insightReason"),
+      insightTitle: document.getElementById("insightTitle"),
+      insightSummary: document.getElementById("insightSummary"),
+      insightKpis: document.getElementById("insightKpis"),
+      insightData: document.getElementById("insightData"),
+      chartTitle: document.getElementById("chartTitle"),
+      chartBars: document.getElementById("chartBars"),
+      chartCaption: document.getElementById("chartCaption"),
+      insightAction: document.getElementById("insightAction"),
+      insightRisk: document.getElementById("insightRisk"),
+      insightConsequence: document.getElementById("insightConsequence"),
+      insightBlind: document.getElementById("insightBlind")
+    };
+
+    function getPersona() {
+      return MODEL.personas.find((item) => item.id === state.personaId) || MODEL.personas[0];
     }
 
-    function setHeroContent(title, copy) {
-      heroTitle.textContent = title;
-      heroCopy.textContent = copy;
+    function getScenario() {
+      const persona = getPersona();
+      return persona?.scenarios?.find((item) => item.id === state.scenarioId) || persona?.scenarios?.[0] || null;
     }
 
-    function renderList(container, items) {
-      container.innerHTML = items.map((item) => `
-        <div class="list-item">
-          <div class="list-dot"></div>
-          <p>${item}</p>
-        </div>
+    function getFramework() {
+      return MODEL.frameworks[state.selectedFramework] || MODEL.frameworks.A;
+    }
+
+    function getAnalysisVariant(code) {
+      return state.analysis?.emotionVariants?.find((item) => item.code === code) || null;
+    }
+
+    function showBanner(message = "", tone = "danger") {
+      if (!message) {
+        els.banner.classList.remove("visible");
+        els.banner.textContent = "";
+        return;
+      }
+      els.banner.textContent = message;
+      els.banner.classList.add("visible");
+      els.banner.style.color = tone === "danger" ? "var(--danger)" : "var(--text)";
+    }
+
+    function renderHero() {
+      const scenario = getScenario();
+      els.heroTitle.textContent = scenario?.scenarioTitle || MODEL.project.name;
+      els.heroCopy.textContent = state.analysis?.parsed?.scenario
+        || scenario?.about
+        || "Use the wizard to resolve Tata UK context, then explore how the selected emotional framework changes what matters across commissioning, commercial, workforce, grant, and energy decisions.";
+    }
+
+    function renderSelectOptions() {
+      els.domainSelect.innerHTML = MODEL.domains.map((item) => `
+        <option value="${item.id}" ${item.id === state.domain ? "selected" : ""}>${item.label}</option>
+      `).join("");
+
+      els.platformSelect.innerHTML = MODEL.platforms.map((item) => `
+        <option value="${item.id}" ${item.id === state.platform ? "selected" : ""}>${item.label}</option>
+      `).join("");
+
+      els.personaSelect.innerHTML = MODEL.personas
+        .filter((persona) => persona.platformBias.includes(state.platform) || state.platform === "programme-core")
+        .map((persona) => `
+          <option value="${persona.id}" ${persona.id === state.personaId ? "selected" : ""}>${persona.role}</option>
+        `).join("");
+
+      const persona = getPersona();
+      const scenarios = persona?.scenarios || [];
+      els.scenarioSelect.innerHTML = scenarios.map((scenario) => `
+        <option value="${scenario.id}" ${scenario.id === state.scenarioId ? "selected" : ""}>${scenario.scenarioTitle || scenario.label}</option>
       `).join("");
     }
 
-    function renderFacts(container, items) {
-      container.innerHTML = items.map((item) => `
-        <div class="fact-item">
-          <div class="fact-dot"></div>
-          <p>${item}</p>
-        </div>
-      `).join("");
+    function ensurePerspectiveSelection() {
+      const persona = getPersona();
+      if (!state.selectedPerspectives.length || state.selectedPerspectives.some((id) => !persona.perspectives.find((p) => p.id === id))) {
+        state.selectedPerspectives = persona.perspectives.slice(0, Math.min(4, persona.perspectives.length)).map((item) => item.id);
+      }
     }
 
-    function renderHeroStats(payload) {
-      const parsed = payload.parsed;
-      const enrichment = payload.enrichment;
-      const baseline = payload.baseline;
-      const stats = [
-        { label: "File", value: payload.fileName, note: parsed.title || "Uploaded markdown file" },
-        { label: "Persona", value: parsed.persona || "Unknown", note: parsed.timeHorizon || "No time horizon supplied" },
-        { label: "Baseline", value: baseline.recommendedOptionLabel, note: `${baseline.confidence} confidence` },
-        { label: "Enrichment", value: enrichment.used ? "Used" : "Skipped", note: enrichment.used ? enrichment.mode : "Scenario-first analysis" }
-      ];
-      heroStats.innerHTML = stats.map((stat) => `
-        <div class="stat">
-          <div class="stat-label">${stat.label}</div>
-          <div class="stat-value">${stat.value}</div>
-          <div class="stat-note">${stat.note}</div>
-        </div>
-      `).join("");
+    function ensureScenarioSelection() {
+      const persona = getPersona();
+      const scenarios = persona?.scenarios || [];
+      if (!scenarios.length) {
+        state.scenarioId = "";
+        return;
+      }
+      if (!state.scenarioId || !scenarios.find((item) => item.id === state.scenarioId)) {
+        state.scenarioId = persona.defaultScenarioId || scenarios[0].id;
+      }
     }
 
-    function renderEmotionPills(payload) {
-      emotionGrid.innerHTML = payload.emotionVariants.map((variant) => `
-        <button class="emotion-pill ${variant.code === activeEmotionCode ? "active" : ""}" data-code="${variant.code}">
-          <span class="emotion-code">Variant ${variant.code}</span>
-          <span class="emotion-name">${variant.name}</span>
-          <span class="emotion-type">${variant.state}</span>
+    function renderFrameworkRecommendations() {
+      const persona = getPersona();
+      const frameworks = persona.frameworks.map((code) => MODEL.frameworks[code]);
+      if (!frameworks.find((item) => item.code === state.selectedFramework)) {
+        state.selectedFramework = persona.recommendedFramework;
+      }
+      els.frameworkGrid.innerHTML = frameworks.map((framework) => `
+        <button class="framework-card ${framework.code === persona.recommendedFramework ? "recommended" : ""} ${framework.code === state.selectedFramework ? "active" : ""}" type="button" data-framework-code="${framework.code}">
+          <div class="framework-top">
+            <div class="framework-name">${framework.name}</div>
+            <div class="framework-tag">${framework.code === persona.recommendedFramework ? "Recommended" : "Alt"}</div>
+          </div>
+          <div class="framework-desc">${framework.note}</div>
         </button>
       `).join("");
     }
 
-    function renderKPIs(variant) {
-      const catalog = analysisState.kpiCatalog;
-      const optionId = variant.recommendedOptionId;
-      const priorityMap = new Map((variant.kpiOrdering || []).map((item) => [item.code, item]));
-      const slotOrder = {
-        priority: 0,
-        blind_spot_warning: 1,
-        primary: 2,
-        secondary: 3
-      };
-      const ranked = catalog
-        .map((kpi) => {
-          const priority = priorityMap.get(kpi.code) || {
-            rankScore: 0,
-            weightPct: 0,
-            slotType: "secondary",
-            reason: "default ordering"
-          };
-          return {
-            ...kpi,
-            priorityScore: priority.rankScore,
-            priorityReason: priority.reason,
-            slotType: priority.slotType,
-            weightPct: priority.weightPct,
-            risk: kpi.optionRisks[optionId]
-          };
-        })
-        .sort((a, b) =>
-          (slotOrder[a.slotType] - slotOrder[b.slotType]) ||
-          (b.weightPct - a.weightPct) ||
-          (b.priorityScore - a.priorityScore) ||
-          a.code.localeCompare(b.code)
-        );
-
-      kpiGrid.innerHTML = ranked.map((kpi, index) => `
-        <div class="kpi ${index < 4 ? "priority" : "hidden"}" data-hidden="${index >= 4 ? "true" : "false"}">
-          <div class="kpi-label">${kpi.label}</div>
-          <div class="kpi-chip risk-${kpi.risk.level}">${kpi.risk.text}</div>
-          <div class="kpi-value">${kpi.optionValues[optionId]}</div>
-          <div class="kpi-note">${kpi.baselineNote}</div>
-          <div class="kpi-meta">${kpi.optionMeta[optionId]}</div>
-          <div class="kpi-meta">Slot: ${kpi.slotType.replaceAll("_", " ")} · ${kpi.priorityReason}</div>
-        </div>
-      `).join("");
-
-      updateKpiVisibility(false);
-    }
-
-    function updateKpiVisibility(expanded) {
-      kpisExpanded = expanded;
-      const hiddenCards = kpiGrid.querySelectorAll('[data-hidden="true"]');
-      hiddenCards.forEach((card) => card.classList.toggle("hidden", !expanded));
-      const hiddenCount = hiddenCards.length;
-      if (!hiddenCount) {
-        kpiToggle.hidden = true;
-        return;
-      }
-      kpiToggle.hidden = false;
-      kpiToggle.textContent = expanded ? "Show fewer KPIs" : `Show ${hiddenCount} more KPIs`;
-      kpiToggle.setAttribute("aria-expanded", String(expanded));
-    }
-
-    function activateEmotion(code) {
-      if (!analysisState) return;
-      activeEmotionCode = code;
-      const variant = analysisState.emotionVariants.find((item) => item.code === code) || analysisState.emotionVariants[0];
-      document.querySelectorAll(".emotion-pill").forEach((pill) => {
-        pill.classList.toggle("active", pill.dataset.code === code);
+    function scoreScenarioOption(option, perspective, mode, scenario) {
+      const haystack = `${option.label} ${option.summary} ${option.risk}`.toLowerCase();
+      let score = 0;
+      [...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || [])].forEach((keyword) => {
+        if (haystack.includes(keyword)) score += 3;
       });
-      stanceTag.textContent = variant.headerBadge || variant.recommendedOptionLabel;
-      stanceTag.className = `tag ${variant.tone}`;
-      recommendationTitle.textContent = variant.recommendedOptionLabel;
-      recommendationSnapshot.textContent = variant.snapshotSubtitle || variant.state;
-      personaLens.textContent = variant.personaLens;
-      renderFacts(priorityFacts, variant.priorityFacts);
-      emotionConsequence.textContent = variant.consequenceRisk;
-      blindSpotText.textContent = variant.blindSpots;
-      nextStepText.textContent = variant.nextStep;
-      emotionRiskCard.className = `risk-card ${variant.tone}`;
-      renderKPIs(variant);
-    }
-
-    function renderClarification(payload) {
-      resultCard.classList.remove("visible");
-      clarificationCard.classList.add("visible");
-      clarificationMessage.textContent = payload.message;
-      const parsed = payload.parsed || {};
-      setHeroContent(parsed.scenarioTitle || parsed.title || "Upload the Persona and Scenario", payload.message);
-    }
-
-    function renderResult(payload) {
-      clarificationCard.classList.remove("visible");
-      resultCard.classList.add("visible");
-      analysisState = payload;
-      const scenarioSummary = payload.parsed?.scenario || "Scenario uploaded and analyzed.";
-      const scenarioTitle = payload.parsed?.scenarioTitle || payload.parsed?.call || payload.parsed?.title || payload.fileName;
-      setHeroContent(scenarioTitle, scenarioSummary);
-      renderHeroStats(payload);
-      renderEmotionPills(payload);
-      activateEmotion(activeEmotionCode);
-    }
-
-    async function analyzeUpload() {
-      const file = fileInput.files[0];
-      if (!file) {
-        setStatus("Select one markdown file before analyzing.");
-        return;
-      }
-      setStatus(`Uploading ${file.name} and running backend analysis...`);
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const response = await fetch("/analyze", {
-          method: "POST",
-          body: formData
+      (perspective.kpis || []).forEach((kpi) => {
+        kpi.toLowerCase().split(/[^a-z0-9]+/).filter((item) => item.length > 4).forEach((bit) => {
+          if (haystack.includes(bit)) score += 1;
         });
+      });
+      if (/containment|reversibility|safety|regret/.test(mode.id)) {
+        if (/phase|joint|quiet|private|hybrid|counter|wait|limit|time-limited|negotiate/i.test(option.label + option.summary)) score += 2;
+      }
+      if (/clarity|speed|command/.test(mode.id)) {
+        if (/immediately|publicly|unconditionally|accept|sign|escalate|lock/i.test(option.label + option.summary)) score += 2;
+      }
+      if (/evidence|sensitivity|threshold/.test(mode.id)) {
+        if (/joint|qualification|counter|private|hybrid|time-limited|negotiate/i.test(option.label + option.summary)) score += 2;
+      }
+      return score;
+    }
+
+    async function loadMatrixBootstrap() {
+      try {
+        const response = await fetch("/matrix-bootstrap");
+        if (!response.ok) throw new Error(`bootstrap ${response.status}`);
         const payload = await response.json();
-        if (!response.ok || payload.status === "error") {
-          throw new Error(payload.message || "Analysis failed.");
-        }
-        setStatus(`Analysis complete for ${payload.fileName}.`);
-        if (payload.status === "clarification_required") {
-          renderClarification(payload);
-        } else {
-          renderResult(payload);
+        if (payload.project) MODEL.project = payload.project;
+        if (payload.domains?.length) MODEL.domains = payload.domains;
+        if (payload.platforms?.length) MODEL.platforms = payload.platforms;
+        if (payload.scenarios?.length) MODEL.scenarios = payload.scenarios;
+        if (payload.personas?.length) {
+          MODEL.personas = payload.personas;
+          state.domain = payload.project?.domain || state.domain;
+          if (!MODEL.personas.find((item) => item.id === state.personaId)) {
+            state.personaId = payload.defaultPersonaId || MODEL.personas[0].id;
+          }
         }
       } catch (error) {
-        setStatus(error.message);
-      } finally {
+        console.warn("matrix bootstrap fallback", error);
       }
+      choosePersona(state.personaId);
     }
 
-    fileInput.addEventListener("change", analyzeUpload);
-    emotionGrid.addEventListener("click", (event) => {
-      const pill = event.target.closest(".emotion-pill");
-      if (!pill) return;
-      activateEmotion(pill.dataset.code);
+    function buildCell(context) {
+      const { perspective, mode, framework, analysisVariant, scenario, perspectiveIndex } = context;
+      const tone = analysisVariant?.tone || framework.code === "A" ? "warn" : "accent";
+      const chosenOption = scenario?.options?.length
+        ? [...scenario.options].sort((a, b) => scoreScenarioOption(b, perspective, mode, scenario) - scoreScenarioOption(a, perspective, mode, scenario))[0]
+        : null;
+      const scenarioKpi = scenario?.kpiFamilies?.[perspectiveIndex] || scenario?.kpiFamilies?.[0] || null;
+      const recommendedAction = chosenOption
+        ? `${chosenOption.label}. ${chosenOption.summary}`
+        : (analysisVariant?.recommendedOptionLabel
+          ? `${analysisVariant.recommendedOptionLabel}.`
+          : perspective.action);
+      const risk = chosenOption?.risk
+        ? `${chosenOption.risk} ${analysisVariant?.consequenceRisk || perspective.risk}`
+        : (analysisVariant?.consequenceRisk
+          ? `${analysisVariant.consequenceRisk} Cell-specific risk: ${perspective.risk}`
+          : perspective.risk);
+      const consequence = scenario?.tension
+        ? `${perspective.consequence} Scenario tension: ${scenario.tension}`
+        : (analysisVariant?.divergenceExplanation
+          ? `${perspective.consequence} ${analysisVariant.divergenceExplanation}`
+          : perspective.consequence);
+      const blind = analysisVariant?.blindSpots
+        ? `${perspective.blind} ${analysisVariant.blindSpots}`
+        : perspective.blind;
+      const kpis = [
+        scenarioKpi?.label,
+        ...(analysisVariant?.kpiOrdering?.slice(0, 2).map((item) => item.label) || []),
+        ...(perspective.kpis || []),
+      ].filter(Boolean).slice(0, 3);
+      const dataRequirements = [
+        ...(scenarioKpi ? [`Current read on ${scenarioKpi.label.toLowerCase()}`] : []),
+        ...(scenario?.decisionContext ? Object.values(scenario.decisionContext).slice(0, 2) : []),
+        ...perspective.data,
+        ...(analysisVariant?.flipCondition ? [analysisVariant.flipCondition] : [])
+      ].slice(0, 4);
+      const chartBars = kpis.slice(0, 3).map((label, index) => {
+        const base = 48 + ((perspective.id.length + mode.id.length + index * 11) % 42);
+        return { label, value: base };
+      });
+      return {
+        id: `${mode.id}::${perspective.id}`,
+        modeId: mode.id,
+        perspectiveId: perspective.id,
+        title: `${mode.label} × ${perspective.label}`,
+        tone,
+        summary: mode.focus,
+        kpis,
+        dataRequirements,
+        chartType: `${scenarioKpi?.label || perspective.label} / ${mode.label}`,
+        chartBars,
+        optionLabel: chosenOption?.label || analysisVariant?.recommendedOptionLabel || perspective.label,
+        recommendedAction,
+        risk,
+        consequence,
+        blind,
+        rationale: `This cell combines ${framework.name} / ${mode.label} with the ${perspective.label} perspective for the selected scenario.`,
+        routeKeywords: [...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || []), ...(chosenOption?.keywords || []), perspective.label.toLowerCase(), mode.label.toLowerCase()]
+      };
+    }
+
+    function buildMatrix() {
+      const persona = getPersona();
+      ensurePerspectiveSelection();
+      ensureScenarioSelection();
+      const framework = getFramework();
+      const scenario = getScenario();
+      const selectedPerspectives = persona.perspectives.filter((item) => state.selectedPerspectives.includes(item.id));
+      const analysisVariant = getAnalysisVariant(framework.code);
+      const modes = framework.modes;
+      const headerRow = `
+        <div class="matrix-row" style="--perspective-count:${selectedPerspectives.length}">
+          <div class="matrix-head">Emotion mode / Perspective</div>
+          ${selectedPerspectives.map((perspective) => `<div class="matrix-head">${perspective.label}</div>`).join("")}
+        </div>
+      `;
+
+      const cells = [];
+      const rows = modes.map((mode) => {
+        const rowCells = selectedPerspectives.map((perspective, perspectiveIndex) => {
+          const cell = buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex });
+          cells.push(cell);
+          const active = state.activeCellId === cell.id;
+          const routed = state.routedCellId === cell.id;
+          return `
+            <button class="matrix-cell ${active ? "active" : ""} ${routed ? "routed" : ""}" type="button" data-cell-id="${cell.id}">
+              <div class="cell-title">${cell.optionLabel}</div>
+              <div class="cell-kpis">${cell.kpis.slice(0, 2).join(" / ")}</div>
+              <div class="cell-meta">${cell.summary}</div>
+            </button>
+          `;
+        }).join("");
+        return `
+          <div class="matrix-row" style="--perspective-count:${selectedPerspectives.length}">
+            <div class="mode-card">
+              <div class="mode-name">${mode.label}</div>
+              <div class="mode-copy">${mode.focus}</div>
+            </div>
+            ${rowCells}
+          </div>
+        `;
+      }).join("");
+
+      els.matrixGrid.innerHTML = headerRow + rows;
+      return cells;
+    }
+
+    function getMatrixCells() {
+      return buildMatrix();
+    }
+
+    function ensureActiveCell(cells) {
+      const available = cells.find((item) => item.id === state.activeCellId) || cells[0] || null;
+      state.activeCellId = available?.id || null;
+      return available;
+    }
+
+    function renderChartBars(cell) {
+      els.chartTitle.textContent = cell.chartType;
+      els.chartBars.innerHTML = cell.chartBars.map((bar) => `
+        <div class="bar">
+          <div class="bar-top"><span>${bar.label}</span><span>${bar.value}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${bar.value}%"></div></div>
+        </div>
+      `).join("");
+      els.chartCaption.textContent = `The chart block is tuned to the selected cell. Here it emphasizes the signals most likely to move the decision inside ${cell.title}.`;
+    }
+
+    function renderInsight(cell) {
+      if (!cell) return;
+      els.insightTag.textContent = getFramework().name;
+      els.insightReason.textContent = state.routeExplanation || cell.rationale;
+      els.insightTitle.textContent = cell.title;
+      els.insightSummary.textContent = `${cell.rationale} ${cell.summary}`;
+      els.insightKpis.innerHTML = cell.kpis.map((item) => `<li>${item}</li>`).join("");
+      els.insightData.innerHTML = cell.dataRequirements.map((item) => `<li>${item}</li>`).join("");
+      renderChartBars(cell);
+      els.insightAction.textContent = cell.recommendedAction;
+      els.insightRisk.textContent = cell.risk;
+      els.insightConsequence.textContent = cell.consequence;
+      els.insightBlind.textContent = cell.blind;
+    }
+
+    function rerenderWorkspace() {
+      renderHero();
+      renderSelectOptions();
+      renderFrameworkRecommendations();
+      const cells = getMatrixCells();
+      const activeCell = ensureActiveCell(cells);
+      renderInsight(activeCell);
+      buildMatrix();
+    }
+
+    function choosePersona(personaId) {
+      state.personaId = personaId;
+      const persona = getPersona();
+      state.selectedFramework = persona.recommendedFramework;
+      state.selectedPerspectives = [];
+      state.scenarioId = persona.defaultScenarioId || persona.scenarios?.[0]?.id || "";
+      ensurePerspectiveSelection();
+      state.activeCellId = null;
+      state.routedCellId = null;
+      state.routeExplanation = "";
+      rerenderWorkspace();
+    }
+
+    function chooseScenario(scenarioId) {
+      state.scenarioId = scenarioId;
+      state.activeCellId = null;
+      state.routedCellId = null;
+      state.routeExplanation = "";
+      rerenderWorkspace();
+    }
+
+    function routeQuestion() {
+      const question = els.questionInput.value.trim().toLowerCase();
+      state.question = question;
+      if (!question) {
+        state.routeExplanation = "No question routed yet. You can also click any matrix cell directly.";
+        state.routedCellId = null;
+        rerenderWorkspace();
+        els.routeNote.textContent = state.routeExplanation;
+        return;
+      }
+      const cells = getMatrixCells();
+      let bestCell = null;
+      let bestScore = -1;
+      cells.forEach((cell) => {
+        let score = 0;
+        cell.routeKeywords.forEach((keyword) => {
+          if (question.includes(keyword)) score += 3;
+        });
+        ["risk", "data", "evidence", "action", "consequence", "recommend"].forEach((keyword) => {
+          if (question.includes(keyword)) score += 1;
+        });
+        if (score > bestScore) {
+          bestScore = score;
+          bestCell = cell;
+        }
+      });
+      if (!bestCell) return;
+      state.activeCellId = bestCell.id;
+      state.routedCellId = bestCell.id;
+      state.routeExplanation = `Question routed to ${bestCell.title} because it matches the strongest combination of perspective and emotional sub-mode signals in the prompt.`;
+      els.routeNote.textContent = state.routeExplanation;
+      rerenderWorkspace();
+    }
+
+    els.domainSelect.addEventListener("change", (event) => {
+      state.domain = event.target.value;
+      rerenderWorkspace();
     });
-    kpiToggle.addEventListener("click", () => {
-      updateKpiVisibility(!kpisExpanded);
+
+    els.platformSelect.addEventListener("change", (event) => {
+      state.platform = event.target.value;
+      const visiblePersonas = MODEL.personas.filter((persona) => persona.platformBias.includes(state.platform) || state.platform === "programme-core");
+      if (!visiblePersonas.find((persona) => persona.id === state.personaId)) {
+        state.personaId = visiblePersonas[0].id;
+      }
+      choosePersona(state.personaId);
     });
+
+    els.personaSelect.addEventListener("change", (event) => {
+      choosePersona(event.target.value);
+    });
+
+    els.scenarioSelect.addEventListener("change", (event) => {
+      chooseScenario(event.target.value);
+    });
+
+    els.frameworkGrid.addEventListener("click", (event) => {
+      const card = event.target.closest("[data-framework-code]");
+      if (!card) return;
+      state.selectedFramework = card.dataset.frameworkCode;
+      state.activeCellId = null;
+      state.routedCellId = null;
+      state.routeExplanation = "";
+      rerenderWorkspace();
+    });
+
+    els.matrixGrid.addEventListener("click", (event) => {
+      const cellButton = event.target.closest("[data-cell-id]");
+      if (!cellButton) return;
+      state.activeCellId = cellButton.dataset.cellId;
+      state.routedCellId = null;
+      state.routeExplanation = `Manual exploration active. This cell is showing the selected emotional sub-mode and perspective intersection.`;
+      els.routeNote.textContent = state.routeExplanation;
+      rerenderWorkspace();
+    });
+
+    els.routeQuestionButton.addEventListener("click", routeQuestion);
+    els.questionInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        routeQuestion();
+      }
+    });
+
+    els.routeNote.textContent = "No question routed yet. You can also click any matrix cell directly.";
+    loadMatrixBootstrap();
   </script>
 </body>
 </html>
