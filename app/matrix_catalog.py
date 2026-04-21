@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 ROOT = Path(__file__).resolve().parent
 PERSONA_DIR = ROOT / "data" / "personas"
 SCENARIO_DIR = ROOT / "data" / "scenarios"
+VO112_SCHEMA_PATH = Path("/Users/pragyan/Downloads/CROSS_VO112_cell_level_executable_schema.md")
 
 PROJECT = {
     "name": "Tata Steel UK Port Talbot EAF Transformation",
@@ -81,6 +82,184 @@ PERSONA_FRAMEWORKS = {
     "P10": {"frameworks": ["B", "F"], "recommended": "B"},
 }
 
+COMMERCIAL_KPI_CATALOG = [
+    {
+        "code": "C1",
+        "label": "Contract entitlement strength",
+        "description": "How strong Tata's position is on the claim, clause, or dispute item.",
+        "keywords": ["contract", "clause", "entitlement", "variation", "claim", "force majeure", "breach"],
+        "dataHints": ["relevant clause wording", "reservation-of-rights position", "external legal view if needed"],
+    },
+    {
+        "code": "C2",
+        "label": "Immediate cash exposure",
+        "description": "Cash or contingency consumed inside the current decision window.",
+        "keywords": ["cash", "payment", "settle", "withhold", "escrow", "contingency", "cost"],
+        "dataHints": ["cash timing profile", "contingency headroom", "cost of suspension vs disputed amount"],
+    },
+    {
+        "code": "C3",
+        "label": "Schedule-at-risk from commercial action",
+        "description": "Delay created by dispute, suspension, notice, amendment, or renegotiation.",
+        "keywords": ["schedule", "delay", "extension", "commissioning", "slip", "longstop", "float"],
+        "dataHints": ["critical path impact", "counterparty suspension rights", "milestone recovery window"],
+    },
+    {
+        "code": "C4",
+        "label": "Disclosure / covenant trigger proximity",
+        "description": "How close the issue is to a formal disclosure, covenant, or materiality threshold.",
+        "keywords": ["disclose", "regulator", "board", "grant", "materiality", "covenant", "notify"],
+        "dataHints": ["materiality threshold", "grant / covenant trigger note", "who must be told by when"],
+    },
+    {
+        "code": "C5",
+        "label": "Counterparty cooperation risk",
+        "description": "Risk that the other side becomes less cooperative if challenged or delayed.",
+        "keywords": ["supplier", "customer", "contractor", "counterparty", "relationship", "cooperate", "suspend"],
+        "dataHints": ["counterparty leverage map", "current relationship temperature", "fallback counterparty options"],
+    },
+    {
+        "code": "C6",
+        "label": "Contractual optionality preserved",
+        "description": "How much room remains to amend, settle, defer, hedge, or reverse.",
+        "keywords": ["optionality", "reversible", "amend", "side letter", "defer", "reserve rights", "wait"],
+        "dataHints": ["amendment path", "reservation-of-rights deadline", "reversible vs irreversible move"],
+    },
+    {
+        "code": "C7",
+        "label": "Revenue / demand exposure",
+        "description": "Revenue, customer volume, or pricing at risk if the issue leaks or hardens.",
+        "keywords": ["revenue", "demand", "customer", "market", "pricing", "volume", "BMW", "JLR", "Stellantis"],
+        "dataHints": ["revenue at risk", "customer concentration", "competitive qualification activity"],
+    },
+    {
+        "code": "C8",
+        "label": "Precedent / governance risk",
+        "description": "Whether the move creates a bad precedent, audit issue, or board liability.",
+        "keywords": ["precedent", "governance", "audit", "board", "control", "liability", "scrutiny"],
+        "dataHints": ["board / audit view", "similar precedent cases", "control or governance implications"],
+    },
+]
+
+PERSONA_COMMERCIAL_EMPHASIS = {
+    "P1": ["K1", "K2", "K3", "C3", "C8"],
+    "P2": ["K1", "K2", "C5", "C3", "C2"],
+    "P3": ["K1", "K4", "K7", "C5", "C3"],
+    "P4": ["K1", "K2", "K7", "K8", "C2", "C4"],
+    "P5": ["K2", "K4", "K5", "C4", "C8"],
+    "P6": ["K1", "K2", "K5", "K6", "C4", "C8"],
+    "P7": ["K1", "K2", "K6", "K7", "C6", "C7"],
+    "P8": ["K1", "K4", "K6", "K5", "C6", "C4"],
+    "P9": ["K6", "K2", "K7", "C4", "C8"],
+    "P10": ["K1", "K3", "K5", "K8", "C7", "C5"],
+}
+
+COMMERCIAL_QUESTION_FAMILIES = {
+    "entitlement": {
+        "keywords": ["entitled", "entitlement", "claim", "can they claim", "variation", "breach", "force majeure", "clause"],
+        "primary": ["C1"],
+        "supporting": ["C8", "C3"],
+    },
+    "payment": {
+        "keywords": ["pay", "withhold", "settle", "escrow", "payment", "under protest", "disputed amount"],
+        "primary": ["C2", "C3"],
+        "supporting": ["C1", "C6"],
+    },
+    "disclosure": {
+        "keywords": ["tell", "disclose", "notify", "regulator", "board", "grant", "customer", "union", "council", "investor"],
+        "primary": ["C4"],
+        "supporting": ["C8", "C7"],
+    },
+    "schedule": {
+        "keywords": ["schedule", "slip", "longstop", "float", "extension", "commissioning", "delay"],
+        "primary": ["C3"],
+        "supporting": ["C5", "C6"],
+    },
+    "counterparty": {
+        "keywords": ["supplier", "contractor", "customer", "utility", "counterparty", "cooperate", "suspend", "renegotiate"],
+        "primary": ["C5"],
+        "supporting": ["C3", "C6"],
+    },
+    "customer_market": {
+        "keywords": ["customer", "market", "BMW", "JLR", "Stellantis", "trust", "revenue", "demand", "qualification"],
+        "primary": ["C7"],
+        "supporting": ["C5", "C4"],
+    },
+    "amendment_notice": {
+        "keywords": ["amend", "amendment", "notice", "reserve rights", "side letter", "notify formally"],
+        "primary": ["C4", "C6"],
+        "supporting": ["C1", "C5"],
+    },
+    "governance": {
+        "keywords": ["material", "board", "covenant", "governance", "audit", "director", "filing"],
+        "primary": ["C4", "C8"],
+        "supporting": ["C2", "C3"],
+    },
+    "optionality": {
+        "keywords": ["wait", "what happens if we wait", "reversible", "optionality", "preserve room", "defer"],
+        "primary": ["C6"],
+        "supporting": ["C3", "C5"],
+    },
+    "bids_pricing": {
+        "keywords": ["bid", "tender", "pricing", "pass-through", "risk-load", "escalation", "indexation"],
+        "primary": ["C1", "C2"],
+        "supporting": ["C8", "C7"],
+    },
+    "consequence": {
+        "keywords": ["what breaks", "consequence", "if we act", "if we wait", "what happens next"],
+        "primary": ["C6", "C3"],
+        "supporting": ["C5", "C8"],
+    },
+}
+
+
+def _extract_markdown_table(section: str) -> List[Dict[str, str]]:
+    lines = [line.rstrip() for line in section.splitlines() if line.strip().startswith("|")]
+    if len(lines) < 3:
+        return []
+    headers = [cell.strip() for cell in lines[0].strip().strip("|").split("|")]
+    rows: List[Dict[str, str]] = []
+    for line in lines[2:]:
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != len(headers):
+            continue
+        rows.append(dict(zip(headers, cells)))
+    return rows
+
+
+def _extract_section_body(text: str, heading: str) -> str:
+    match = re.search(rf"{re.escape(heading)}\n(.*?)(?=\n### |\n## |\Z)", text, re.S)
+    return match.group(1).strip() if match else ""
+
+
+def _extract_prefixed_bullets(text: str) -> List[str]:
+    return [line.strip()[2:].strip() for line in text.splitlines() if line.strip().startswith("- ")]
+
+
+def _dedupe(values: List[str], limit: int = 20) -> List[str]:
+    seen = set()
+    result: List[str] = []
+    for value in values:
+        if not value:
+            continue
+        key = value.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(value)
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _clean_schema_text(value: str) -> str:
+    if not value:
+        return ""
+    cleaned = re.sub(r"fileciteturn\d+file\d+", "", value)
+    cleaned = re.sub(r"\?filecite\?turn\d+file\d+\?", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
 
 def _slugify(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
@@ -142,6 +321,30 @@ def _extract_bullets(text: str) -> List[str]:
     return bullets
 
 
+def _extract_options_from_section(text: str) -> List[Dict[str, str]]:
+    options: List[Dict[str, str]] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        match = re.match(r"-\s+\*\*([A-Z])\s+—\s+(.+?)\.\*\*\s*(.*)", stripped)
+        if not match:
+            continue
+        code, label, body = match.groups()
+        normalized = re.sub(r"\s+", " ", body).strip()
+        risk_match = re.search(r"Risk:\s*(.+)", normalized, re.I)
+        risk = risk_match.group(1).strip() if risk_match else ""
+        action_summary = re.sub(r"\s*Risk:\s*.+$", "", normalized, flags=re.I).strip()
+        options.append(
+            {
+                "code": code,
+                "label": label.strip(),
+                "summary": action_summary or normalized,
+                "risk": risk,
+                "keywords": _keywords(label, normalized),
+            }
+        )
+    return options
+
+
 def _short_label(label: str) -> str:
     cleaned = re.sub(r"\([^)]*\)", "", label)
     cleaned = re.sub(r"^[A-Z]\d+\s*·\s*", "", cleaned)
@@ -162,6 +365,33 @@ def _keywords(*values: str) -> List[str]:
     return items[:10]
 
 
+def _is_commercial_context(*values: str) -> bool:
+    combined = " ".join(values).lower()
+    triggers = (
+        "contract",
+        "commercial",
+        "customer",
+        "bid",
+        "variation",
+        "claim",
+        "payment",
+        "disclose",
+        "mou",
+        "offtake",
+        "notice",
+    )
+    return any(token in combined for token in triggers)
+
+
+def _build_commercial_overlay(code: str) -> Dict[str, Any]:
+    return {
+        "enabled": True,
+        "personaEmphasis": PERSONA_COMMERCIAL_EMPHASIS.get(code, []),
+        "universalKpis": COMMERCIAL_KPI_CATALOG,
+        "questionFamilies": COMMERCIAL_QUESTION_FAMILIES,
+    }
+
+
 def _extract_scenario_options(text: str) -> List[Dict[str, str]]:
     options: List[Dict[str, str]] = []
     matches = list(
@@ -176,11 +406,12 @@ def _extract_scenario_options(text: str) -> List[Dict[str, str]]:
         normalized = re.sub(r"\s+", " ", body).strip()
         risk_match = re.search(r"Risk:\s*(.+)", normalized, re.I)
         risk = risk_match.group(1).strip() if risk_match else ""
+        action_summary = re.sub(r"\s*Risk:\s*.+$", "", normalized, flags=re.I).strip()
         options.append(
             {
                 "code": code.replace("Option ", ""),
                 "label": label.strip(),
-                "summary": normalized,
+                "summary": action_summary or normalized,
                 "risk": risk,
                 "keywords": _keywords(label, normalized),
             }
@@ -262,6 +493,7 @@ def _parse_persona_file(path: Path) -> Dict[str, Any]:
         "kpiFamilies": kpis,
         "decisionStyleNotes": decision_notes,
         "perspectives": _derive_perspectives(kpis, context_bullets, lens, tension, persona or name, platform),
+        "commercialOverlay": _build_commercial_overlay(code),
         "frameworks": frameworks["frameworks"],
         "recommendedFramework": frameworks["recommended"],
     }
@@ -270,13 +502,22 @@ def _parse_persona_file(path: Path) -> Dict[str, Any]:
 def _parse_scenario_file(path: Path) -> Dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     header_match = re.search(r"^#\s+(P\d+)\s+·\s+(.+?)\s+—\s+Decision Scenario$", text, re.M)
-    if not header_match:
+    cross_match = re.search(r"^#\s+Scenario:\s+(.+)$", text, re.M)
+    shared_across_personas = False
+    persona_overrides: Dict[str, Dict[str, Any]] = {}
+    if header_match:
+        code, name = header_match.groups()
+    elif cross_match:
+        code, name = "CROSS", "All personas"
+        shared_across_personas = True
+    else:
         raise ValueError(f"Could not parse scenario header in {path.name}")
-    code, name = header_match.groups()
     domain = _extract_field(text, "Domain")
     platform = _extract_field(text, "Platform")
     persona = _extract_field(text, "Persona")
     scenario_date = _extract_field(text, "Scenario date")
+    classification = _extract_field(text, "Classification")
+    trigger = _extract_field(text, "Trigger")
     about = _extract_section(text, "About this scenario")
     scenario_heading_match = re.search(r"## Scenario:\s*(.+)", text)
     scenario_title = scenario_heading_match.group(1).strip() if scenario_heading_match else ""
@@ -296,17 +537,48 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
     kpi_text = _extract_section(text, "KPI families")
     kpis = _extract_kpis(kpi_text)
     summary = " ".join(line.strip() for line in scenario_body.splitlines()[:2] if line.strip())
+    if shared_across_personas:
+        matches = list(
+            re.finditer(
+                r"###\s+(P\d+)\s+·\s+(.+?)\n(.*?)(?=\n###\s+P\d+\s+·|\n##\s+Shared KPIs|\n##\s+The meta-tension|\Z)",
+                text,
+                re.S,
+            )
+        )
+        for match in matches:
+            persona_code, persona_name, block = match.groups()
+            decision_match = re.search(r"\*\*Decision:\*\*\s*(.+)", block)
+            tension_match = re.search(r"\*\*Tension:\*\*\s*(.+)", block)
+            time_match = re.search(r"\*\*Time horizon:\*\*\s*(.+)", block)
+            kpi_match = re.search(r"\*\*KPIs:\*\*\s*(.+)", block)
+            persona_overrides[persona_code] = {
+                "personaCode": persona_code,
+                "personaName": persona_name.strip(),
+                "decision": decision_match.group(1).strip() if decision_match else "",
+                "tension": tension_match.group(1).strip() if tension_match else tension,
+                "timeHorizon": time_match.group(1).strip() if time_match else "",
+                "kpis": [
+                    {"code": item.split(" ", 1)[0].strip(), "label": item.strip()}
+                    for item in re.split(r",\s*", kpi_match.group(1).strip())
+                    if item.strip()
+                ] if kpi_match else [],
+                "options": _extract_options_from_section(block),
+                "summary": " ".join(line.strip() for line in block.splitlines()[:3] if line.strip() and not line.strip().startswith("**")),
+                "keywords": _keywords(persona_name, block),
+            }
     return {
         "id": f"{code.lower()}-{_slugify(path.stem.replace('_Scenario', ''))}-scenario",
         "code": code,
         "name": f"{code} scenario",
-        "label": scenario_title or f"{name} scenario",
+        "label": scenario_title or (cross_match.group(1).strip() if cross_match else f"{name} scenario"),
         "personaCode": code,
         "personaName": name,
         "domain": domain,
         "platform": platform,
         "persona": persona,
         "scenarioDate": scenario_date,
+        "classification": classification,
+        "trigger": trigger,
         "about": about,
         "scenarioTitle": scenario_title,
         "scenarioBody": scenario_body,
@@ -316,7 +588,154 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
         "decisionContext": decision_context,
         "kpiFamilies": kpis,
         "options": options,
+        "sharedAcrossPersonas": shared_across_personas,
+        "personaOverrides": persona_overrides,
+        "scenarioKinds": ["commercial-contracts"] if _is_commercial_context(domain, platform, scenario_title, summary, tension, call, about) else [],
         "keywords": _keywords(scenario_title, summary, tension, call, *(item["label"] for item in kpis)),
+    }
+
+
+def _parse_vo112_schema() -> Dict[str, Any]:
+    if not VO112_SCHEMA_PATH.exists():
+        return {}
+
+    text = VO112_SCHEMA_PATH.read_text(encoding="utf-8")
+
+    emotion_rows = _extract_markdown_table(_extract_section_body(text, "## Emotion profiles"))
+    emotions: Dict[str, Dict[str, Any]] = {}
+    for row in emotion_rows:
+        code = row.get("Code", "")
+        if not code:
+            continue
+        emotions[code] = {
+            "code": code,
+            "name": row.get("Name", ""),
+            "displayDensity": row.get("Default density", "moderate"),
+            "actionPattern": row.get("Action pattern", ""),
+            "biasRisk": row.get("Bias risk", ""),
+        }
+
+    perspective_rows = _extract_markdown_table(_extract_section_body(text, "## Perspective metadata"))
+    perspectives: Dict[str, Dict[str, Any]] = {}
+    for row in perspective_rows:
+        code = row.get("Code", "")
+        tags = [item.strip() for item in row.get("Typical question tags", "").split(",") if item.strip()]
+        if not code:
+            continue
+        perspectives[code] = {
+            "code": code,
+            "name": row.get("Name", ""),
+            "questionTags": tags,
+            "defaultChart": row.get("Default chart", ""),
+        }
+
+    personas: Dict[str, Any] = {}
+    persona_matches = list(
+        re.finditer(r"## (P\d+)\s+·\s+(.+?)\n(.*?)(?=\n## P\d+\s+·|\Z)", text, re.S)
+    )
+    for match in persona_matches:
+        persona_code, persona_name, block = match.groups()
+        role_match = re.search(r"\*\*Role:\*\*\s*(.+)", block)
+        decision_match = re.search(r"\*\*VO-112 decision:\*\*\s*(.+)", block)
+        tension_match = re.search(r"\*\*Tension:\*\*\s*(.+)", block)
+
+        spine_rows = _extract_markdown_table(_extract_section_body(block, "### Persona KPI spine"))
+        kpi_spine: List[Dict[str, Any]] = []
+        kpi_lookup: Dict[str, str] = {}
+        for row in spine_rows:
+            perspective_text = row.get("Perspective", "")
+            perspective_code = perspective_text.split(" ", 1)[0]
+            kpi_label = row.get("KPI", "")
+            kpi_code = kpi_label.split(" ", 1)[0]
+            kpi_lookup[kpi_code] = kpi_label
+            kpi_spine.append(
+                {
+                    "perspectiveCode": perspective_code,
+                    "perspectiveLabel": perspectives.get(perspective_code, {}).get("name", perspective_text),
+                    "kpiCode": kpi_code,
+                    "kpiLabel": kpi_label,
+                    "reading": row.get("Reading", ""),
+                    "hardPriority": row.get("Hard priority", "").lower() == "yes",
+                }
+            )
+
+        resolver_section = _extract_section_body(block, "### Recommended action resolver")
+        resolver_hints = [_clean_schema_text(item) for item in _extract_prefixed_bullets(resolver_section)]
+
+        cell_rows = _extract_markdown_table(_extract_section_body(block, "### Executable cells"))
+        cells: Dict[str, Any] = {}
+        for row in cell_rows:
+            cell_id = row.get("Cell ID", "")
+            emotion_code = row.get("Emotion", "").split(" ", 1)[0]
+            perspective_text = row.get("Perspective", "")
+            perspective_code = perspective_text.split(" ", 1)[0]
+            primary_label = row.get("Primary KPI", "")
+            primary_code = primary_label.split(" ", 1)[0]
+            supporting_codes = [item.strip() for item in row.get("Supporting KPIs", "").split(",") if item.strip()]
+            question_tags = [item.strip() for item in row.get("Question tags", "").split(",") if item.strip()]
+            emotion_meta = emotions.get(emotion_code, {})
+            perspective_meta = perspectives.get(perspective_code, {})
+
+            kpis = [primary_label] + [kpi_lookup.get(code, code) for code in supporting_codes]
+            route_keywords = _dedupe(
+                question_tags
+                + perspective_meta.get("questionTags", [])
+                + _keywords(primary_label, row.get("Current state", ""))
+                + _keywords(*(kpi_lookup.get(code, code) for code in supporting_codes))
+                + _keywords(emotion_meta.get("name", ""), perspective_meta.get("name", ""), row.get("Action pattern", "")),
+                20,
+            )
+
+            cells[cell_id] = {
+                "id": cell_id,
+                "personaCode": persona_code,
+                "emotionCode": emotion_code,
+                "emotionName": emotion_meta.get("name", emotion_code),
+                "perspectiveCode": perspective_code,
+                "perspectiveLabel": perspective_meta.get("name", perspective_text),
+                "primaryKpi": {
+                    "code": primary_code,
+                    "label": primary_label,
+                    "currentState": _clean_schema_text(row.get("Current state", "")),
+                },
+                "supportingKpis": [kpi_lookup.get(code, code) for code in supporting_codes],
+                "weight": int(row.get("Weight", "0") or 0),
+                "displaySlot": row.get("Display slot", ""),
+                "questionTags": question_tags,
+                "chartType": _clean_schema_text(row.get("Chart", "")),
+                "actionPattern": _clean_schema_text(row.get("Action pattern", "")),
+                "biasRisk": _clean_schema_text(row.get("Bias risk", "")),
+                "blindSpotScan": row.get("Blind-spot scan", "").lower() == "true",
+                "displayDensity": emotion_meta.get("displayDensity", "moderate"),
+                "routeKeywords": route_keywords,
+                "kpis": kpis[:3],
+                "dataRequirements": _dedupe(
+                    [
+                        f"Current state: {_clean_schema_text(row.get('Current state', ''))}",
+                        f"Supporting KPIs: {', '.join(supporting_codes)}" if supporting_codes else "",
+                        f"Weighting: {row.get('Weight', '')} / {row.get('Display slot', '')}",
+                        _clean_schema_text(tension_match.group(1).strip()) if tension_match else "",
+                    ],
+                    4,
+                ),
+            }
+
+        personas[persona_code] = {
+            "code": persona_code,
+            "name": persona_name.strip(),
+            "role": role_match.group(1).strip() if role_match else "",
+            "decision": _clean_schema_text(decision_match.group(1).strip()) if decision_match else "",
+            "tension": _clean_schema_text(tension_match.group(1).strip()) if tension_match else "",
+            "kpiSpine": kpi_spine,
+            "resolverHints": resolver_hints,
+            "cells": cells,
+        }
+
+    return {
+        "scenarioCodes": ["vo112", "tenova variation order cascade"],
+        "emotions": emotions,
+        "perspectives": perspectives,
+        "personas": personas,
     }
 
 
@@ -328,13 +747,20 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
     )
     personas = [_parse_persona_file(path) for path in persona_files]
     scenario_files = sorted(
-        SCENARIO_DIR.glob("P*_Scenario.md"),
-        key=lambda path: int(re.search(r"P(\d+)", path.name).group(1)),
+        list(SCENARIO_DIR.glob("P*_Scenario.md")) + list(SCENARIO_DIR.glob("CROSS*.md")),
+        key=lambda path: (
+            999 if not re.search(r"P(\d+)", path.name) else int(re.search(r"P(\d+)", path.name).group(1)),
+            path.name,
+        ),
     )
     scenarios = [_parse_scenario_file(path) for path in scenario_files]
     scenario_map: Dict[str, List[Dict[str, Any]]] = {}
     for scenario in scenarios:
-        scenario_map.setdefault(scenario["personaCode"], []).append(scenario)
+        if scenario.get("sharedAcrossPersonas"):
+            for persona in personas:
+                scenario_map.setdefault(persona["code"], []).append(scenario)
+        else:
+            scenario_map.setdefault(scenario["personaCode"], []).append(scenario)
     for persona in personas:
         persona["scenarios"] = scenario_map.get(persona["code"], [])
         persona["defaultScenarioId"] = persona["scenarios"][0]["id"] if persona["scenarios"] else ""
@@ -344,5 +770,11 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
         "platforms": PLATFORMS,
         "personas": personas,
         "scenarios": scenarios,
+        "commercialLogic": {
+            "universalKpis": COMMERCIAL_KPI_CATALOG,
+            "questionFamilies": COMMERCIAL_QUESTION_FAMILIES,
+            "personaEmphasis": PERSONA_COMMERCIAL_EMPHASIS,
+        },
+        "vo112Schema": _parse_vo112_schema(),
         "defaultPersonaId": personas[0]["id"] if personas else "",
     }

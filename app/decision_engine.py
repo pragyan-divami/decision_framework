@@ -204,6 +204,112 @@ NEXT_STEP_CLOSE = {
     "F": "The close margin says the balanced option may not be better than a pointed one. Test the two best-scoring options head-to-head on one KPI that matters most to the persona.",
 }
 
+# ── Layer 4: Emotion Fit Scoring ─────────────────────────────────────────────
+
+# How well each emotion fits each domain pack (1–5)
+EMOTION_DOMAIN_FIT: Dict[str, Dict[str, float]] = {
+    "A": {"healthcare_safety": 5, "finance_balance_sheet": 4, "operations_supply_chain": 3, "ethics_public_trust": 4, "hr_org_behavior": 2, "strategy_governance": 2},
+    "B": {"strategy_governance": 5, "finance_balance_sheet": 3, "operations_supply_chain": 2, "ethics_public_trust": 2, "hr_org_behavior": 2, "healthcare_safety": 1},
+    "C": {"ethics_public_trust": 5, "hr_org_behavior": 4, "strategy_governance": 3, "finance_balance_sheet": 2, "healthcare_safety": 3, "operations_supply_chain": 2},
+    "D": {"operations_supply_chain": 5, "strategy_governance": 3, "finance_balance_sheet": 2, "hr_org_behavior": 2, "healthcare_safety": 2, "ethics_public_trust": 1},
+    "E": {"finance_balance_sheet": 5, "healthcare_safety": 4, "strategy_governance": 3, "operations_supply_chain": 3, "ethics_public_trust": 3, "hr_org_behavior": 2},
+    "F": {"operations_supply_chain": 4, "hr_org_behavior": 4, "finance_balance_sheet": 3, "healthcare_safety": 3, "strategy_governance": 2, "ethics_public_trust": 2},
+}
+
+# Role keywords that signal a natural fit for each emotion
+EMOTION_PERSONA_FIT: Dict[str, List[str]] = {
+    "A": ["cfo", "risk", "compliance", "governance", "treasurer", "audit", "finance"],
+    "B": ["ceo", "chief executive", "strategy", "managing director", "group director"],
+    "C": ["hr", "human resources", "commercial", "sales", "community", "communications", "director"],
+    "D": ["operating officer", "plant head", "delivery", "operations", "production"],
+    "E": ["analyst", "data", "research", "modelling", "scientific", "clinical"],
+    "F": ["procurement", "manager", "administrator", "principal"],
+}
+
+# Scenario/tension keywords that activate each emotion mode
+EMOTION_SCENARIO_FIT: Dict[str, List[str]] = {
+    "A": ["downside", "risk", "exposure", "protection", "covenant", "safety", "loss", "failure", "breach"],
+    "B": ["strategic", "long-term", "competitive", "position", "advantage", "investment", "transformation", "horizon"],
+    "C": ["stakeholder", "trust", "relationship", "coalition", "alignment", "public", "political", "minister"],
+    "D": ["urgent", "immediate", "deadline", "now", "fast", "commit", "action", "quickly", "month-end"],
+    "E": ["evidence", "data", "analysis", "model", "quantify", "measure", "forecast", "uncertain", "benchmark"],
+    "F": ["practical", "feasible", "execution", "operational", "continuity", "workable", "realistic", "recovery"],
+}
+
+# How well each emotion fits each urgency level (1–5)
+EMOTION_URGENCY_FIT: Dict[str, Dict[str, float]] = {
+    "A": {"immediate": 2.0, "moderate": 4.0, "analytical": 5.0},
+    "B": {"immediate": 2.0, "moderate": 3.5, "analytical": 5.0},
+    "C": {"immediate": 2.5, "moderate": 4.0, "analytical": 4.5},
+    "D": {"immediate": 5.0, "moderate": 4.0, "analytical": 2.0},
+    "E": {"immediate": 1.5, "moderate": 3.5, "analytical": 5.0},
+    "F": {"immediate": 3.5, "moderate": 4.5, "analytical": 3.0},
+}
+
+# How well each emotion fits each risk orientation (1–5)
+EMOTION_RISK_FIT: Dict[str, Dict[str, float]] = {
+    "A": {"conservative": 5.0, "moderate": 3.0, "growth_oriented": 1.0},
+    "B": {"conservative": 2.0, "moderate": 3.5, "growth_oriented": 5.0},
+    "C": {"conservative": 3.0, "moderate": 4.0, "growth_oriented": 3.0},
+    "D": {"conservative": 1.0, "moderate": 3.0, "growth_oriented": 5.0},
+    "E": {"conservative": 4.0, "moderate": 4.5, "growth_oriented": 2.5},
+    "F": {"conservative": 3.0, "moderate": 4.0, "growth_oriented": 3.5},
+}
+
+# ── Layer 7: Cell Prompt Templates ────────────────────────────────────────────
+
+CELL_QUESTION_TEMPLATES: Dict[str, str] = {
+    "A": "What breaks first if {kpi_label} slips?",
+    "B": "Which path on {kpi_label} preserves long-term position?",
+    "C": "Which move on {kpi_label} preserves trust across stakeholders?",
+    "D": "What is the clearest move now on {kpi_label}?",
+    "E": "What does the evidence say right now about {kpi_label}?",
+    "F": "What can actually work in execution for {kpi_label}?",
+}
+
+CELL_RISK_FRAME_TEMPLATES: Dict[str, str] = {
+    "A": "Cautious mode flags {kpi_label} as a {risk_band} risk. If it deteriorates, {consequence}.",
+    "B": "Strategic mode: long-run position on {kpi_label} may erode if structural changes are not captured early.",
+    "C": "Diplomatic mode: misalignment on {kpi_label} could fracture the stakeholder coalition at a critical moment.",
+    "D": "Decisive mode: moving without full signal on {kpi_label} could lock in an irreversible position.",
+    "E": "Analytical mode: uncertainty in {kpi_label} data may be masking a materially different picture.",
+    "F": "Pragmatic mode: optimising {kpi_label} for workability may leave a structurally better option on the table.",
+}
+
+CELL_ACTION_FRAME_TEMPLATES: Dict[str, str] = {
+    "A": "Protect {kpi_label}: prioritise the option that limits downside exposure and preserves reversibility.",
+    "B": "Leverage {kpi_label}: choose the path that builds structural advantage on this dimension over time.",
+    "C": "Align on {kpi_label}: select the option that maintains stakeholder confidence across all affected groups.",
+    "D": "Move on {kpi_label}: commit to the option that delivers the fastest observable change on this metric.",
+    "E": "Validate {kpi_label}: ensure the evidence base is sufficient before using this metric as a decision driver.",
+    "F": "Secure {kpi_label}: choose the option most feasible to execute with the least risk of creating new problems.",
+}
+
+CELL_CONSEQUENCE_FRAME_TEMPLATES: Dict[str, str] = {
+    "A": "Ignoring {kpi_label} in Cautious mode means the downside becomes apparent only after it is too late to contain.",
+    "B": "Ignoring {kpi_label} in Strategic mode risks a long-run positional loss no tactical adjustment can reverse.",
+    "C": "Ignoring {kpi_label} in Diplomatic mode risks a stakeholder fracture that outlasts the decision window.",
+    "D": "Ignoring {kpi_label} in Decisive mode means acting without a key signal — a commitment that may need unwinding.",
+    "E": "Ignoring {kpi_label} in Analytical mode introduces unquantified error that can silently distort the option ranking.",
+    "F": "Ignoring {kpi_label} in Pragmatic mode may produce an execution path that looks workable but is structurally fragile.",
+}
+
+# Family-level consequence phrases used to fill in risk frame templates
+FAMILY_CONSEQUENCE_PHRASES: Dict[str, str] = {
+    "financial_impact": "capital pressure compounds",
+    "urgency_time": "deadline compression accelerates",
+    "stakeholder_trust": "trust erosion becomes hard to reverse",
+    "regulatory_legal": "compliance exposure widens",
+    "institutional_reputation": "credibility becomes harder to rebuild",
+    "continuity_disruption": "operational continuity is threatened",
+    "safety_harm": "harm exposure cannot be undone",
+    "resource_pressure": "capacity headroom disappears",
+    "evidence_quality": "the decision rests on an insufficient signal",
+    "reversibility_optionality": "optionality closes permanently",
+    "ethics_disclosure": "disclosure integrity is compromised",
+    "equity_access": "the access gap widens for vulnerable groups",
+}
+
 DEFAULT_CLOSE_CALL_THRESHOLD = 5.0
 PERSONA_CLOSE_CALL_THRESHOLDS = {
     "P7": 10.0,
@@ -429,6 +535,771 @@ def get_ml_predictor():
     return predictor if getattr(predictor, "available", False) else None
 
 
+# ── Shared Scenario (Cross-cutting / All-Personas) ───────────────────────────
+
+def parse_shared_scenario(text: str) -> Dict[str, Any]:
+    """
+    Parse a cross-cutting scenario markdown (one scenario, all personas).
+    Extracts the shared event context and each persona's specific decision block.
+    """
+    # Shared event context
+    event_match = re.search(r"## The event\n\n(.*?)(?=\n## |\n---\n|\Z)", text, re.DOTALL)
+    shared_event = event_match.group(1).strip() if event_match else ""
+
+    # Meta-tension
+    meta_match = re.search(r"## The meta-tension.*?\n\n(.*?)(?=\n## |\n---\n|\Z)", text, re.DOTALL)
+    meta_tension = meta_match.group(1).strip() if meta_match else ""
+
+    # Scenario title
+    title_match = re.search(r"^# Scenario: (.+)$", text, re.MULTILINE)
+    title = title_match.group(1).strip() if title_match else "Shared Scenario"
+
+    # Per-persona sections  ### P1 · Name (Role) ... up to next ### P or end
+    persona_sections: Dict[str, Any] = {}
+    section_matches = list(re.finditer(
+        r"^### (P\d+)\s+[·â€¢]\s+(.+?)\s+\((.+?)\)\n(.*?)(?=^### P\d+\s+[·â€¢]|\Z)",
+        text, re.MULTILINE | re.DOTALL,
+    ))
+    for m in section_matches:
+        code = m.group(1)
+        name = m.group(2).strip()
+        role_hint = m.group(3).strip()
+        body = m.group(4).strip()
+
+        decision_m = re.search(r"\*\*Decision:\s*(.+?)\*\*", body)
+        decision = decision_m.group(1).strip() if decision_m else ""
+
+        # Options: "- **A — Label.** description" (handle em-dash variants)
+        options: List[Dict[str, str]] = []
+        for om in re.finditer(
+            r"-\s+\*\*([A-C])\s+[—–â\-]+\s+(.+?)\.\*\*\s*(.*?)(?=\n- \*\*[A-C]|\n\n\*\*Tension|\Z)",
+            body, re.DOTALL,
+        ):
+            desc = re.sub(r"\s+", " ", om.group(3)).strip()
+            options.append({"code": om.group(1), "label": om.group(2).strip(), "description": desc})
+
+        tension_m = re.search(r"\*\*Tension:\*\*\s*(.+)", body)
+        tension = tension_m.group(1).strip() if tension_m else ""
+
+        horizon_m = re.search(r"\*\*Time horizon:\*\*\s*(.+)", body)
+        time_horizon = horizon_m.group(1).strip() if horizon_m else ""
+
+        kpi_m = re.search(r"\*\*KPIs:\*\*\s*(.+)", body)
+        kpi_refs: List[str] = []
+        if kpi_m:
+            kpi_refs = [f"K{n}" for n in re.findall(r"K(\d+)", kpi_m.group(1))]
+
+        persona_sections[code] = {
+            "code": code,
+            "name": name,
+            "roleHint": role_hint,
+            "decision": decision,
+            "options": options,
+            "tension": tension,
+            "timeHorizon": time_horizon,
+            "kpiRefs": kpi_refs,
+            "body": body,
+        }
+
+    return {
+        "title": title,
+        "sharedEvent": shared_event,
+        "metaTension": meta_tension,
+        "personaSections": persona_sections,
+    }
+
+
+def build_combined_doc_for_persona(
+    code: str,
+    persona_profile: Dict[str, Any],
+    section: Dict[str, Any],
+    shared_event: str,
+) -> str:
+    """
+    Build a parse_markdown-compatible document for one persona
+    from the shared scenario + that persona's own KPI families.
+    """
+    role = persona_profile.get("role") or persona_profile.get("name", section["roleHint"])
+    name = persona_profile.get("name", section["name"])
+    all_kpis: List[Dict[str, str]] = persona_profile.get("kpiFamilies", [])
+
+    # Select KPIs referenced in this persona's scenario section
+    kpi_refs = section.get("kpiRefs", [])
+    if kpi_refs:
+        selected = [k for k in all_kpis if k["code"] in kpi_refs]
+        # Top up to 4 from remainder if needed
+        remaining = [k for k in all_kpis if k["code"] not in {s["code"] for s in selected}]
+        selected = (selected + remaining)[:max(4, len(selected))]
+    else:
+        selected = all_kpis[:8]
+
+    kpi_lines = "\n".join(f"- {k['code']} - {k['label']}" for k in selected)
+
+    # Option blocks in the format parse_markdown expects
+    option_blocks = ""
+    for opt in section.get("options", []):
+        desc = opt.get("description", "").strip()
+        option_blocks += f"\n### {opt['code']} — {opt['label']}\n{desc}\n"
+
+    # Build context: first 200 chars of shared event as scenario intro
+    scenario_body = f"{shared_event[:600].rstrip()}...\n\n{section['body']}" if shared_event else section["body"]
+
+    return f"""# {code} · {name} — {section.get('decision', 'Shared Scenario Decision')}
+
+Persona: {role}
+
+Scenario:
+{scenario_body}
+
+Tension: {section.get('tension', '')}
+
+Time horizon: {section.get('timeHorizon', '')}
+
+## Options in play
+{option_blocks}
+## KPI families for this scenario
+
+{kpi_lines}
+"""
+
+
+# ── Question Resolution Layer ─────────────────────────────────────────────────
+
+# Keywords that signal each question intent type
+QUESTION_INTENT_SIGNALS: Dict[str, List[str]] = {
+    "threshold": ["when does", "at what point", "threshold", "trigger", "minimum", "maximum", "exit", "limit", "boundary", "unacceptable", "acceptable level"],
+    "probability": ["probability", "likelihood", "how likely", "expected value", "chances", "risk of", "odds", "forecast", "what are the"],
+    "comparison": [" vs ", " versus ", "compare", "difference between", "option a", "option b", "which is better", "trade-off", "trade off"],
+    "legal_trigger": ["obligation", "legally", "legal", "disclose", "covenant", "contract", "required to", "mandated", "governance", "board approval", "grant condition"],
+    "reversibility": ["reverse", "undo", "lock in", "point of no return", "recover", "retrofit", "switch back", "unwind", "optionality", "exit", "walk away", "no way to", "no going back", "can't undo", "cannot undo", "locked in", "locked into"],
+    "stakeholder_signal": ["signal to", "how will this look", "perception", "trust", "stakeholder", "public", "minister", "union", "board", "how will", "looks to"],
+    "cost_of_delay": ["cost of waiting", "what if we wait", "delay cost", "if we defer", "cost of deferring", "runs out", "what if we delay", "cost of not acting", "cost of waiting", "waiting another", "if we wait"],
+    "action_selection": ["what should", "which option", "what to do", "should we", "recommend", "best path", "which move", "what is the right", "what do we do"],
+    "consequence": ["what happens if", "consequence of", "what if this fails", "what if leaked", "if we choose", "if the slip", "if disclosed", "what if we"],
+    "sequencing": ["first", "in what order", "before we", "after we", "step by step", "which step", "sequence", "what needs to happen before", "what do we need to do first"],
+}
+
+# Which KPI families best answer each intent type (ordered by priority)
+INTENT_KPI_FAMILY_AFFINITY: Dict[str, List[str]] = {
+    "threshold": ["regulatory_legal", "financial_impact", "resource_pressure", "safety_harm", "urgency_time"],
+    "probability": ["evidence_quality", "urgency_time", "reversibility_optionality", "financial_impact"],
+    "comparison": ["financial_impact", "urgency_time", "continuity_disruption", "resource_pressure"],
+    "legal_trigger": ["regulatory_legal", "ethics_disclosure", "institutional_reputation", "evidence_quality"],
+    "reversibility": ["reversibility_optionality", "financial_impact", "urgency_time", "continuity_disruption"],
+    "stakeholder_signal": ["stakeholder_trust", "institutional_reputation", "equity_access", "ethics_disclosure"],
+    "cost_of_delay": ["urgency_time", "financial_impact", "resource_pressure", "continuity_disruption"],
+    "action_selection": ["urgency_time", "financial_impact", "continuity_disruption", "institutional_reputation"],
+    "consequence": ["safety_harm", "institutional_reputation", "stakeholder_trust", "reversibility_optionality"],
+    "sequencing": ["urgency_time", "evidence_quality", "regulatory_legal", "continuity_disruption"],
+}
+
+# Primary action type for each intent
+INTENT_TO_ACTION_TYPE: Dict[str, str] = {
+    "threshold": "gather missing evidence first",
+    "probability": "run sensitivity analysis first",
+    "comparison": "delay pending evidence",
+    "legal_trigger": "escalate privately",
+    "reversibility": "preserve optionality",
+    "stakeholder_signal": "negotiate quietly",
+    "cost_of_delay": "commit conditionally",
+    "action_selection": "escalate formally",
+    "consequence": "trigger contingency plan",
+    "sequencing": "gather missing evidence first",
+}
+
+INTENT_TO_SECONDARY_ACTION: Dict[str, str] = {
+    "threshold": "escalate privately",
+    "probability": "delay pending evidence",
+    "comparison": "commit conditionally",
+    "legal_trigger": "disclose with caveat",
+    "reversibility": "hedge / provisionally secure",
+    "stakeholder_signal": "escalate privately",
+    "cost_of_delay": "escalate formally",
+    "action_selection": "delay pending evidence",
+    "consequence": "escalate formally",
+    "sequencing": "delegate to legal / technical / finance owner",
+}
+
+INTENT_TO_DISPLAY_TYPE: Dict[str, str] = {
+    "threshold": "threshold",
+    "probability": "probability",
+    "comparison": "comparison",
+    "legal_trigger": "threshold",
+    "reversibility": "comparison",
+    "stakeholder_signal": "stakeholder",
+    "cost_of_delay": "threshold",
+    "action_selection": "recommendation",
+    "consequence": "consequence",
+    "sequencing": "sequence",
+}
+
+# Per-family consequence phrases for act / don't act paths
+FAMILY_ACT_CONSEQUENCE: Dict[str, str] = {
+    "financial_impact": "acting preserves financial discipline and reduces compounding exposure",
+    "urgency_time": "acting now prevents deadline compression and maintains schedule integrity",
+    "stakeholder_trust": "acting protects trust and reduces the risk of a relationship fracture",
+    "regulatory_legal": "acting reduces non-compliance exposure and strengthens defensibility",
+    "institutional_reputation": "acting preserves credibility before external scrutiny intensifies",
+    "continuity_disruption": "acting maintains operational continuity and limits downstream disruption",
+    "safety_harm": "acting mitigates harm exposure before it becomes irreversible",
+    "resource_pressure": "acting preserves headroom before capacity constraints tighten",
+    "evidence_quality": "gathering evidence reduces decision risk and supports a defensible choice",
+    "reversibility_optionality": "acting preserves optionality while conditions remain favourable",
+    "ethics_disclosure": "acting maintains disclosure integrity and reduces governance exposure",
+    "equity_access": "acting protects access outcomes for the most affected groups",
+}
+
+FAMILY_INACT_CONSEQUENCE: Dict[str, str] = {
+    "financial_impact": "delay allows financial exposure to compound and reduces future negotiating room",
+    "urgency_time": "delay compresses the decision window and increases forced-hand risk",
+    "stakeholder_trust": "inaction erodes trust gradually and becomes progressively harder to recover",
+    "regulatory_legal": "inaction increases non-compliance probability and governance exposure",
+    "institutional_reputation": "delay risks allowing the narrative to be set externally before you can shape it",
+    "continuity_disruption": "inaction allows disruption risk to harden into an operational crisis",
+    "safety_harm": "inaction allows harm exposure to escalate beyond the recoverable range",
+    "resource_pressure": "inaction depletes headroom until forced action is the only remaining option",
+    "evidence_quality": "proceeding without resolving evidence uncertainty means the decision rests on an incomplete signal",
+    "reversibility_optionality": "delay closes the optionality window permanently",
+    "ethics_disclosure": "inaction risks a later disclosure being read as active concealment",
+    "equity_access": "inaction allows access gaps to widen beyond the recoverable range",
+}
+
+# Evidence requirements by intent type
+INTENT_EVIDENCE_REQUIREMENTS: Dict[str, List[str]] = {
+    "threshold": ["explicit threshold definition", "current metric reading", "trend direction"],
+    "probability": ["historical base rate", "scenario probability distribution", "sensitivity assumptions"],
+    "comparison": ["option cost or benefit breakdown", "primary differentiator metric", "time horizon basis"],
+    "legal_trigger": ["governing contract or covenant wording", "trigger condition definition", "evidence sufficiency standard"],
+    "reversibility": ["switching cost estimate", "lock-in timeline", "optionality window"],
+    "stakeholder_signal": ["stakeholder trust or sentiment baseline", "narrative risk assessment", "relationship durability signal"],
+    "cost_of_delay": ["delay cost curve or rate", "depletion or decay rate", "urgency trigger date"],
+    "action_selection": ["option scoring under current KPI balance", "marginal difference between top two options"],
+    "consequence": ["direct consequence path", "second-order spillover", "reversibility and time-to-impact"],
+    "sequencing": ["gating conditions", "minimum evidence set", "dependency map"],
+}
+
+FAMILY_EVIDENCE_SUPPLEMENT: Dict[str, str] = {
+    "regulatory_legal": "current covenant or contract wording",
+    "financial_impact": "current financial exposure numbers",
+    "stakeholder_trust": "stakeholder sentiment or relationship status",
+    "evidence_quality": "data sufficiency and confidence level",
+    "reversibility_optionality": "switching cost and lock-in timeline",
+    "institutional_reputation": "external perception baseline or analyst read",
+}
+
+
+def classify_question_intent(question_lower: str) -> str:
+    scores: Dict[str, int] = {}
+    for intent, signals in QUESTION_INTENT_SIGNALS.items():
+        scores[intent] = sum(1 for s in signals if s in question_lower)
+    best = max(scores, key=lambda k: scores[k])
+    return best if scores[best] > 0 else "action_selection"
+
+
+def infer_emotion_from_question(question_lower: str) -> str:
+    """Map question wording to the most likely emotion mode."""
+    if any(w in question_lower for w in ["break", "risk", "exposure", "downside", "worst", "fail", "breach", "slip"]):
+        return "A"  # Cautious
+    if any(w in question_lower for w in ["long-term", "strategic", "position", "advantage", "future", "horizon"]):
+        return "B"  # Strategic
+    if any(w in question_lower for w in ["stakeholder", "trust", "relationship", "signal", "perception", "looks to", "how will"]):
+        return "C"  # Diplomatic
+    if any(w in question_lower for w in ["should we", "now", "immediately", "commit", "which move", "act"]):
+        return "D"  # Decisive
+    if any(w in question_lower for w in ["evidence", "data", "probability", "likelihood", "measure", "quantify", "at what point"]):
+        return "E"  # Analytical
+    return "F"  # Pragmatic
+
+
+def score_kpi_for_question(
+    kpi: Dict[str, Any],
+    question_lower: str,
+    question_intent: str,
+    matrix_perspectives: List[Dict[str, Any]],
+    matrix_emotion_modes: List[Dict[str, Any]],
+    scenario_lower: str,
+    tension_lower: str,
+) -> float:
+    """
+    Question Resolution Score =
+    (Target KPI match × 0.25) + (Intent-KPI fit × 0.2) +
+    (Perspective alignment × 0.2) + (Emotion fit × 0.15) +
+    (Scenario tension alignment × 0.1) + (Actionability × 0.1)
+    """
+    family = kpi.get("family", "continuity_disruption")
+
+    # (1) Target KPI match — word overlap between question and KPI label
+    kpi_words = set(re.findall(r"\b\w{4,}\b", kpi["label"].lower()))
+    q_words = set(re.findall(r"\b\w{4,}\b", question_lower))
+    overlap = len(kpi_words & q_words)
+    target_kpi_match = min(5.0, 1.0 + overlap * 1.5)
+
+    # (2) Intent-KPI fit — does the KPI family belong to this intent's affinity list?
+    affinity = INTENT_KPI_FAMILY_AFFINITY.get(question_intent, [])
+    if family in affinity[:2]:
+        intent_kpi_fit = 4.5
+    elif family in affinity:
+        intent_kpi_fit = 3.0
+    else:
+        intent_kpi_fit = 1.5
+
+    # (3) Perspective alignment — is this KPI one of the top matrix perspectives?
+    perspective_codes = {p["code"] for p in matrix_perspectives}
+    perspective_alignment = 4.0 if kpi["code"] in perspective_codes else 2.0
+
+    # (4) Emotion fit — does the question's implied emotion match the top matrix emotion?
+    question_emotion = infer_emotion_from_question(question_lower)
+    top_emotion_codes = [e["code"] for e in matrix_emotion_modes]
+    if question_emotion == (top_emotion_codes[0] if top_emotion_codes else ""):
+        emotion_fit = 4.5
+    elif question_emotion in top_emotion_codes:
+        emotion_fit = 3.0
+    else:
+        emotion_fit = 1.5
+
+    # (5) Scenario tension alignment — do tension/scenario keywords match this family?
+    combined_context = scenario_lower + " " + tension_lower
+    family_signals = FAMILY_SCENARIO_SIGNALS.get(family, [])
+    tension_hits = sum(1 for s in family_signals if s in combined_context)
+    scenario_tension_alignment = min(5.0, 1.0 + tension_hits * 0.8)
+
+    # (6) Actionability — proxy by KPI family type
+    actionable_families = {"financial_impact", "urgency_time", "continuity_disruption", "regulatory_legal", "resource_pressure"}
+    actionability = 4.0 if family in actionable_families else 2.5
+
+    score = (
+        target_kpi_match * 0.25
+        + intent_kpi_fit * 0.20
+        + perspective_alignment * 0.20
+        + emotion_fit * 0.15
+        + scenario_tension_alignment * 0.10
+        + actionability * 0.10
+    )
+    return round(score, 3)
+
+
+def _build_evidence_requirements(
+    question_intent: str,
+    primary_kpi: Dict[str, Any],
+) -> List[str]:
+    base = list(INTENT_EVIDENCE_REQUIREMENTS.get(question_intent, ["scenario context", "KPI current readings"]))
+    supplement = FAMILY_EVIDENCE_SUPPLEMENT.get(primary_kpi.get("family", ""), "")
+    if supplement and supplement not in base:
+        base.append(supplement)
+    return base[:4]
+
+
+def _build_consequence_paths(
+    primary_kpi: Dict[str, Any],
+) -> Tuple[str, str]:
+    family = primary_kpi.get("family", "continuity_disruption")
+    label = primary_kpi["label"]
+    act = FAMILY_ACT_CONSEQUENCE.get(family, f"acting addresses {label} before the window closes")
+    no_act = FAMILY_INACT_CONSEQUENCE.get(family, f"inaction allows {label} to deteriorate beyond the recoverable range")
+    return (
+        f"On {label}: {act}.",
+        f"On {label}: {no_act}.",
+    )
+
+
+def _resolution_confidence(
+    question_intent: str,
+    primary_score: float,
+    question_lower: str,
+    scenario_lower: str,
+) -> str:
+    if any(s in question_lower for s in ["unknown", "unclear", "not defined", "uncertain"]):
+        return "Low"
+    if any(s in scenario_lower for s in ["explicitly", "defined in the", "stated in", "as per the covenant", "as per the contract"]):
+        return "High"
+    if primary_score >= 3.5 and question_intent in {"comparison", "action_selection", "cost_of_delay", "threshold"}:
+        return "High"
+    if primary_score >= 2.8:
+        return "Medium"
+    if question_intent in {"legal_trigger", "probability"} and primary_score < 2.5:
+        return "Low"
+    return "Medium"
+
+
+def resolve_question(
+    question_text: str,
+    kpis: List[Dict[str, Any]],
+    scenario: str,
+    tension: str,
+    time_horizon: str,
+    normalized_persona: Dict[str, Any],
+    matrix_perspectives: List[Dict[str, Any]],
+    matrix_emotion_modes: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Resolve a natural-language question to the KPIs that best answer it,
+    plus action type, consequence paths, evidence requirements, and confidence.
+    """
+    question_lower = question_text.lower()
+    scenario_lower = (scenario or "").lower()
+    tension_lower = (tension or "").lower()
+
+    question_intent = classify_question_intent(question_lower)
+
+    scored: List[Tuple[Dict[str, Any], float]] = sorted(
+        [
+            (kpi, score_kpi_for_question(
+                kpi, question_lower, question_intent,
+                matrix_perspectives, matrix_emotion_modes,
+                scenario_lower, tension_lower,
+            ))
+            for kpi in kpis
+        ],
+        key=lambda x: -x[1],
+    )
+
+    primary_kpi, primary_score = scored[0] if scored else (None, 0.0)
+    supporting_scored = scored[1:3]
+
+    question_emotion = infer_emotion_from_question(question_lower)
+    top_emotion_codes = [e["code"] for e in matrix_emotion_modes]
+
+    action_type = INTENT_TO_ACTION_TYPE.get(question_intent, "gather missing evidence first")
+    secondary_action = INTENT_TO_SECONDARY_ACTION.get(question_intent, "escalate privately")
+
+    consequence_act, consequence_inact = (
+        _build_consequence_paths(primary_kpi) if primary_kpi else ("", "")
+    )
+    evidence = _build_evidence_requirements(question_intent, primary_kpi) if primary_kpi else []
+    confidence = _resolution_confidence(question_intent, primary_score, question_lower, scenario_lower)
+    display_type = INTENT_TO_DISPLAY_TYPE.get(question_intent, "recommendation")
+
+    highlighted = (
+        [primary_kpi["code"]] + [k["code"] for k, _ in supporting_scored]
+        if primary_kpi else []
+    )
+
+    return {
+        "question_text": question_text,
+        "question_intent": question_intent,
+        "primary_kpi": {
+            "code": primary_kpi["code"],
+            "label": primary_kpi["label"],
+            "family": primary_kpi.get("family"),
+            "resolutionScore": round(primary_score, 3),
+        } if primary_kpi else None,
+        "supporting_kpis": [
+            {
+                "code": k["code"],
+                "label": k["label"],
+                "family": k.get("family"),
+                "resolutionScore": round(s, 3),
+            }
+            for k, s in supporting_scored
+        ],
+        "highlighted_kpi_codes": highlighted,
+        "primary_emotion_mode": EMOTION_LABELS.get(question_emotion, question_emotion),
+        "secondary_emotion_mode": EMOTION_LABELS.get(top_emotion_codes[0], top_emotion_codes[0]) if top_emotion_codes else None,
+        "primary_perspective": primary_kpi["label"] if primary_kpi else None,
+        "secondary_perspective": supporting_scored[0][0]["label"] if supporting_scored else None,
+        "recommended_action_type": action_type,
+        "secondary_action_type": secondary_action,
+        "evidence_required": evidence,
+        "consequence_if_act": consequence_act,
+        "consequence_if_not_act": consequence_inact,
+        "confidence": confidence,
+        "display_type": display_type,
+        "all_kpi_scores": {k["code"]: round(s, 3) for k, s in scored},
+    }
+
+
+# ── Layer 3: Perspective Priority Scoring ─────────────────────────────────────
+
+# Scenario tension keywords that signal relevance for each KPI family
+FAMILY_SCENARIO_SIGNALS: Dict[str, List[str]] = {
+    "financial_impact": ["cost", "financial", "budget", "capital", "margin", "revenue", "spend"],
+    "resource_pressure": ["cash", "liquidity", "runway", "capacity", "headroom", "resource"],
+    "urgency_time": ["deadline", "urgent", "immediate", "timeline", "schedule", "milestone", "delay"],
+    "stakeholder_trust": ["customer", "trust", "relationship", "stakeholder", "client", "partner"],
+    "regulatory_legal": ["regulatory", "compliance", "legal", "penalty", "fine", "permit"],
+    "institutional_reputation": ["reputation", "credibility", "confidence", "rating", "outlook"],
+    "continuity_disruption": ["continuity", "disruption", "operational", "supply", "shutdown"],
+    "safety_harm": ["safety", "harm", "injury", "adverse", "risk"],
+    "evidence_quality": ["evidence", "data", "signal", "uncertain", "analysis", "forecast"],
+    "reversibility_optionality": ["reversible", "option", "flexibility", "hybrid", "staged"],
+    "ethics_disclosure": ["ethics", "disclosure", "transparency", "defensible"],
+    "equity_access": ["access", "equity", "affordable", "vulnerable"],
+}
+
+# KPI families that are typically owned directly by the persona's role
+ROLE_OWNED_FAMILIES: Dict[str, List[str]] = {
+    "cfo": ["financial_impact", "resource_pressure", "institutional_reputation", "regulatory_legal"],
+    "chief financial officer": ["financial_impact", "resource_pressure", "institutional_reputation", "regulatory_legal"],
+    "ceo": ["institutional_reputation", "continuity_disruption", "urgency_time", "stakeholder_trust"],
+    "chief executive": ["institutional_reputation", "continuity_disruption", "urgency_time"],
+    "operating officer": ["urgency_time", "continuity_disruption", "safety_harm", "resource_pressure"],
+    "plant head": ["safety_harm", "continuity_disruption", "urgency_time", "resource_pressure"],
+    "commercial": ["stakeholder_trust", "financial_impact", "continuity_disruption"],
+    "sustainability": ["institutional_reputation", "regulatory_legal", "reversibility_optionality"],
+    "procurement": ["stakeholder_trust", "continuity_disruption", "financial_impact"],
+    "hr": ["stakeholder_trust", "equity_access", "institutional_reputation"],
+    "human resources": ["stakeholder_trust", "equity_access", "institutional_reputation"],
+    "administrator": ["continuity_disruption", "regulatory_legal", "resource_pressure"],
+    "principal": ["continuity_disruption", "stakeholder_trust", "regulatory_legal"],
+    "clinical": ["safety_harm", "evidence_quality", "ethics_disclosure", "equity_access"],
+    "medical": ["safety_harm", "evidence_quality", "ethics_disclosure"],
+}
+
+# KPI families that are always central when these stakeholder types appear in the scenario
+STAKEHOLDER_FAMILY_CENTRALITY: Dict[str, List[str]] = {
+    "minister": ["institutional_reputation", "regulatory_legal", "stakeholder_trust"],
+    "board": ["institutional_reputation", "financial_impact", "regulatory_legal"],
+    "union": ["stakeholder_trust", "equity_access", "continuity_disruption"],
+    "investor": ["financial_impact", "institutional_reputation", "resource_pressure"],
+    "regulator": ["regulatory_legal", "ethics_disclosure", "institutional_reputation"],
+    "customer": ["stakeholder_trust", "continuity_disruption", "financial_impact"],
+    "community": ["equity_access", "stakeholder_trust", "ethics_disclosure"],
+}
+
+
+def score_perspective_priority(
+    kpi: Dict[str, Any],
+    option_analysis: Dict[str, Dict[str, Any]],
+    normalized_persona: Dict[str, Any],
+    parsed: "ParseResult",
+    scenario_salience: Dict[str, int],
+) -> float:
+    """
+    Perspective Priority Score =
+    (Relevance to scenario × 0.4) +
+    (Sensitivity to decision × 0.25) +
+    (Persona ownership × 0.2) +
+    (Stakeholder centrality × 0.15)
+    """
+    code = kpi["code"]
+    family = kpi.get("family", "continuity_disruption")
+    tension_lower = (parsed.tension or "").lower()
+    scenario_lower = (parsed.scenario or "").lower()
+    combined_context = tension_lower + " " + scenario_lower
+
+    # Relevance to scenario
+    relevance = min(5.0, float(scenario_salience.get(code, 1)) + 0.5)
+    family_signals = FAMILY_SCENARIO_SIGNALS.get(family, [])
+    if any(s in combined_context for s in family_signals):
+        relevance = min(5.0, relevance + 1.0)
+    if any(s in tension_lower for s in family_signals):
+        relevance = min(5.0, relevance + 0.5)
+
+    # Sensitivity to decision (how much do option effects diverge on this KPI?)
+    effects = [opt["effects"].get(code, 0.0) for opt in option_analysis.values()]
+    spread = (max(effects) - min(effects)) if len(effects) > 1 else 0.0
+    sensitivity = min(5.0, 1.0 + spread * 2.0)
+
+    # Persona ownership
+    role_lower = normalized_persona["raw"].lower()
+    owned_families: List[str] = []
+    for role_key, families in ROLE_OWNED_FAMILIES.items():
+        if role_key in role_lower:
+            owned_families.extend(families)
+    ownership = 4.0 if family in owned_families else 2.0
+
+    # Stakeholder centrality
+    stakeholder_centrality = 2.0
+    stakeholder_bumps: List[str] = []
+    for stakeholder_key, central_families in STAKEHOLDER_FAMILY_CENTRALITY.items():
+        if stakeholder_key in combined_context:
+            stakeholder_bumps.extend(central_families)
+    if family in stakeholder_bumps:
+        stakeholder_centrality = min(5.0, stakeholder_centrality + 1.5)
+    if family in {"stakeholder_trust", "institutional_reputation", "equity_access"}:
+        stakeholder_centrality = min(5.0, stakeholder_centrality + 0.5)
+
+    score = (
+        relevance * 0.40
+        + sensitivity * 0.25
+        + ownership * 0.20
+        + stakeholder_centrality * 0.15
+    )
+    return round(score, 3)
+
+
+def select_top_perspectives(
+    kpis: List[Dict[str, Any]],
+    option_analysis: Dict[str, Dict[str, Any]],
+    normalized_persona: Dict[str, Any],
+    parsed: "ParseResult",
+    scenario_salience: Dict[str, int],
+    count: int = 4,
+) -> Tuple[List[Dict[str, Any]], Dict[str, float]]:
+    """Select the top `count` KPIs to use as matrix perspectives, with scores."""
+    scored = [
+        (kpi, score_perspective_priority(kpi, option_analysis, normalized_persona, parsed, scenario_salience))
+        for kpi in kpis
+    ]
+    scored.sort(key=lambda x: -x[1])
+    selected = [kpi for kpi, _ in scored[:count]]
+    all_scores = {kpi["code"]: score for kpi, score in scored}
+    return selected, all_scores
+
+
+# ── Layer 4: Emotion Fit Scoring ──────────────────────────────────────────────
+
+def score_emotion_fit(
+    emotion_code: str,
+    normalized_persona: Dict[str, Any],
+    parsed: "ParseResult",
+    domain_pack: str,
+    urgency_profile: Dict[str, Any],
+) -> float:
+    """
+    Emotion Fit Score =
+    (Domain fit × 0.2) + (Persona fit × 0.25) + (Scenario fit × 0.3) +
+    (Urgency fit × 0.15) + (Risk fit × 0.1)
+    """
+    domain_fit = float(EMOTION_DOMAIN_FIT.get(emotion_code, {}).get(domain_pack, 2.0))
+
+    role_lower = normalized_persona["raw"].lower()
+    persona_signals = EMOTION_PERSONA_FIT.get(emotion_code, [])
+    persona_hit = sum(1 for s in persona_signals if s in role_lower)
+    persona_fit = min(5.0, 2.0 + persona_hit * 1.5)
+
+    combined_scenario = " ".join(
+        filter(None, [parsed.scenario, parsed.tension, parsed.call])
+    ).lower()
+    scenario_signals = EMOTION_SCENARIO_FIT.get(emotion_code, [])
+    scenario_hit = sum(1 for s in scenario_signals if s in combined_scenario)
+    scenario_fit = min(5.0, 1.0 + scenario_hit * 0.8)
+
+    urgency_level = urgency_profile.get("level", "analytical")
+    urgency_fit = EMOTION_URGENCY_FIT.get(emotion_code, {}).get(urgency_level, 3.0)
+
+    risk_orientation = normalized_persona.get("riskOrientation", "moderate")
+    risk_fit = EMOTION_RISK_FIT.get(emotion_code, {}).get(risk_orientation, 3.0)
+
+    score = (
+        domain_fit * 0.20
+        + persona_fit * 0.25
+        + scenario_fit * 0.30
+        + urgency_fit * 0.15
+        + risk_fit * 0.10
+    )
+    return round(score, 3)
+
+
+def select_top_emotion_modes(
+    normalized_persona: Dict[str, Any],
+    parsed: "ParseResult",
+    domain_pack: str,
+    urgency_profile: Dict[str, Any],
+    count: int = 4,
+) -> Tuple[List[Dict[str, Any]], Dict[str, float]]:
+    """Select the top `count` emotion modes for this persona+scenario, with scores."""
+    scored = [
+        (profile, score_emotion_fit(profile["code"], normalized_persona, parsed, domain_pack, urgency_profile))
+        for profile in EMOTION_PROFILES
+    ]
+    scored.sort(key=lambda x: -x[1])
+    selected = [profile for profile, _ in scored[:count]]
+    all_scores = {profile["code"]: score for profile, score in scored}
+    return selected, all_scores
+
+
+# ── Layers 5–7: Matrix Cell Building ─────────────────────────────────────────
+
+def _cell_question(emotion_code: str, kpi_label: str) -> str:
+    template = CELL_QUESTION_TEMPLATES.get(emotion_code, "What does {kpi_label} tell us here?")
+    return template.format(kpi_label=kpi_label)
+
+
+def _cell_risk_frame(emotion_code: str, kpi: Dict[str, Any], worst_risk: Dict[str, Any]) -> str:
+    risk_band = worst_risk.get("band", "Moderate")
+    consequence = FAMILY_CONSEQUENCE_PHRASES.get(kpi.get("family", ""), "the downside compounds")
+    template = CELL_RISK_FRAME_TEMPLATES.get(emotion_code, CELL_RISK_FRAME_TEMPLATES["F"])
+    return template.format(kpi_label=kpi["label"], risk_band=risk_band, consequence=consequence)
+
+
+def _cell_action_frame(emotion_code: str, kpi_label: str) -> str:
+    template = CELL_ACTION_FRAME_TEMPLATES.get(emotion_code, CELL_ACTION_FRAME_TEMPLATES["F"])
+    return template.format(kpi_label=kpi_label)
+
+
+def _cell_consequence_frame(emotion_code: str, kpi_label: str) -> str:
+    template = CELL_CONSEQUENCE_FRAME_TEMPLATES.get(emotion_code, CELL_CONSEQUENCE_FRAME_TEMPLATES["F"])
+    return template.format(kpi_label=kpi_label)
+
+
+def _find_backup_kpi(
+    primary_kpi: Dict[str, Any],
+    kpis: List[Dict[str, Any]],
+    emotion_weights: Dict[str, float],
+) -> Optional[Dict[str, Any]]:
+    same_family = [
+        k for k in kpis
+        if k["code"] != primary_kpi["code"] and k.get("family") == primary_kpi.get("family")
+    ]
+    candidates = same_family or [k for k in kpis if k["code"] != primary_kpi["code"]]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda k: emotion_weights.get(k["code"], 0.0))
+
+
+def _cell_confidence(perspective_score: float, emotion_fit_score: float, salience: int) -> str:
+    combined = perspective_score * 0.5 + emotion_fit_score * 0.3 + float(salience) * 0.2
+    if combined >= 3.5:
+        return "High"
+    if combined >= 2.5:
+        return "Medium-High"
+    if combined >= 1.5:
+        return "Medium"
+    return "Medium-Low"
+
+
+def build_matrix_cells(
+    top_perspectives: List[Dict[str, Any]],
+    top_emotion_modes: List[Dict[str, Any]],
+    option_analysis: Dict[str, Dict[str, Any]],
+    normalized_persona: Dict[str, Any],
+    parsed: "ParseResult",
+    emotion_weights_by_kpi: Dict[str, Dict[str, float]],
+    scenario_salience: Dict[str, int],
+    kpis: List[Dict[str, Any]],
+    perspective_scores: Dict[str, float],
+    emotion_fit_scores: Dict[str, float],
+) -> List[Dict[str, Any]]:
+    """
+    Build the 4×4 (emotion × perspective) matrix cells.
+    Each cell contains: primary KPI, backup KPI, question, risk frame,
+    action frame, consequence frame, and confidence rating.
+    """
+    cells = []
+    for emotion_profile in top_emotion_modes:
+        emotion_code = emotion_profile["code"]
+        emotion_weights = emotion_weights_by_kpi[emotion_code]
+        for perspective_kpi in top_perspectives:
+            code = perspective_kpi["code"]
+            # Worst-case risk across all options for this KPI
+            all_risks = [option_analysis[oid]["risks"].get(code, {}) for oid in option_analysis]
+            worst_risk = max(all_risks, key=lambda r: r.get("riskScore", 0.0)) if all_risks else {}
+            backup = _find_backup_kpi(perspective_kpi, kpis, emotion_weights)
+            p_score = perspective_scores.get(code, 1.0)
+            e_score = emotion_fit_scores.get(emotion_code, 3.0)
+            salience = scenario_salience.get(code, 1)
+            cells.append({
+                "emotion_mode": emotion_profile["name"],
+                "emotion_code": emotion_code,
+                "perspective": perspective_kpi["label"],
+                "perspective_code": code,
+                "primary_kpi": perspective_kpi["label"],
+                "primary_kpi_code": code,
+                "backup_kpi": backup["label"] if backup else None,
+                "backup_kpi_code": backup["code"] if backup else None,
+                "question": _cell_question(emotion_code, perspective_kpi["label"]),
+                "risk_frame": _cell_risk_frame(emotion_code, perspective_kpi, worst_risk),
+                "action_frame": _cell_action_frame(emotion_code, perspective_kpi["label"]),
+                "consequence_frame": _cell_consequence_frame(emotion_code, perspective_kpi["label"]),
+                "confidence": _cell_confidence(p_score, e_score, salience),
+                "emotion_weight_pct": round(emotion_weights.get(code, 0.0), 1),
+                "perspective_priority_score": round(p_score, 3),
+                "emotion_fit_score": round(e_score, 3),
+            })
+    return cells
+
+
 def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
     parsed = parse_markdown(markdown_text, filename)
     missing = []
@@ -500,6 +1371,26 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
             )
         )
 
+    # ── 4×4 matrix: select top perspectives and emotion modes ─────────────────
+    top_perspectives, perspective_scores = select_top_perspectives(
+        kpis, option_analysis, normalized_persona, parsed, scenario_salience
+    )
+    top_emotion_modes, emotion_fit_scores = select_top_emotion_modes(
+        normalized_persona, parsed, domain_pack, urgency_profile
+    )
+    matrix_cells = build_matrix_cells(
+        top_perspectives,
+        top_emotion_modes,
+        option_analysis,
+        normalized_persona,
+        parsed,
+        emotion_weights_by_kpi,
+        scenario_salience,
+        kpis,
+        perspective_scores,
+        emotion_fit_scores,
+    )
+
     confidence = compute_confidence(parsed, enrichment, len(options), ml_metadata)
     return {
         "status": "ok",
@@ -537,6 +1428,20 @@ def analyze_markdown(markdown_text: str, filename: str) -> Dict[str, Any]:
         ),
         "emotionVariants": emotions,
         "kpiCatalog": build_kpi_catalog(kpis, option_analysis, parsed, normalized_persona),
+        "matrix": {
+            "cells": matrix_cells,
+            "perspectives": [
+                {"code": k["code"], "label": k["label"], "family": k.get("family"), "priorityScore": round(perspective_scores.get(k["code"], 0.0), 3)}
+                for k in top_perspectives
+            ],
+            "emotionModes": [
+                {"code": e["code"], "name": e["name"], "state": e["state"], "fitScore": round(emotion_fit_scores.get(e["code"], 0.0), 3)}
+                for e in top_emotion_modes
+            ],
+            "shape": {"rows": len(top_emotion_modes), "cols": len(top_perspectives)},
+            "allPerspectiveScores": perspective_scores,
+            "allEmotionFitScores": emotion_fit_scores,
+        },
         "metadata": {
             "confidence": confidence,
             "confidenceBreakdown": confidence,

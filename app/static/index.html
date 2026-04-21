@@ -558,6 +558,11 @@
       line-height: 1.45;
     }
     [hidden] { display: none !important; }
+    .shared-upload-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .shared-status { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; }
+    .shared-status.loading { color: var(--muted); }
+    .shared-status.ok { color: #1f7055; }
+    .shared-status.error { color: var(--danger); }
 
     @media (max-width: 1220px) {
       .builder-grid {
@@ -809,6 +814,7 @@
           ]
         }
       },
+      commercialLogic: null,
       scenarios: [],
       personas: [
         {
@@ -1043,7 +1049,8 @@
           frameworks: ["C", "F"],
           recommendedFramework: "C"
         }
-      ]
+      ],
+      vo112Schema: null
     };
 
     const state = {
@@ -1094,11 +1101,48 @@
 
     function getScenario() {
       const persona = getPersona();
-      return persona?.scenarios?.find((item) => item.id === state.scenarioId) || persona?.scenarios?.[0] || null;
+      const scenario = persona?.scenarios?.find((item) => item.id === state.scenarioId) || persona?.scenarios?.[0] || null;
+      if (!scenario) return null;
+      if (!scenario.sharedAcrossPersonas) return scenario;
+      const override = scenario.personaOverrides?.[persona.code];
+      if (!override) return scenario;
+      return {
+        ...scenario,
+        personaOverride: override,
+        scenarioTitle: override.decision || scenario.scenarioTitle || scenario.label,
+        summary: override.summary || scenario.summary,
+        tension: override.tension || scenario.tension,
+        options: override.options?.length ? override.options : scenario.options,
+        kpiFamilies: override.kpis?.length ? override.kpis : scenario.kpiFamilies,
+        keywords: [...(scenario.keywords || []), ...(override.keywords || [])]
+      };
+    }
+
+    function getVo112Schema() {
+      return MODEL.vo112Schema || { emotions: {}, perspectives: {}, personas: {}, scenarioCodes: [] };
+    }
+
+    function isVo112Scenario(scenario = getScenario()) {
+      if (!scenario) return false;
+      const schema = getVo112Schema();
+      const haystack = [scenario.id, scenario.label, scenario.scenarioTitle, scenario.summary].join(" ").toLowerCase();
+      return (schema.scenarioCodes || []).some((code) => haystack.includes(String(code).toLowerCase()));
+    }
+
+    function getVo112PersonaSchema(persona = getPersona()) {
+      return getVo112Schema().personas?.[persona.code] || null;
+    }
+
+    function findVo112ScenarioForPersona(persona = getPersona()) {
+      return (persona?.scenarios || []).find((item) => isVo112Scenario(item)) || null;
     }
 
     function getFramework() {
       return MODEL.frameworks[state.selectedFramework] || MODEL.frameworks.A;
+    }
+
+    function getCommercialLogic() {
+      return MODEL.commercialLogic || { universalKpis: [], questionFamilies: {}, personaEmphasis: {} };
     }
 
     function getAnalysisVariant(code) {
@@ -1118,6 +1162,18 @@
 
     function renderHero() {
       const scenario = getScenario();
+      if (isVo112Scenario(scenario)) {
+        const personaSchema = getVo112PersonaSchema();
+        const heroTitle = personaSchema?.decision || scenario?.personaOverride?.decision || scenario?.scenarioTitle || scenario?.label || MODEL.project.name;
+        const heroCopy = scenario?.personaOverride?.summary
+          || personaSchema?.tension
+          || scenario?.personaOverride?.tension
+          || scenario?.summary
+          || "Explore how this persona should handle the VO-112 dispute across the matrix.";
+        els.heroTitle.textContent = heroTitle;
+        els.heroCopy.textContent = heroCopy;
+        return;
+      }
       els.heroTitle.textContent = scenario?.scenarioTitle || MODEL.project.name;
       els.heroCopy.textContent = state.analysis?.parsed?.scenario
         || scenario?.about
@@ -1147,9 +1203,9 @@
     }
 
     function ensurePerspectiveSelection() {
-      const persona = getPersona();
-      if (!state.selectedPerspectives.length || state.selectedPerspectives.some((id) => !persona.perspectives.find((p) => p.id === id))) {
-        state.selectedPerspectives = persona.perspectives.slice(0, Math.min(4, persona.perspectives.length)).map((item) => item.id);
+      const activePerspectives = getActivePerspectives();
+      if (!state.selectedPerspectives.length || state.selectedPerspectives.some((id) => !activePerspectives.find((p) => p.id === id))) {
+        state.selectedPerspectives = activePerspectives.slice(0, Math.min(4, activePerspectives.length)).map((item) => item.id);
       }
     }
 
@@ -1163,6 +1219,500 @@
       if (!state.scenarioId || !scenarios.find((item) => item.id === state.scenarioId)) {
         state.scenarioId = persona.defaultScenarioId || scenarios[0].id;
       }
+    }
+
+    function extractTextTokens(value) {
+      return (value || "").toLowerCase().split(/[^a-z0-9%£/+-]+/).filter((item) => item.length > 3);
+    }
+
+    function shortKpiLabel(label) {
+      return (label || "")
+        .replace(/^[A-Z]\d+\s+/, "")
+        .replace(/\s+vs\s+/gi, " / ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function slugify(value) {
+      return (value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    }
+
+    function buildScenarioPerspective(item, scenario, persona) {
+      const label = shortKpiLabel(item.label);
+      const contextNotes = Object.values(scenario?.decisionContext || {}).slice(0, 2);
+      return {
+        id: `${scenario.id}::${item.code || slugify(label)}`,
+        code: item.code,
+        label,
+        kpis: [item.label],
+        data: [
+          `Current read on ${label.toLowerCase()}`,
+          ...contextNotes,
+        ].slice(0, 4),
+        chart: `${label} tracker`,
+        action: `Bias the move toward protecting ${label.toLowerCase()} for the ${persona.role} lens.`,
+        risk: `If ${label.toLowerCase()} deteriorates, the core tension around ${(scenario?.tension || persona?.hardestTension || "this decision").toLowerCase()} gets harder to control.`,
+        consequence: `The likely consequence is pressure on ${label.toLowerCase()} within the ${persona.role} lens.`,
+        blind: `Over-focusing on ${label.toLowerCase()} can hide second-order effects elsewhere in the contract and programme system.`,
+        keywords: dedupeItems([
+          item.code,
+          label,
+          ...(extractTextTokens(label)),
+          ...(scenario?.keywords || []),
+          ...(extractTextTokens(scenario?.tension || "")),
+        ], 16),
+      };
+    }
+
+    function getActivePerspectives(persona = getPersona(), scenario = getScenario()) {
+      if (isVo112Scenario(scenario)) {
+        const schema = getVo112Schema();
+        const personaSchema = getVo112PersonaSchema(persona);
+        const perspectiveMeta = schema.perspectives || {};
+        const kpiSpine = personaSchema?.kpiSpine || [];
+        return kpiSpine.map((item) => {
+          const meta = perspectiveMeta[item.perspectiveCode] || {};
+          return {
+            id: item.perspectiveCode,
+            code: item.perspectiveCode,
+            label: meta.name || item.perspectiveLabel,
+            kpis: [item.kpiLabel],
+            data: [
+              `Current state: ${item.reading}`,
+              personaSchema?.tension || "",
+            ].filter(Boolean),
+            chart: meta.defaultChart || "timeline",
+            action: `${(schema.emotions?.A?.actionPattern || "verify, reserve, protect").replace(/,$/, "")}.`,
+            risk: `${personaSchema?.tension || "The risk remains scenario-specific."}`,
+            consequence: `This perspective stays anchored to ${item.kpiLabel.toLowerCase()} for ${persona.role}.`,
+            blind: item.hardPriority
+              ? `Hard-priority signal: ${item.kpiLabel.toLowerCase()} should remain visible even when emotional weighting shifts.`
+              : `Secondary signals around ${item.kpiLabel.toLowerCase()} can be missed if the matrix collapses into one dominant lens.`,
+            keywords: dedupeItems([
+              item.perspectiveCode,
+              meta.name || item.perspectiveLabel,
+              ...(meta.questionTags || []),
+              ...extractTextTokens(item.kpiLabel),
+              ...extractTextTokens(item.reading),
+            ], 16),
+          };
+        });
+      }
+      const overrideKpis = scenario?.personaOverride?.kpis || [];
+      const scenarioKpis = scenario?.kpiFamilies || [];
+      if (scenario?.sharedAcrossPersonas && overrideKpis.length) {
+        return overrideKpis.slice(0, 4).map((item) => buildScenarioPerspective(item, scenario, persona));
+      }
+      if (scenarioKpis.length) {
+        return scenarioKpis.slice(0, 4).map((item) => buildScenarioPerspective(item, scenario, persona));
+      }
+      return persona.perspectives || [];
+    }
+
+    function getVo112EmotionRows() {
+      const schema = getVo112Schema();
+      return ["A", "B", "C", "D"]
+        .map((code) => schema.emotions?.[code])
+        .filter(Boolean)
+        .map((item) => ({
+          id: item.code,
+          code: item.code,
+          label: item.name,
+          focus: item.actionPattern,
+          note: item.biasRisk,
+          keywords: dedupeItems([
+            item.name,
+            item.actionPattern,
+            item.biasRisk,
+            item.displayDensity,
+          ], 12)
+        }));
+    }
+
+    function formatVo112StateLabel(value) {
+      if (!value) return "";
+      return value
+        .replace(/\(\s*red\s*⚑\s*\)/gi, "(🔴 🚩)")
+        .replace(/\(\s*amber\s*⚑\s*\)/gi, "(🟠 🚩)")
+        .replace(/\(\s*green\s*⚑\s*\)/gi, "(🟢 🚩)")
+        .replace(/\bred\s*⚑\b/gi, "🔴 🚩")
+        .replace(/\bamber\s*⚑\b/gi, "🟠 🚩")
+        .replace(/\bgreen\s*⚑\b/gi, "🟢 🚩")
+        .replace(/\(\s*red\s*\)/gi, "(🔴)")
+        .replace(/\(\s*amber\s*\)/gi, "(🟠)")
+        .replace(/\(\s*green\s*\)/gi, "(🟢)")
+        .replace(/\bred\b/gi, "🔴")
+        .replace(/\bamber\b/gi, "🟠")
+        .replace(/\bgreen\b/gi, "🟢")
+        .replace(/⚑/g, "🚩");
+    }
+
+    function scorePhraseMatches(text, phrases = [], weight = 1) {
+      const lower = (text || "").toLowerCase();
+      return phrases.reduce((sum, phrase) => sum + (lower.includes(String(phrase).toLowerCase()) ? weight : 0), 0);
+    }
+
+    function detectVo112ScenarioActivation(question, scenario = getScenario()) {
+      const lower = (question || "").toLowerCase();
+      if (isVo112Scenario(scenario)) return { active: true, score: 1 };
+      let score = 0;
+      score += scorePhraseMatches(lower, VO112_ROUTER.directScenarioTerms, 1);
+      VO112_ROUTER.indirectScenarioClusters.forEach((cluster) => {
+        const hits = cluster.reduce((sum, term) => sum + (lower.includes(term.toLowerCase()) ? 1 : 0), 0);
+        if (hits >= 2) score += 1;
+      });
+      return { active: score > 0, score };
+    }
+
+    function resolveVo112Persona(question) {
+      const currentPersona = getPersona();
+      let winner = currentPersona;
+      let bestScore = 0;
+      MODEL.personas.forEach((persona) => {
+        const terms = VO112_ROUTER.personaTerms[persona.code] || [];
+        const score = scorePhraseMatches(question, terms, 3);
+        if (score > bestScore) {
+          bestScore = score;
+          winner = persona;
+        }
+      });
+      return { persona: winner, score: bestScore };
+    }
+
+    function classifyVo112QuestionType(question) {
+      let winner = "recommendation";
+      let bestScore = 0;
+      Object.entries(VO112_ROUTER.questionTypes).forEach(([type, phrases]) => {
+        const score = scorePhraseMatches(question, phrases, 2);
+        if (score > bestScore) {
+          bestScore = score;
+          winner = type;
+        }
+      });
+      return { type: winner, score: bestScore };
+    }
+
+    function inferVo112Emotion(question, persona) {
+      let winner = null;
+      let bestScore = 0;
+      Object.entries(VO112_ROUTER.emotionTerms).forEach(([code, phrases]) => {
+        const score = scorePhraseMatches(question, phrases, 2);
+        if (score > bestScore) {
+          bestScore = score;
+          winner = code;
+        }
+      });
+      if (!winner) {
+        const fallbackOrder = [state.selectedFramework, persona?.recommendedFramework, "A", "B", "C", "D"];
+        winner = fallbackOrder.find((code) => ["A", "B", "C", "D"].includes(code)) || "A";
+      }
+      return { code: winner, score: bestScore };
+    }
+
+    function classifyVo112Perspective(question, persona, scenario, personaSchema, questionType) {
+      const lower = (question || "").toLowerCase();
+      const scores = {};
+      Object.keys(VO112_ROUTER.perspectiveTerms).forEach((code) => {
+        scores[code] = scorePhraseMatches(lower, VO112_ROUTER.perspectiveTerms[code], 2);
+        scores[code] += scorePhraseMatches(lower, VO112_ROUTER.perspectiveDecisionVerbs[code] || [], 3);
+      });
+
+      if (questionType === "disclosure") scores.P3 += 3;
+      if (questionType === "timing") scores.P1 += 2;
+      if (questionType === "comparison" || questionType === "recommendation") scores.P4 += 1;
+      if (questionType === "threshold" || questionType === "kpi_lookup") scores.P2 += 1;
+
+      let winner = "P4";
+      let bestScore = -1;
+      VO112_ROUTER.perspectivePrecedence.forEach((code) => {
+        const score = scores[code] || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          winner = code;
+        }
+      });
+
+      const perspective = (getActivePerspectives(persona, scenario) || []).find((item) => item.code === winner)
+        || getActivePerspectives().find((item) => item.code === winner);
+      return { code: winner, score: bestScore, perspective };
+    }
+
+    function selectVo112PrimaryKpi(question, personaSchema, perspectiveCode, emotionCode) {
+      const lower = (question || "").toLowerCase();
+      const spine = personaSchema?.kpiSpine || [];
+      const byPerspective = spine.find((item) => item.perspectiveCode === perspectiveCode) || spine[0] || null;
+
+      const explicit = spine.find((item) => {
+        const label = item.kpiLabel || "";
+        return lower.includes(item.kpiCode.toLowerCase()) || extractTextTokens(label).some((token) => lower.includes(token));
+      });
+
+      const hardOverride = spine.find((item) => item.hardPriority && /red|🔴/.test((item.reading || "").toLowerCase()));
+      const primary = explicit || byPerspective;
+      return {
+        primary: primary || hardOverride || spine[0] || null,
+        blindSpot: hardOverride && primary && hardOverride.kpiCode !== primary.kpiCode ? hardOverride : null,
+      };
+    }
+
+    function routeVo112Question(question) {
+      const scenarioActivation = detectVo112ScenarioActivation(question);
+      if (!scenarioActivation.active) return null;
+
+      const personaResolution = resolveVo112Persona(question);
+      const persona = personaResolution.persona || getPersona();
+      const vo112Scenario = findVo112ScenarioForPersona(persona);
+      if (!vo112Scenario) return null;
+
+      if (state.personaId !== persona.id) {
+        state.personaId = persona.id;
+        state.selectedPerspectives = [];
+      }
+      state.scenarioId = vo112Scenario.id;
+
+      const scenario = getScenario();
+      const personaSchema = getVo112PersonaSchema(persona);
+      const questionType = classifyVo112QuestionType(question);
+      const emotion = inferVo112Emotion(question, persona);
+      const perspective = classifyVo112Perspective(question, persona, scenario, personaSchema, questionType.type);
+      const selectedPrimary = selectVo112PrimaryKpi(question, personaSchema, perspective.code, emotion.code);
+      const cellId = `${persona.code}_${emotion.code}_${perspective.code}`;
+      const cell = personaSchema?.cells?.[cellId] || null;
+
+      const scenarioScore = scenarioActivation.score > 0 ? 1 : 0.6;
+      const personaScore = personaResolution.score > 0 ? 1 : 0.7;
+      const perspectiveScore = Math.max(0.45, Math.min(1, 0.45 + (perspective.score || 0) * 0.08));
+      const emotionScore = emotion.score > 0 ? Math.min(1, 0.55 + emotion.score * 0.08) : 0.65;
+      const kpiScore = selectedPrimary.primary ? 0.8 : 0.45;
+      const confidence = Math.min(1, (scenarioScore + personaScore + perspectiveScore + emotionScore + kpiScore) / 5);
+
+      const reasonParts = [
+        `Question matched ${perspective.code} ${perspective.perspective?.label || ""}`.trim(),
+        `${getVo112Schema().emotions?.[emotion.code]?.name || emotion.code} mode selected`,
+        questionType.type ? `${VO112_ROUTER.responseLabels[questionType.type]}` : "",
+      ].filter(Boolean);
+      if (selectedPrimary.blindSpot) {
+        reasonParts.push(`Blind spot surfaced: ${selectedPrimary.blindSpot.kpiLabel} ${formatVo112StateLabel(selectedPrimary.blindSpot.reading)}`);
+      }
+
+      return {
+        persona,
+        scenario: vo112Scenario,
+        cell,
+        questionType: questionType.type,
+        emotionCode: emotion.code,
+        perspectiveCode: perspective.code,
+        primaryKpi: selectedPrimary.primary,
+        blindSpot: selectedPrimary.blindSpot,
+        confidence,
+        explanation: reasonParts.join(" · "),
+      };
+    }
+
+    function isCommercialContext(question = "") {
+      const scenario = getScenario();
+      const combined = [
+        scenario?.domain,
+        scenario?.platform,
+        scenario?.scenarioTitle,
+        scenario?.call,
+        scenario?.tension,
+        ...(scenario?.scenarioKinds || []),
+        question
+      ].join(" ").toLowerCase();
+      return ["contract", "commercial", "customer", "bid", "variation", "claim", "payment", "disclose", "notice", "mou", "offtake"].some((token) => combined.includes(token));
+    }
+
+    function detectCommercialQuestionFamily(question) {
+      const logic = getCommercialLogic();
+      const lower = (question || "").toLowerCase();
+      let winner = null;
+      let bestScore = 0;
+      Object.entries(logic.questionFamilies || {}).forEach(([family, rule]) => {
+        const score = (rule.keywords || []).reduce((sum, keyword) => sum + (lower.includes(keyword.toLowerCase()) ? 1 : 0), 0);
+        if (score > bestScore) {
+          winner = family;
+          bestScore = score;
+        }
+      });
+      return winner;
+    }
+
+    function lookupCommercialKpi(code, persona, scenario) {
+      return scenario?.kpiFamilies?.find((item) => item.code === code)
+        || persona?.kpiFamilies?.find((item) => item.code === code)
+        || getCommercialLogic().universalKpis.find((item) => item.code === code)
+        || null;
+    }
+
+    function dedupeItems(items, limit = 4) {
+      const seen = new Set();
+      const result = [];
+      items.filter(Boolean).forEach((item) => {
+        const key = item.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        result.push(item);
+      });
+      return result.slice(0, limit);
+    }
+
+    const COMMERCIAL_EMOTION_BIAS = {
+      A: ["C4", "C8", "C6"],
+      B: ["C7", "C6", "C8"],
+      C: ["C5", "C4", "C7"],
+      D: ["C3", "C2", "C5"],
+      E: ["C1", "C4", "C6"],
+      F: ["C6", "C3", "C2"]
+    };
+
+    const COMMERCIAL_ACTION_HINTS = {
+      entitlement: "Clarify Tata’s contractual position before conceding value.",
+      payment: "Choose continuity vs cash discipline explicitly and document the trigger.",
+      disclosure: "Sequence disclosure deliberately and decide who hears it first.",
+      schedule: "Protect the delivery path before the commercial issue hardens into a slip.",
+      counterparty: "Manage the counterparty behaviour without surrendering leverage.",
+      customer_market: "Protect customer trust without over-committing beyond validated capability.",
+      amendment_notice: "Preserve notice and amendment rights before flexibility disappears.",
+      governance: "Test materiality and governance triggers before the situation escalates upward.",
+      optionality: "Preserve room to recover before making an irreversible move.",
+      bids_pricing: "Price the risk explicitly instead of absorbing an unbounded exposure.",
+      consequence: "Identify the earliest irreversible consequence and act before it compounds."
+    };
+
+    const VO112_ROUTER = {
+      directScenarioTerms: [
+        "vo-112", "vo112", "tenova", "variation order", "commercial dispute", "£31.4m", "31.4m",
+        "14.9m disputed", "11-week extension", "11 week extension", "pay under protest",
+        "withhold and risk suspension", "factor 1", "factor 2", "factor 3", "fume treatment redesign",
+        "payment security clause"
+      ],
+      indirectScenarioClusters: [
+        ["contractor", "claim"],
+        ["disputed payment", "suspension"],
+        ["programme slip", "contractor dispute"],
+        ["tenova", "extension"],
+        ["disputed variation", "commissioning date"],
+        ["commercial settlement", "precedent"],
+        ["dbet", "grant covenant"],
+        ["bmw", "commissioning slip"],
+        ["council", "delay disclosure"],
+      ],
+      personaTerms: {
+        P1: ["ceo", "rajesh", "chief executive", "overall programme", "covenant", "group exposure"],
+        P2: ["chro", "chris", "hr", "workforce", "training", "reskilling", "operators", "trainers", "secondments"],
+        P3: ["owen", "project director", "site", "programme director", "tenova", "milestones", "instruction", "site team"],
+        P4: ["cfo", "sian", "finance", "cash", "contingency", "dbet", "drawdown", "budget", "clawback"],
+        P5: ["alun", "union", "community union", "members", "workers", "transition board", "mp", "parliamentary"],
+        P6: ["henrik", "board", "chair", "directors", "material event", "governance", "legal opinion"],
+        P7: ["kate", "scrap", "procurement", "suppliers", "merchants", "bridge contracts", "volume secured"],
+        P8: ["james", "grid", "ppa", "energy", "national grid", "certification", "synchronisation"],
+        P9: ["steve", "council", "local government", "residents", "community", "transition fund", "political fallout"],
+        P10: ["priya", "commercial", "customer", "automotive", "bmw", "jlr", "offtake", "qualification"],
+      },
+      perspectiveTerms: {
+        P1: ["delay", "slip", "timeline", "commissioning", "float", "critical path", "recover schedule", "programme moving", "suspends", "how late", "end-2027"],
+        P2: ["cost", "cash", "contingency", "budget", "claim", "value", "revenue", "headroom", "spend", "financial exposure", "economic impact"],
+        P3: ["who should know", "disclose", "trust", "credibility", "relationship damage", "political", "reputational", "member trust", "residents", "board", "ministers", "transition board", "media"],
+        P4: ["pay under protest", "settlement", "precedent", "negotiation", "supplier contract", "customer communication", "qualification", "commercial position", "legal position", "long-term leverage", "contract amendment", "tell bmw"],
+      },
+      perspectiveDecisionVerbs: {
+        P4: ["pay", "withhold", "settle", "tell", "notify", "amend", "renegotiate", "communicate", "contract", "disclose"],
+        P2: ["absorb", "fund", "reserve", "budget", "spend", "cash"],
+        P1: ["delay", "slip", "suspend", "recover", "accelerate", "commission"],
+        P3: ["tell", "frame", "sequence", "brief", "announce", "escalate politically"],
+      },
+      perspectivePrecedence: ["P4", "P2", "P1", "P3"],
+      emotionTerms: {
+        A: ["cautious", "safest", "avoid downside", "defensible", "protect", "risk-first", "exposure", "worst case", "safer"],
+        B: ["strategic", "long-term", "leverage", "precedent", "optionality", "thesis", "market position", "anchor", "future"],
+        C: ["diplomatic", "relationship", "trust", "who to tell", "how to frame", "coalition", "optics", "sequence", "stakeholder"],
+        D: ["decisive", "now", "immediately", "best next move", "lock in", "commit", "act fast", "within 21 days", "urgent"],
+      },
+      questionTypes: {
+        recommendation: ["what should", "should ", "best option", "right move", "recommend"],
+        comparison: ["better than", "option a", "option b", "option c", "compare", "versus", "vs"],
+        consequence: ["what happens if", "if we wait", "if he waits", "if she waits", "risk if", "consequence"],
+        action_plan: ["next 21 days", "next step", "action plan", "what do we do now", "what should happen next"],
+        threshold: ["at what point", "when does", "threshold", "become dominant", "flip"],
+        disclosure: ["who should know", "who to tell", "tell first", "disclose", "notify first"],
+        kpi_lookup: ["which kpi", "what matters most", "dominant kpi", "priority kpi"],
+        timing: ["when to act", "too early", "wait", "delay", "timing"],
+      },
+      responseLabels: {
+        recommendation: "best option + why",
+        comparison: "side-by-side option tradeoff",
+        consequence: "risk + downstream effects",
+        action_plan: "3-step action sequence",
+        threshold: "KPI threshold + trigger",
+        disclosure: "stakeholder sequence",
+        kpi_lookup: "highlighted KPI + rationale",
+        timing: "urgency + deadline logic",
+      }
+    };
+
+    function resolveCommercialKpiStack({ persona, scenario, mode, perspective, question }) {
+      const logic = getCommercialLogic();
+      if (!logic.universalKpis?.length) return null;
+
+      const family = detectCommercialQuestionFamily(question);
+      const rule = family ? logic.questionFamilies[family] : null;
+      const emphasisList = persona?.commercialOverlay?.personaEmphasis || logic.personaEmphasis?.[persona?.code] || [];
+      const emphasisScore = new Map(emphasisList.map((code, index) => [code, Math.max(0, 14 - index * 2)]));
+      const emotionBias = COMMERCIAL_EMOTION_BIAS[getFramework().code] || [];
+      const scenarioText = [scenario?.scenarioTitle, scenario?.summary, scenario?.tension, scenario?.call].join(" ").toLowerCase();
+      const questionText = (question || "").toLowerCase();
+      const perspectiveText = [perspective?.label, ...(perspective?.kpis || []), ...(perspective?.keywords || [])].join(" ").toLowerCase();
+
+      const native = scenario?.kpiFamilies || [];
+      const universal = logic.universalKpis || [];
+      const candidates = dedupeItems(
+        [...native, ...universal].map((item) => item.code),
+        32
+      ).map((code) => lookupCommercialKpi(code, persona, scenario)).filter(Boolean);
+
+      const scored = candidates.map((candidate) => {
+        const keywords = candidate.keywords || extractTextTokens(candidate.label);
+        let score = emphasisScore.get(candidate.code) || 0;
+        if (perspective?.code && candidate.code === perspective.code) score += 24;
+        if (rule?.primary?.includes(candidate.code)) score += 18;
+        if (rule?.supporting?.includes(candidate.code)) score += 10;
+        if (emotionBias.includes(candidate.code)) score += 5;
+        score += keywords.reduce((sum, keyword) => sum + (questionText.includes(keyword) ? 4 : 0), 0);
+        score += keywords.reduce((sum, keyword) => sum + (scenarioText.includes(keyword) ? 2 : 0), 0);
+        score += keywords.reduce((sum, keyword) => sum + (perspectiveText.includes(keyword) ? 2 : 0), 0);
+        if (candidate.code === native[0]?.code) score += 1;
+        return { ...candidate, score };
+      }).sort((a, b) => b.score - a.score);
+
+      const top = scored.slice(0, 3);
+      const primary = top[0] || null;
+      if (!primary) return null;
+
+      const evidence = dedupeItems([
+        ...(primary.dataHints || []),
+        ...top.slice(1).flatMap((item) => item.dataHints || []),
+        ...Object.values(scenario?.decisionContext || {}),
+        ...(perspective?.data || [])
+      ], 5);
+
+      return {
+        family,
+        familyRule: rule,
+        actionHint: family ? COMMERCIAL_ACTION_HINTS[family] : "",
+        kpis: top.map((item) => item.label),
+        primary,
+        supporting: top.slice(1),
+        dataRequirements: evidence,
+        chartTitle: `${primary.label} / ${mode.label}`,
+        routeKeywords: dedupeItems([
+          ...(rule?.keywords || []),
+          ...top.flatMap((item) => item.keywords || extractTextTokens(item.label)),
+          primary.label,
+          perspective?.label,
+          mode?.label
+        ], 18)
+      };
     }
 
     function renderFrameworkRecommendations() {
@@ -1206,14 +1756,28 @@
     }
 
     async function loadMatrixBootstrap() {
+      let payload = null;
       try {
         const response = await fetch("/matrix-bootstrap");
         if (!response.ok) throw new Error(`bootstrap ${response.status}`);
-        const payload = await response.json();
+        payload = await response.json();
+      } catch (error) {
+        console.warn("matrix bootstrap endpoint unavailable, trying static fallback", error);
+        try {
+          const fallbackResponse = await fetch("./matrix-bootstrap.json");
+          if (!fallbackResponse.ok) throw new Error(`static bootstrap ${fallbackResponse.status}`);
+          payload = await fallbackResponse.json();
+        } catch (fallbackError) {
+          console.warn("matrix bootstrap fallback unavailable", fallbackError);
+        }
+      }
+      if (payload) {
         if (payload.project) MODEL.project = payload.project;
         if (payload.domains?.length) MODEL.domains = payload.domains;
         if (payload.platforms?.length) MODEL.platforms = payload.platforms;
         if (payload.scenarios?.length) MODEL.scenarios = payload.scenarios;
+        if (payload.commercialLogic) MODEL.commercialLogic = payload.commercialLogic;
+        if (payload.vo112Schema) MODEL.vo112Schema = payload.vo112Schema;
         if (payload.personas?.length) {
           MODEL.personas = payload.personas;
           state.domain = payload.project?.domain || state.domain;
@@ -1221,8 +1785,6 @@
             state.personaId = payload.defaultPersonaId || MODEL.personas[0].id;
           }
         }
-      } catch (error) {
-        console.warn("matrix bootstrap fallback", error);
       }
       choosePersona(state.personaId);
     }
@@ -1234,6 +1796,13 @@
         ? [...scenario.options].sort((a, b) => scoreScenarioOption(b, perspective, mode, scenario) - scoreScenarioOption(a, perspective, mode, scenario))[0]
         : null;
       const scenarioKpi = scenario?.kpiFamilies?.[perspectiveIndex] || scenario?.kpiFamilies?.[0] || null;
+      const commercialStack = isCommercialContext(state.question) ? resolveCommercialKpiStack({
+        persona: getPersona(),
+        scenario,
+        mode,
+        perspective,
+        question: state.question
+      }) : null;
       const recommendedAction = chosenOption
         ? `${chosenOption.label}. ${chosenOption.summary}`
         : (analysisVariant?.recommendedOptionLabel
@@ -1252,12 +1821,12 @@
       const blind = analysisVariant?.blindSpots
         ? `${perspective.blind} ${analysisVariant.blindSpots}`
         : perspective.blind;
-      const kpis = [
+      const kpis = commercialStack?.kpis || [
         scenarioKpi?.label,
         ...(analysisVariant?.kpiOrdering?.slice(0, 2).map((item) => item.label) || []),
         ...(perspective.kpis || []),
       ].filter(Boolean).slice(0, 3);
-      const dataRequirements = [
+      const dataRequirements = commercialStack?.dataRequirements || [
         ...(scenarioKpi ? [`Current read on ${scenarioKpi.label.toLowerCase()}`] : []),
         ...(scenario?.decisionContext ? Object.values(scenario.decisionContext).slice(0, 2) : []),
         ...perspective.data,
@@ -1276,15 +1845,79 @@
         summary: mode.focus,
         kpis,
         dataRequirements,
-        chartType: `${scenarioKpi?.label || perspective.label} / ${mode.label}`,
+        chartType: commercialStack?.chartTitle || `${scenarioKpi?.label || perspective.label} / ${mode.label}`,
         chartBars,
         optionLabel: chosenOption?.label || analysisVariant?.recommendedOptionLabel || perspective.label,
-        recommendedAction,
+        recommendedAction: commercialStack?.actionHint ? `${commercialStack.actionHint} ${recommendedAction}` : recommendedAction,
         risk,
         consequence,
         blind,
         rationale: `This cell combines ${framework.name} / ${mode.label} with the ${perspective.label} perspective for the selected scenario.`,
-        routeKeywords: [...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || []), ...(chosenOption?.keywords || []), perspective.label.toLowerCase(), mode.label.toLowerCase()]
+        routeKeywords: dedupeItems([...(commercialStack?.routeKeywords || []), ...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || []), ...(chosenOption?.keywords || []), perspective.label.toLowerCase(), mode.label.toLowerCase()], 20)
+      };
+    }
+
+    function buildVo112Cell({ persona, scenario, perspective, mode }) {
+      const personaSchema = getVo112PersonaSchema(persona);
+      const schema = getVo112Schema();
+      const cellId = `${persona.code}_${mode.code}_${perspective.code}`;
+      const cellSchema = personaSchema?.cells?.[cellId];
+      if (!cellSchema) {
+        return {
+          id: `${mode.code}::${perspective.id}`,
+          modeId: mode.code,
+          perspectiveId: perspective.id,
+          title: `${mode.label} × ${perspective.label}`,
+          tone: "accent",
+          summary: mode.focus,
+          kpis: perspective.kpis || [],
+          dataRequirements: perspective.data || [],
+          chartType: perspective.chart || "timeline",
+          chartBars: [],
+          optionLabel: perspective.kpis?.[0] || perspective.label,
+          recommendedAction: personaSchema?.decision || scenario?.scenarioTitle || "",
+          risk: personaSchema?.tension || "",
+          consequence: perspective.consequence || "",
+          blind: perspective.blind || "",
+          rationale: `${mode.label} is active for ${perspective.label}.`,
+          routeKeywords: dedupeItems([...(perspective.keywords || []), ...(mode.keywords || [])], 20)
+        };
+      }
+
+      const formattedState = formatVo112StateLabel(cellSchema.primaryKpi?.currentState);
+      const primaryState = formattedState ? `${cellSchema.primaryKpi.label} — ${formattedState}` : cellSchema.primaryKpi?.label;
+      const actionPrefix = schema.emotions?.[mode.code]?.actionPattern || cellSchema.actionPattern || "";
+      const resolverLead = personaSchema?.resolverHints?.[0] || "";
+
+      return {
+        id: `${mode.code}::${perspective.id}`,
+        modeId: mode.code,
+        perspectiveId: perspective.id,
+        title: `${mode.label} × ${perspective.label}`,
+        tone: cellSchema.primaryKpi?.currentState?.toLowerCase().includes("red") ? "warn" : "accent",
+        summary: perspective.consequence || mode.focus,
+        kpis: cellSchema.kpis?.length ? cellSchema.kpis : [cellSchema.primaryKpi?.label].filter(Boolean),
+        dataRequirements: (cellSchema.dataRequirements || perspective.data || []).map((item) => formatVo112StateLabel(item)),
+        chartType: cellSchema.chartType || perspective.chart || "timeline",
+        chartBars: (cellSchema.kpis || []).slice(0, 3).map((label, index) => ({
+          label,
+          value: Math.max(28, Math.min(96, (cellSchema.weight || 30) - index * 8 + 18))
+        })),
+        optionLabel: primaryState || perspective.label,
+        recommendedAction: [actionPrefix, resolverLead].filter(Boolean).join(" "),
+        risk: `${cellSchema.biasRisk}${personaSchema?.tension ? ` ${personaSchema.tension}` : ""}`.trim(),
+        consequence: `Current state: ${formattedState || "Watch closely"}. ${perspective.consequence || ""}`.trim(),
+        blind: cellSchema.blindSpotScan
+          ? `Blind-spot scan triggered. ${perspective.blind || ""}`.trim()
+          : (perspective.blind || ""),
+        rationale: `${personaSchema?.name || persona.code}: ${personaSchema?.decision || scenario?.scenarioTitle || ""}`,
+        routeKeywords: dedupeItems([
+          ...(cellSchema.routeKeywords || []),
+          ...(perspective.keywords || []),
+          ...(mode.keywords || []),
+          ...extractTextTokens(personaSchema?.decision || ""),
+          ...extractTextTokens(personaSchema?.tension || ""),
+        ], 24)
       };
     }
 
@@ -1294,9 +1927,9 @@
       ensureScenarioSelection();
       const framework = getFramework();
       const scenario = getScenario();
-      const selectedPerspectives = persona.perspectives.filter((item) => state.selectedPerspectives.includes(item.id));
+      const selectedPerspectives = getActivePerspectives(persona, scenario).filter((item) => state.selectedPerspectives.includes(item.id));
       const analysisVariant = getAnalysisVariant(framework.code);
-      const modes = framework.modes;
+      const modes = isVo112Scenario(scenario) ? getVo112EmotionRows() : framework.modes;
       const headerRow = `
         <div class="matrix-row" style="--perspective-count:${selectedPerspectives.length}">
           <div class="matrix-head">Emotion mode / Perspective</div>
@@ -1307,7 +1940,9 @@
       const cells = [];
       const rows = modes.map((mode) => {
         const rowCells = selectedPerspectives.map((perspective, perspectiveIndex) => {
-          const cell = buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex });
+          const cell = isVo112Scenario(scenario)
+            ? buildVo112Cell({ persona, scenario, perspective, mode })
+            : buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex });
           cells.push(cell);
           const active = state.activeCellId === cell.id;
           const routed = state.routedCellId === cell.id;
@@ -1357,7 +1992,12 @@
 
     function renderInsight(cell) {
       if (!cell) return;
-      els.insightTag.textContent = getFramework().name;
+      if (isVo112Scenario()) {
+        const emotionMeta = getVo112Schema().emotions?.[cell.modeId];
+        els.insightTag.textContent = emotionMeta?.name || cell.modeId;
+      } else {
+        els.insightTag.textContent = getFramework().name;
+      }
       els.insightReason.textContent = state.routeExplanation || cell.rationale;
       els.insightTitle.textContent = cell.title;
       els.insightSummary.textContent = `${cell.rationale} ${cell.summary}`;
@@ -1395,6 +2035,7 @@
 
     function chooseScenario(scenarioId) {
       state.scenarioId = scenarioId;
+      state.selectedPerspectives = [];
       state.activeCellId = null;
       state.routedCellId = null;
       state.routeExplanation = "";
@@ -1411,6 +2052,25 @@
         els.routeNote.textContent = state.routeExplanation;
         return;
       }
+
+      const vo112Route = routeVo112Question(question);
+      if (vo112Route?.cell) {
+        state.activeCellId = `${vo112Route.emotionCode}::${vo112Route.perspectiveCode}`;
+        state.routedCellId = state.activeCellId;
+        const confidenceLabel = vo112Route.confidence >= 0.85
+          ? "High confidence"
+          : vo112Route.confidence >= 0.7
+            ? "Moderate confidence"
+            : "Low confidence";
+        state.routeExplanation = `${vo112Route.explanation} · Primary KPI: ${vo112Route.primaryKpi?.kpiLabel || vo112Route.primaryKpi?.label || "n/a"} · ${confidenceLabel}.`;
+        if (vo112Route.blindSpot) {
+          state.routeExplanation += ` Blind-spot warning: ${vo112Route.blindSpot.kpiLabel} ${formatVo112StateLabel(vo112Route.blindSpot.reading)}.`;
+        }
+        els.routeNote.textContent = state.routeExplanation;
+        rerenderWorkspace();
+        return;
+      }
+
       const cells = getMatrixCells();
       let bestCell = null;
       let bestScore = -1;
