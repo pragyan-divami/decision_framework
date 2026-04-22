@@ -261,6 +261,29 @@ def _clean_schema_text(value: str) -> str:
     return cleaned
 
 
+def _collapse_markdown_text(value: str) -> str:
+    if not value:
+        return ""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", value)
+    text = re.sub(r"^#+\s*", "", text, flags=re.M)
+    text = re.sub(r"^\s*-\s*", "", text, flags=re.M)
+    text = re.sub(r"\n{2,}", "\n\n", text.strip())
+    return text
+
+
+def _build_header_summary(about: str, scenario_body: str, tension: str, call: str) -> str:
+    parts = []
+    if about:
+        parts.append(_collapse_markdown_text(about))
+    elif scenario_body:
+        parts.append(_collapse_markdown_text(scenario_body))
+    if tension:
+        parts.append(f"Tension: {_collapse_markdown_text(tension)}")
+    if call:
+        parts.append(f"Decision focus: {_collapse_markdown_text(call)}")
+    return "\n\n".join(part for part in parts if part).strip()
+
+
 def _slugify(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
@@ -419,6 +442,49 @@ def _extract_scenario_options(text: str) -> List[Dict[str, str]]:
     return options
 
 
+def _extract_pack_options(text: str) -> List[Dict[str, str]]:
+    options: List[Dict[str, str]] = []
+    matches = list(
+        re.finditer(
+            r"\*\*([A-Z])\.\s+(.+?)\*\*\s*(.*?)(?=\n\s*\*\*[A-Z]\.\s+|\n###\s+KPI families|\Z)",
+            text,
+            re.S,
+        )
+    )
+    for match in matches:
+        code, label, body = match.groups()
+        normalized = re.sub(r"\s+", " ", body).strip()
+        options.append(
+            {
+                "code": code.strip(),
+                "label": label.strip(),
+                "summary": normalized,
+                "risk": "",
+                "keywords": _keywords(label, normalized),
+            }
+        )
+    return options
+
+
+def _extract_pack_kpis(text: str) -> List[Dict[str, str]]:
+    kpis: List[Dict[str, str]] = []
+    for index, bullet in enumerate(_extract_bullets(text), start=1):
+        kpis.append({"code": f"K{index}", "label": bullet})
+    return kpis
+
+
+def _build_pack_summary(trigger: str, tension: str, options: List[Dict[str, str]]) -> str:
+    parts = []
+    if trigger:
+        parts.append(trigger.strip())
+    if tension:
+        parts.append(f"Tension: {tension.strip()}")
+    if options:
+        option_summary = "; ".join(f"{item['code']}: {item['label']}" for item in options[:3])
+        parts.append(f"Options in play: {option_summary}.")
+    return "\n\n".join(parts)
+
+
 def _derive_perspectives(kpis: List[Dict[str, str]], context_bullets: List[str], lens: str, tension: str, role: str, platform: str) -> List[Dict[str, Any]]:
     base_bullets = context_bullets[:2]
     perspectives: List[Dict[str, Any]] = []
@@ -536,7 +602,7 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
     decision_context = _extract_table_rows(decision_context_text)
     kpi_text = _extract_section(text, "KPI families")
     kpis = _extract_kpis(kpi_text)
-    summary = " ".join(line.strip() for line in scenario_body.splitlines()[:2] if line.strip())
+    summary = _build_header_summary(about, scenario_body, tension, call)
     if shared_across_personas:
         matches = list(
             re.finditer(
@@ -563,7 +629,16 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
                     if item.strip()
                 ] if kpi_match else [],
                 "options": _extract_options_from_section(block),
-                "summary": " ".join(line.strip() for line in block.splitlines()[:3] if line.strip() and not line.strip().startswith("**")),
+                "summary": "\n\n".join(
+                    part
+                    for part in [
+                        _clean_schema_text(decision_match.group(1).strip()) if decision_match else "",
+                        f"Tension: {_clean_schema_text(tension_match.group(1).strip())}" if tension_match else "",
+                        f"Time horizon: {_clean_schema_text(time_match.group(1).strip())}" if time_match else "",
+                    ]
+                    if part
+                ),
+                "explanation": _collapse_markdown_text(block),
                 "keywords": _keywords(persona_name, block),
             }
     return {
@@ -593,6 +668,62 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
         "scenarioKinds": ["commercial-contracts"] if _is_commercial_context(domain, platform, scenario_title, summary, tension, call, about) else [],
         "keywords": _keywords(scenario_title, summary, tension, call, *(item["label"] for item in kpis)),
     }
+
+
+def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
+    text = path.read_text(encoding="utf-8")
+    pack_title_match = re.search(r"^##\s+(.+Scenario Pack)$", text, re.M)
+    pack_title = pack_title_match.group(1).strip() if pack_title_match else path.stem.replace("_", " ")
+
+    scenario_matches = list(
+        re.finditer(
+            r"^##\s+Scenario\s+(\d+)\s+·\s+(.+?)\n(.*?)(?=^##\s+Scenario\s+\d+\s+·|\Z)",
+            text,
+            re.M | re.S,
+        )
+    )
+
+    scenarios: List[Dict[str, Any]] = []
+    for match in scenario_matches:
+        number, title, block = match.groups()
+        trigger = _extract_section_body(block, "### Trigger")
+        tension = _extract_section_body(block, "### Decision tension")
+        options_text = _extract_section_body(block, "### Options")
+        kpi_text = _extract_section_body(block, "### KPI families")
+        options = _extract_pack_options(options_text)
+        kpis = _extract_pack_kpis(kpi_text)
+        summary = _build_pack_summary(trigger, tension, options)
+        scenarios.append(
+            {
+                "id": f"cross-{_slugify(path.stem)}-{number}-scenario",
+                "code": "CROSS",
+                "name": f"{pack_title} · Scenario {number}",
+                "label": title.strip(),
+                "personaCode": "CROSS",
+                "personaName": "All personas",
+                "domain": "Contracts & Commercial Variance",
+                "platform": "Port Talbot Transformation Programme",
+                "persona": "All personas",
+                "scenarioDate": "",
+                "classification": "Shared scenario pack",
+                "trigger": trigger.strip(),
+                "about": trigger.strip(),
+                "scenarioTitle": title.strip(),
+                "scenarioBody": block.strip(),
+                "summary": summary,
+                "explanation": summary,
+                "call": "Choose the most defensible path across the available options.",
+                "tension": tension.strip(),
+                "decisionContext": {},
+                "kpiFamilies": kpis,
+                "options": options,
+                "sharedAcrossPersonas": True,
+                "personaOverrides": {},
+                "scenarioKinds": ["commercial-contracts"],
+                "keywords": _keywords(title, trigger, tension, *(item["label"] for item in kpis), *(item["label"] for item in options)),
+            }
+        )
+    return scenarios
 
 
 def _parse_vo112_schema() -> Dict[str, Any]:
@@ -753,7 +884,12 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
             path.name,
         ),
     )
-    scenarios = [_parse_scenario_file(path) for path in scenario_files]
+    scenarios: List[Dict[str, Any]] = []
+    for path in scenario_files:
+        if "Scenario_Pack" in path.name:
+            scenarios.extend(_parse_scenario_pack_file(path))
+        else:
+            scenarios.append(_parse_scenario_file(path))
     scenario_map: Dict[str, List[Dict[str, Any]]] = {}
     for scenario in scenarios:
         if scenario.get("sharedAcrossPersonas"):

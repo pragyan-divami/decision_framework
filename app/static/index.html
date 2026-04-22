@@ -93,22 +93,92 @@
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      font-size: clamp(1.7rem, 3vw, 2.8rem);
-      line-height: 0.96;
+      font-size: clamp(1.55rem, 2.5vw, 2.45rem);
+      line-height: 1.05;
       letter-spacing: -0.025em;
+      text-wrap: balance;
     }
     .hero-copy {
       margin: 0;
-      max-width: 920px;
+      max-width: 1080px;
       color: var(--muted);
       font-size: 0.98rem;
       line-height: 1.58;
       text-wrap: pretty;
+      white-space: pre-line;
+    }
+    .insight-copy {
+      white-space: pre-line;
     }
     .hero-route-note {
       color: var(--muted);
       font-size: 0.8rem;
       line-height: 1.35;
+    }
+    .question-answer-box {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.9);
+      box-shadow: 0 12px 28px rgba(18, 32, 51, 0.04);
+    }
+    .question-answer-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .question-answer-title {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+      white-space: pre-line;
+    }
+    .question-answer-copy {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+      white-space: pre-line;
+      text-wrap: pretty;
+    }
+    .question-answer-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .question-answer-meta .panel-block {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(18, 32, 51, 0.07);
+      background: rgba(255, 253, 248, 0.66);
+    }
+    .question-answer-evidence {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .question-answer-evidence .panel-block {
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(18, 32, 51, 0.07);
+      background: rgba(255, 253, 248, 0.66);
+    }
+    .question-followups {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .question-followups[hidden] {
+      display: none;
+    }
+    .question-followups .summary-label {
+      margin-bottom: 0;
     }
     .button, .ghost-button, .chip-button, select, textarea, input {
       font: inherit;
@@ -348,6 +418,37 @@
       height: 16px;
       display: block;
     }
+    .question-assist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .question-assist[hidden] {
+      display: none !important;
+    }
+    .question-chip {
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      background: rgba(255, 253, 248, 0.84);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.66rem;
+      line-height: 1.1;
+      cursor: pointer;
+      transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+    }
+    .question-chip:hover {
+      border-color: rgba(30, 79, 144, 0.18);
+      color: var(--accent);
+      background: rgba(30, 79, 144, 0.06);
+    }
+    .inline-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
     .matrix-shell {
       display: grid;
       gap: 18px;
@@ -439,6 +540,20 @@
     .matrix-cell.routed {
       outline: 2px solid rgba(31, 112, 85, 0.22);
       outline-offset: 0;
+    }
+    .cell-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(31, 112, 85, 0.1);
+      color: var(--good);
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      line-height: 1;
     }
     .cell-title {
       font-size: 0.78rem;
@@ -658,6 +773,40 @@
                 </button>
               </div>
               <div class="hero-route-note" id="routeNote">No question routed yet. You can also click any matrix cell directly.</div>
+              <div class="question-answer-box" id="questionAnswerBox">
+                <div class="question-answer-head">
+                  <div class="summary-label">Answer</div>
+                  <div class="framework-tag" id="questionAnswerTag">Awaiting question</div>
+                </div>
+                <div class="question-answer-title" id="questionAnswerTitle">Ask a scenario question</div>
+                <div class="question-answer-copy" id="questionAnswerSummary">The system will answer from the selected scenario, then use the matrix as supporting evidence.</div>
+                <div class="question-answer-meta" id="questionAnswerMeta">
+                  <div class="panel-block">
+                    <div class="summary-label">Recommended Action</div>
+                    <div class="panel-note" id="questionAnswerAction">The action will appear after the system answers the question.</div>
+                  </div>
+                  <div class="panel-block">
+                    <div class="summary-label">Primary Risk</div>
+                    <div class="panel-note" id="questionAnswerRisk">The main risk will appear here.</div>
+                  </div>
+                  <div class="panel-block">
+                    <div class="summary-label">Likely Consequence</div>
+                    <div class="panel-note" id="questionAnswerConsequence">The likely consequence will appear here.</div>
+                  </div>
+                </div>
+                <div class="question-answer-evidence" id="questionAnswerEvidence">
+                  <div class="panel-block">
+                    <div class="summary-label">Supporting Matrix Cell</div>
+                    <div class="insight-title" id="questionSupportCellTitle">No cell selected</div>
+                    <div class="insight-copy" id="questionSupportCellSummary">The selected matrix cell will explain why the answer is grounded in this perspective and emotion mode.</div>
+                  </div>
+                  <div class="panel-block">
+                    <div class="summary-label">Evidence Used</div>
+                    <ul class="insight-list" id="questionAnswerEvidenceList"></ul>
+                  </div>
+                </div>
+              </div>
+              <div class="question-assist" id="questionAssist" hidden></div>
             </div>
           </div>
         </section>
@@ -673,51 +822,6 @@
           <div class="matrix-grid" id="matrixGrid"></div>
         </section>
 
-        <section class="surface insight-panel">
-          <div class="card-header">
-            <div>
-              <h2 class="card-title">Decision Insight</h2>
-              <p class="card-note" id="insightReason">Click a matrix cell or route a question to inspect one emotion-mode × perspective intersection.</p>
-            </div>
-            <div class="framework-tag" id="insightTag">Tata UK</div>
-          </div>
-          <div class="insight-grid">
-            <div class="panel-block">
-              <div class="summary-label">Active Cell</div>
-              <div class="insight-title" id="insightTitle">Awaiting selection</div>
-              <div class="insight-copy" id="insightSummary">The matrix will explain what this cell means, what data it needs, which action it leans toward, and what downside it creates.</div>
-            </div>
-            <div class="panel-block">
-              <h3>Recommended Action</h3>
-              <p class="panel-note" id="insightAction"></p>
-            </div>
-            <div class="panel-block">
-              <h3>Primary Risk</h3>
-              <p class="panel-note" id="insightRisk"></p>
-            </div>
-            <div class="panel-block">
-              <h3>Likely Consequence</h3>
-              <p class="panel-note" id="insightConsequence"></p>
-            </div>
-            <div class="panel-block chart-wrap panel-span-2">
-              <h3 id="chartTitle">Evidence Signal</h3>
-              <div id="chartBars"></div>
-              <div class="chart-caption" id="chartCaption">The chart block changes with the selected cell.</div>
-            </div>
-            <div class="panel-block">
-              <h3>Top KPIs</h3>
-              <ul class="insight-list" id="insightKpis"></ul>
-            </div>
-            <div class="panel-block">
-              <h3>Data To Inspect</h3>
-              <ul class="insight-list" id="insightData"></ul>
-            </div>
-            <div class="panel-block">
-              <h3>Blind Spot And Next Step</h3>
-              <p class="panel-note" id="insightBlind"></p>
-            </div>
-          </div>
-        </section>
       </section>
     </section>
   </main>
@@ -1064,7 +1168,11 @@
       analysis: null,
       activeCellId: null,
       routedCellId: null,
-      routeExplanation: ""
+      routeExplanation: "",
+      pendingClarification: null,
+      assistMode: "idle",
+      recoverySuggestions: [],
+      followUpSuggestions: []
     };
 
     const els = {
@@ -1080,28 +1188,29 @@
       questionInput: document.getElementById("questionInput"),
       routeQuestionButton: document.getElementById("routeQuestionButton"),
       routeNote: document.getElementById("routeNote"),
-      insightTag: document.getElementById("insightTag"),
-      insightReason: document.getElementById("insightReason"),
-      insightTitle: document.getElementById("insightTitle"),
-      insightSummary: document.getElementById("insightSummary"),
-      insightKpis: document.getElementById("insightKpis"),
-      insightData: document.getElementById("insightData"),
-      chartTitle: document.getElementById("chartTitle"),
-      chartBars: document.getElementById("chartBars"),
-      chartCaption: document.getElementById("chartCaption"),
-      insightAction: document.getElementById("insightAction"),
-      insightRisk: document.getElementById("insightRisk"),
-      insightConsequence: document.getElementById("insightConsequence"),
-      insightBlind: document.getElementById("insightBlind")
+      questionAnswerBox: document.getElementById("questionAnswerBox"),
+      questionAnswerTag: document.getElementById("questionAnswerTag"),
+      questionAnswerTitle: document.getElementById("questionAnswerTitle"),
+      questionAnswerSummary: document.getElementById("questionAnswerSummary"),
+      questionAnswerAction: document.getElementById("questionAnswerAction"),
+      questionAnswerRisk: document.getElementById("questionAnswerRisk"),
+      questionAnswerConsequence: document.getElementById("questionAnswerConsequence"),
+      questionSupportCellTitle: document.getElementById("questionSupportCellTitle"),
+      questionSupportCellSummary: document.getElementById("questionSupportCellSummary"),
+      questionAnswerEvidenceList: document.getElementById("questionAnswerEvidenceList"),
+      questionAssist: document.getElementById("questionAssist")
     };
 
-    function getPersona() {
-      return MODEL.personas.find((item) => item.id === state.personaId) || MODEL.personas[0];
+    function getPersonaById(personaId = state.personaId) {
+      return MODEL.personas.find((item) => item.id === personaId) || MODEL.personas[0];
     }
 
-    function getScenario() {
-      const persona = getPersona();
-      const scenario = persona?.scenarios?.find((item) => item.id === state.scenarioId) || persona?.scenarios?.[0] || null;
+    function getPersona() {
+      return getPersonaById(state.personaId);
+    }
+
+    function getScenarioForPersona(persona = getPersona(), scenarioId = state.scenarioId) {
+      const scenario = persona?.scenarios?.find((item) => item.id === scenarioId) || persona?.scenarios?.[0] || null;
       if (!scenario) return null;
       if (!scenario.sharedAcrossPersonas) return scenario;
       const override = scenario.personaOverrides?.[persona.code];
@@ -1111,11 +1220,16 @@
         personaOverride: override,
         scenarioTitle: override.decision || scenario.scenarioTitle || scenario.label,
         summary: override.summary || scenario.summary,
+        explanation: override.explanation || scenario.explanation || scenario.summary,
         tension: override.tension || scenario.tension,
         options: override.options?.length ? override.options : scenario.options,
         kpiFamilies: override.kpis?.length ? override.kpis : scenario.kpiFamilies,
         keywords: [...(scenario.keywords || []), ...(override.keywords || [])]
       };
+    }
+
+    function getScenario() {
+      return getScenarioForPersona(getPersona(), state.scenarioId);
     }
 
     function getVo112Schema() {
@@ -1137,8 +1251,12 @@
       return (persona?.scenarios || []).find((item) => isVo112Scenario(item)) || null;
     }
 
+    function getFrameworkByCode(code = state.selectedFramework) {
+      return MODEL.frameworks[code] || MODEL.frameworks.A;
+    }
+
     function getFramework() {
-      return MODEL.frameworks[state.selectedFramework] || MODEL.frameworks.A;
+      return getFrameworkByCode(state.selectedFramework);
     }
 
     function getCommercialLogic() {
@@ -1165,7 +1283,9 @@
       if (isVo112Scenario(scenario)) {
         const personaSchema = getVo112PersonaSchema();
         const heroTitle = personaSchema?.decision || scenario?.personaOverride?.decision || scenario?.scenarioTitle || scenario?.label || MODEL.project.name;
-        const heroCopy = scenario?.personaOverride?.summary
+        const heroCopy = scenario?.explanation
+          || scenario?.personaOverride?.explanation
+          || scenario?.personaOverride?.summary
           || personaSchema?.tension
           || scenario?.personaOverride?.tension
           || scenario?.summary
@@ -1176,6 +1296,7 @@
       }
       els.heroTitle.textContent = scenario?.scenarioTitle || MODEL.project.name;
       els.heroCopy.textContent = state.analysis?.parsed?.scenario
+        || scenario?.summary
         || scenario?.about
         || "Use the wizard to resolve Tata UK context, then explore how the selected emotional framework changes what matters across commissioning, commercial, workforce, grant, and energy decisions.";
     }
@@ -1209,6 +1330,10 @@
       }
     }
 
+    function getDefaultSelectedPerspectives(persona = getPersona(), scenario = getScenario()) {
+      return getActivePerspectives(persona, scenario).slice(0, Math.min(4, getActivePerspectives(persona, scenario).length)).map((item) => item.id);
+    }
+
     function ensureScenarioSelection() {
       const persona = getPersona();
       const scenarios = persona?.scenarios || [];
@@ -1228,6 +1353,15 @@
     function shortKpiLabel(label) {
       return (label || "")
         .replace(/^[A-Z]\d+\s+/, "")
+        .replace(/\s+vs\s+/gi, " / ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function formatVo112KpiName(label) {
+      return (label || "")
+        .replace(/^K\d+\s*[·:.-]\s*/i, "")
+        .replace(/^K\d+\s+/i, "")
         .replace(/\s+vs\s+/gi, " / ")
         .replace(/\s+/g, " ")
         .trim();
@@ -1276,7 +1410,7 @@
             id: item.perspectiveCode,
             code: item.perspectiveCode,
             label: meta.name || item.perspectiveLabel,
-            kpis: [item.kpiLabel],
+            kpis: [formatVo112KpiName(item.kpiLabel)],
             data: [
               `Current state: ${item.reading}`,
               personaSchema?.tension || "",
@@ -1284,15 +1418,15 @@
             chart: meta.defaultChart || "timeline",
             action: `${(schema.emotions?.A?.actionPattern || "verify, reserve, protect").replace(/,$/, "")}.`,
             risk: `${personaSchema?.tension || "The risk remains scenario-specific."}`,
-            consequence: `This perspective stays anchored to ${item.kpiLabel.toLowerCase()} for ${persona.role}.`,
+            consequence: `This perspective stays anchored to ${formatVo112KpiName(item.kpiLabel).toLowerCase()} for ${persona.role}.`,
             blind: item.hardPriority
-              ? `Hard-priority signal: ${item.kpiLabel.toLowerCase()} should remain visible even when emotional weighting shifts.`
-              : `Secondary signals around ${item.kpiLabel.toLowerCase()} can be missed if the matrix collapses into one dominant lens.`,
+              ? `Hard-priority signal: ${formatVo112KpiName(item.kpiLabel).toLowerCase()} should remain visible even when emotional weighting shifts.`
+              : `Secondary signals around ${formatVo112KpiName(item.kpiLabel).toLowerCase()} can be missed if the matrix collapses into one dominant lens.`,
             keywords: dedupeItems([
               item.perspectiveCode,
               meta.name || item.perspectiveLabel,
               ...(meta.questionTags || []),
-              ...extractTextTokens(item.kpiLabel),
+              ...extractTextTokens(formatVo112KpiName(item.kpiLabel)),
               ...extractTextTokens(item.reading),
             ], 16),
           };
@@ -1347,9 +1481,232 @@
         .replace(/⚑/g, "🚩");
     }
 
+    const VO112_QUESTION_SUGGESTIONS = {
+      default: [
+        "Who should know first if this slips further?",
+        "What is the safest path under VO112 right now?",
+        "Which KPI matters most before Tata responds to Tenova?",
+      ],
+      P1: [
+        "What should the CEO do if VO112 threatens the 2027 commitment?",
+        "Which cell best handles grant covenant pressure under VO112?",
+      ],
+      P4: [
+        "What should the CFO do if grant clawback risk increases?",
+        "Should finance pay under protest or hold the disputed amount?",
+      ],
+      P6: [
+        "Who should the Board Chair tell first under VO112?",
+        "At what point does VO112 become a board-level governance event?",
+      ],
+      P10: [
+        "Should Priya tell BMW now or wait?",
+        "Which cell best handles customer qualification risk under VO112?",
+      ],
+    };
+
+    function getVo112Suggestions(persona = getPersona()) {
+      return dedupeItems([
+        ...(VO112_QUESTION_SUGGESTIONS[persona?.code] || []),
+        ...VO112_QUESTION_SUGGESTIONS.default,
+      ], 4);
+    }
+
+    function getPerspectiveQuestionKind(label = "") {
+      const lower = label.toLowerCase();
+      if (lower.includes("schedule") || lower.includes("delivery")) return "schedule";
+      if (lower.includes("financial") || lower.includes("grant") || lower.includes("cash") || lower.includes("budget")) return "financial";
+      if (lower.includes("people") || lower.includes("political") || lower.includes("stakeholder") || lower.includes("governance")) return "people";
+      if (lower.includes("commercial") || lower.includes("strategic") || lower.includes("customer")) return "commercial";
+      return "default";
+    }
+
+    function buildQuestionForCell(cell, persona = getPersona(), scenario = getScenario(), family = "action") {
+      const perspectiveLabel = cell.title.split(" × ")[1] || cell.optionLabel || cell.perspectiveId || "this perspective";
+      const primaryKpi = (cell.kpis?.[0] || perspectiveLabel || "this KPI").trim();
+      const lowerKpi = primaryKpi.charAt(0).toLowerCase() + primaryKpi.slice(1);
+      const scenarioTitle = scenario?.scenarioTitle || "this scenario";
+      const role = persona?.role || "this persona";
+      const kind = getPerspectiveQuestionKind(perspectiveLabel);
+
+      if (family === "data") return `Which data should ${role} inspect first before acting on ${lowerKpi} in ${scenarioTitle}?`;
+      if (family === "threshold") return `At what point does ${lowerKpi} become the trigger to change course in ${scenarioTitle}?`;
+      if (family === "stakeholder") return `Who should ${role} tell first if ${lowerKpi} worsens in ${scenarioTitle}?`;
+      if (family === "risk") return `What is the dominant downside if Tata waits on ${lowerKpi} in ${scenarioTitle}?`;
+
+      if (kind === "schedule") return `What is the safest schedule-recovery path if ${lowerKpi} deteriorates in ${scenarioTitle}?`;
+      if (kind === "financial") return `What is the most financially defensible move if ${lowerKpi} worsens in ${scenarioTitle}?`;
+      if (kind === "people") return `What is the most defensible stakeholder path if ${lowerKpi} becomes harder to manage in ${scenarioTitle}?`;
+      if (kind === "commercial") return `What is the best commercial move if ${lowerKpi} comes under pressure in ${scenarioTitle}?`;
+      return `What is the best path through the ${perspectiveLabel} lens in ${scenarioTitle}?`;
+    }
+
+    function selectDistinctCells(scoredCells, limit = 4) {
+      const chosen = [];
+      const seenPerspectives = new Set();
+      scoredCells.forEach((item) => {
+        const cell = item?.cell || item;
+        if (!cell) return;
+        const perspective = cell.perspectiveId || cell.title.split(" × ")[1] || cell.optionLabel;
+        if (perspective && seenPerspectives.has(perspective)) return;
+        chosen.push(cell);
+        if (perspective) seenPerspectives.add(perspective);
+      });
+      return chosen.slice(0, limit);
+    }
+
+    function detectQuestionFamilies(question = "") {
+      const lower = question.toLowerCase();
+      const families = [];
+      if (["risk", "downside", "exposure", "danger", "slip"].some((term) => lower.includes(term))) families.push("risk");
+      if (["data", "evidence", "kpi", "metric", "prove", "confirm"].some((term) => lower.includes(term))) families.push("data");
+      if (["when", "threshold", "trigger", "point", "deadline"].some((term) => lower.includes(term))) families.push("threshold");
+      if (["tell", "notify", "disclose", "announce", "who should know"].some((term) => lower.includes(term))) families.push("stakeholder");
+      families.push("action");
+      return dedupeItems(families, 4);
+    }
+
+    function buildRecoverySuggestions(question, persona = getPersona(), scenario = getScenario(), framework = getFramework()) {
+      const lower = (question || "").toLowerCase();
+      const tokens = extractTextTokens(lower);
+      const context = buildCellsForContext({ persona, scenario, frameworkCode: framework.code, question });
+      const scoredCells = context.cells.map((cell) => {
+        const haystack = [
+          cell.title,
+          cell.optionLabel,
+          cell.recommendedAction,
+          cell.risk,
+          cell.consequence,
+          ...(cell.kpis || []),
+          ...(cell.routeKeywords || []),
+        ].join(" ").toLowerCase();
+        const overlap = tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+        return { cell, overlap };
+      }).sort((a, b) => b.overlap - a.overlap);
+
+      const topCells = selectDistinctCells(scoredCells, 4);
+      const families = detectQuestionFamilies(question);
+      const suggestions = topCells.map((cell, index) => buildQuestionForCell(cell, persona, scenario, families[index % Math.max(1, families.length)] || "action"));
+
+      if (!suggestions.length) {
+        suggestions.push(`Which KPI becomes dominant if ${scenario?.scenarioTitle || "this scenario"} deteriorates further?`);
+        suggestions.push(`What data should ${persona.role} inspect first before choosing a path here?`);
+        suggestions.push(`Who should ${persona.role} tell first if this scenario worsens?`);
+        suggestions.push(`At what point does this become the trigger to change course?`);
+      }
+
+      return dedupeItems(suggestions, 5);
+    }
+
+    function isBroadQuestion(question) {
+      const lower = (question || "").trim().toLowerCase();
+      if (!lower) return false;
+      const broadPhrases = [
+        "best solution",
+        "best path",
+        "right path",
+        "what should we do",
+        "what should i do",
+        "what now",
+        "help",
+        "tell me the answer",
+        "give me the answer",
+        "what is the answer",
+        "best move",
+      ];
+      if (broadPhrases.includes(lower)) return true;
+      const tokens = extractTextTokens(lower);
+      if (tokens.length <= 2 && ["help", "answer", "solution", "path", "what", "now"].some((token) => lower.includes(token))) {
+        return true;
+      }
+      return false;
+    }
+
+    function buildBroadQuestionSuggestions(question = "", persona = getPersona(), scenario = getScenario()) {
+      const framework = getFramework();
+      const built = buildCellsForContext({ persona, scenario, frameworkCode: framework.code, question: "" });
+      const topCells = selectDistinctCells(built.cells, 4);
+      const families = detectQuestionFamilies(question || "").length
+        ? detectQuestionFamilies(question || "")
+        : ["action", "risk", "stakeholder", "threshold"];
+      const suggestions = topCells.map((cell, index) => buildQuestionForCell(cell, persona, scenario, families[index] || "action"));
+      return dedupeItems(suggestions, 5);
+    }
+
+    function buildFollowUpSuggestions(cell, persona = getPersona(), scenario = getScenario(), framework = getFramework()) {
+      if (!cell) return [];
+      const perspectives = getActivePerspectives(persona, scenario).filter((item) => item.id !== cell.perspectiveId && item.code !== cell.perspectiveId);
+      const modes = getFrameworkModesForContext(framework.code, scenario).filter((item) => item.id !== cell.modeId && item.code !== cell.modeId);
+      const primaryKpi = cell.kpis?.[0] || cell.optionLabel || "this signal";
+      const kind = getPerspectiveQuestionKind(cell.title.split(" × ")[1] || cell.optionLabel || "");
+      let riskQuestion = `What becomes the dominant risk if Tata waits 14 more days here?`;
+      let thresholdQuestion = `At what point does ${primaryKpi.toLowerCase()} become the trigger to change course?`;
+      if (kind === "financial") {
+        riskQuestion = `What happens to contingency and exposure if Tata waits on ${primaryKpi.toLowerCase()}?`;
+        thresholdQuestion = `At what point does ${primaryKpi.toLowerCase()} become a board-level financial trigger?`;
+      } else if (kind === "people") {
+        riskQuestion = `Who becomes the next stakeholder risk if Tata waits on ${primaryKpi.toLowerCase()}?`;
+        thresholdQuestion = `When does ${primaryKpi.toLowerCase()} become a disclosure or governance trigger?`;
+      } else if (kind === "commercial") {
+        riskQuestion = `What commercial downside grows first if Tata waits on ${primaryKpi.toLowerCase()}?`;
+        thresholdQuestion = `When does ${primaryKpi.toLowerCase()} force a customer or counterparty decision?`;
+      }
+      const questions = [
+        perspectives[0] ? `How does this look from the ${perspectives[0].label} perspective instead?` : "",
+        modes[0] ? `What changes if this is viewed through ${modes[0].label} instead of ${cell.title.split(" × ")[0]}?` : "",
+        riskQuestion,
+        `Which additional data would confirm this recommendation for ${primaryKpi.toLowerCase()}?`,
+        thresholdQuestion,
+      ].filter(Boolean);
+      return dedupeItems(questions, 5);
+    }
+
+    function renderQuestionAssist() {
+      let suggestions = [];
+      let prefix = "";
+      if (isVo112Scenario()) {
+        suggestions = getVo112Suggestions();
+      }
+      els.questionAssist.hidden = !suggestions.length;
+      els.questionAssist.innerHTML = `${prefix}${suggestions.map((text) => `
+        <button class="question-chip" type="button" data-question-chip="${text.replace(/"/g, "&quot;")}">${text}</button>
+      `).join("")}`;
+    }
+
+    function buildClarificationSuggestions() {
+      const clarification = state.pendingClarification;
+      if (!clarification) return [];
+      if (clarification.suggestions?.length) return clarification.suggestions;
+      const candidateSuggestions = (clarification.candidates || []).map((candidate) => {
+        const personaRole = candidate.persona?.role || "";
+        const scenarioTitle = candidate.scenario?.scenarioTitle || "";
+        const perspectiveLabel = candidate.perspective?.label || candidate.cell?.title || "";
+        if (isVo112Scenario(candidate.scenario)) {
+          if (/who should know|tell|notify|disclose/i.test(clarification.originalQuestion || "")) {
+            return `From the ${personaRole} lens, who should know first under ${scenarioTitle}?`;
+          }
+          return `For ${personaRole}, what is the right path under ${scenarioTitle} through ${perspectiveLabel}?`;
+        }
+        return `Route this through ${personaRole} / ${scenarioTitle}.`;
+      });
+      return dedupeItems(candidateSuggestions, 4);
+    }
+
     function scorePhraseMatches(text, phrases = [], weight = 1) {
       const lower = (text || "").toLowerCase();
       return phrases.reduce((sum, phrase) => sum + (lower.includes(String(phrase).toLowerCase()) ? weight : 0), 0);
+    }
+
+    function scoreTokenOverlap(text, phrases = [], weight = 1) {
+      const lower = (text || "").toLowerCase();
+      const tokens = new Set(extractTextTokens(lower));
+      let score = 0;
+      phrases.forEach((phrase) => {
+        extractTextTokens(String(phrase)).forEach((token) => {
+          if (tokens.has(token)) score += weight;
+        });
+      });
+      return score;
     }
 
     function detectVo112ScenarioActivation(question, scenario = getScenario()) {
@@ -1364,19 +1721,44 @@
       return { active: score > 0, score };
     }
 
+    function getVo112PersonaMentions(question) {
+      const lower = (question || "").toLowerCase();
+      const matches = MODEL.personas.map((persona) => {
+        const terms = VO112_ROUTER.personaTerms[persona.code] || [];
+        const score = scorePhraseMatches(lower, terms, 3);
+        return { persona, score };
+      }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score);
+      return matches;
+    }
+
     function resolveVo112Persona(question) {
       const currentPersona = getPersona();
-      let winner = currentPersona;
-      let bestScore = 0;
-      MODEL.personas.forEach((persona) => {
-        const terms = VO112_ROUTER.personaTerms[persona.code] || [];
-        const score = scorePhraseMatches(question, terms, 3);
-        if (score > bestScore) {
-          bestScore = score;
-          winner = persona;
-        }
-      });
-      return { persona: winner, score: bestScore };
+      const matches = getVo112PersonaMentions(question);
+      if (matches.length) {
+        return {
+          persona: matches[0].persona,
+          score: matches[0].score,
+          explicit: true,
+          explicitMatches: matches.length,
+          matches,
+        };
+      }
+      if (isVo112Scenario()) {
+        return {
+          persona: currentPersona,
+          score: 3,
+          explicit: false,
+          explicitMatches: 0,
+          matches: [],
+        };
+      }
+      return {
+        persona: currentPersona,
+        score: 0,
+        explicit: false,
+        explicitMatches: 0,
+        matches: [],
+      };
     }
 
     function classifyVo112QuestionType(question) {
@@ -1421,6 +1803,18 @@
       if (questionType === "timing") scores.P1 += 2;
       if (questionType === "comparison" || questionType === "recommendation") scores.P4 += 1;
       if (questionType === "threshold" || questionType === "kpi_lookup") scores.P2 += 1;
+      if (/safest|protect|contain|avoid downside|defensible|worst case|delay|slip|schedule|critical path/.test(lower)) {
+        scores.P1 += 3;
+      }
+      if (/cash|cost|budget|grant|clawback|fund|contingency|reserve|finance/.test(lower)) {
+        scores.P2 += 3;
+      }
+      if (/board|government|dbet|ministers|union|community|tell|notify|disclose|announce|media/.test(lower)) {
+        scores.P3 += 3;
+      }
+      if (/tenova|claim|payment|settlement|precedent|contract|bmw|jlr|customer|commercial|withhold|pay under protest/.test(lower)) {
+        scores.P4 += 3;
+      }
 
       let winner = "P4";
       let bestScore = -1;
@@ -1434,7 +1828,41 @@
 
       const perspective = (getActivePerspectives(persona, scenario) || []).find((item) => item.code === winner)
         || getActivePerspectives().find((item) => item.code === winner);
-      return { code: winner, score: bestScore, perspective };
+      return { code: winner, score: bestScore, perspective, scores };
+    }
+
+    function getVo112ExplicitPerspectiveCode(question) {
+      const lower = (question || "").toLowerCase();
+      const perspectiveMap = [
+        { code: "P1", terms: ["schedule/delivery", "schedule delivery", "delivery", "schedule", "timeline"] },
+        { code: "P2", terms: ["financial", "finance", "cash", "budget", "grant"] },
+        { code: "P3", terms: ["people/political", "people political", "people", "political", "stakeholder", "government", "board"] },
+        { code: "P4", terms: ["commercial/strategic", "commercial strategic", "commercial", "strategic", "contract", "customer"] },
+      ];
+      const hit = perspectiveMap.find((item) => item.terms.some((term) => lower.includes(term)));
+      return hit?.code || null;
+    }
+
+    function getVo112PreferredEmotionForPerspective(persona, perspectiveCode) {
+      const personaSchema = getVo112PersonaSchema(persona);
+      if (!personaSchema?.cells) return null;
+      const candidates = ["A", "B", "C", "D"].map((code) => {
+        const cell = personaSchema.cells?.[`${persona.code}_${code}_${perspectiveCode}`];
+        return cell ? { code, weight: Number(cell.weight || 0) } : null;
+      }).filter(Boolean).sort((a, b) => b.weight - a.weight);
+      return candidates[0]?.code || null;
+    }
+
+    function buildVo112DirectCandidate(persona, scenario, perspectiveCode, emotionCode) {
+      const personaSchema = getVo112PersonaSchema(persona);
+      if (!personaSchema?.cells) return null;
+      const perspective = getActivePerspectives(persona, scenario).find((item) => item.code === perspectiveCode);
+      const mode = getVo112EmotionRows().find((item) => item.code === emotionCode);
+      if (!perspective || !mode) return null;
+      const cellSchema = personaSchema.cells?.[`${persona.code}_${emotionCode}_${perspectiveCode}`];
+      if (!cellSchema) return null;
+      const cell = buildVo112Cell({ persona, scenario, perspective, mode });
+      return { persona, scenario, perspective, mode, cellSchema, cell };
     }
 
     function selectVo112PrimaryKpi(question, personaSchema, perspectiveCode, emotionCode) {
@@ -1443,7 +1871,7 @@
       const byPerspective = spine.find((item) => item.perspectiveCode === perspectiveCode) || spine[0] || null;
 
       const explicit = spine.find((item) => {
-        const label = item.kpiLabel || "";
+        const label = formatVo112KpiName(item.kpiLabel || "");
         return lower.includes(item.kpiCode.toLowerCase()) || extractTextTokens(label).some((token) => lower.includes(token));
       });
 
@@ -1455,56 +1883,206 @@
       };
     }
 
+    function scoreVo112CellCandidate(question, candidate, questionType, emotionHint, perspectiveHint, personaResolution) {
+      const lower = (question || "").toLowerCase();
+      const tokens = extractTextTokens(lower);
+      const cellSchema = candidate.cellSchema || {};
+      const hardPriorityRed = /red|🔴/.test(`${cellSchema.primaryKpi?.currentState || ""}`.toLowerCase());
+      const explicitPerspectiveCode = getVo112ExplicitPerspectiveCode(question);
+      const preferredEmotionCode = explicitPerspectiveCode
+        ? getVo112PreferredEmotionForPerspective(candidate.persona, explicitPerspectiveCode)
+        : null;
+      const haystackTerms = dedupeItems([
+        candidate.persona.role,
+        candidate.scenario?.scenarioTitle,
+        candidate.mode?.label,
+        candidate.mode?.focus,
+        candidate.perspective?.label,
+        candidate.cell?.title,
+        candidate.cell?.optionLabel,
+        candidate.cell?.recommendedAction,
+        candidate.cell?.risk,
+        candidate.cell?.consequence,
+        candidate.cell?.rationale,
+        cellSchema.actionPattern,
+        cellSchema.biasRisk,
+        cellSchema.primaryKpi?.label,
+        cellSchema.primaryKpi?.currentState,
+        ...(cellSchema.supportingKpis || []),
+        ...(cellSchema.routeKeywords || []),
+        ...(cellSchema.questionTags || []),
+        ...(candidate.cell?.kpis || []),
+        ...(candidate.cell?.dataRequirements || []),
+      ], 80);
+      const phraseScore = scorePhraseMatches(lower, haystackTerms, 2);
+      const tokenScore = scoreTokenOverlap(lower, haystackTerms, 1);
+      let total = phraseScore + tokenScore;
+
+      if (candidate.mode?.code === emotionHint.code) {
+        total += emotionHint.score > 0 ? 12 + emotionHint.score : 4;
+      }
+      if (candidate.perspective?.code === perspectiveHint.code) {
+        total += 10 + Math.max(0, perspectiveHint.score || 0);
+      } else {
+        total += (perspectiveHint.scores?.[candidate.perspective?.code] || 0);
+      }
+      if (explicitPerspectiveCode && candidate.perspective?.code === explicitPerspectiveCode) {
+        total += 14;
+      }
+
+      if ((questionType.type === "stakeholder_signal" || questionType.type === "legal_trigger") && candidate.perspective?.code === "P3") total += 8;
+      if (questionType.type === "timing" && candidate.perspective?.code === "P1") total += 8;
+      if (questionType.type === "threshold" && candidate.perspective?.code === "P2") total += 6;
+      if (questionType.type === "comparison" && candidate.perspective?.code === "P4") total += 6;
+      if ((questionType.type === "action_selection" || questionType.type === "legal_trigger") && /safest|safe|defensible|downside|protect/.test(lower) && candidate.mode?.code === "A") total += 10;
+      if ((questionType.type === "action_selection" || questionType.type === "reversibility") && explicitPerspectiveCode && candidate.perspective?.code === explicitPerspectiveCode && preferredEmotionCode === candidate.mode?.code) {
+        total += 16;
+      }
+      if ((questionType.type === "sequencing" || questionType.type === "cost_of_delay") && /immediately|now|urgent|next/.test(lower) && candidate.mode?.code === "D") total += 8;
+      if (questionType.type === "reversibility" && candidate.mode?.code === "B") total += 6;
+      if (questionType.type === "probability" && ["P1", "P2"].includes(candidate.perspective?.code)) total += 5;
+      if (/board|government|dbet|ministers|union|community|trust|reput/.test(lower) && candidate.perspective?.code === "P3") total += 6;
+      if (/cash|cost|budget|grant|clawback|finance|contingency|fund/.test(lower) && candidate.perspective?.code === "P2") total += 6;
+      if (/delay|timeline|schedule|slip|programme|milestone|commission/.test(lower) && candidate.perspective?.code === "P1") total += 6;
+      if (/tenova|payment|settlement|customer|bmw|jlr|contract|precedent|commercial|withhold/.test(lower) && candidate.perspective?.code === "P4") total += 6;
+      if (hardPriorityRed && /risk|safest|critical|urgent|exposure|red/.test(lower)) total += 7;
+
+      if (!personaResolution.explicit && isVo112Scenario() && candidate.persona.id === getPersona().id) {
+        total += 8;
+      }
+      if (state.selectedFramework === candidate.mode?.code) total += 2;
+      if (state.selectedPerspectives.includes(candidate.perspective?.id)) total += 2;
+      if (tokens.length <= 3 && candidate.mode?.code === state.selectedFramework) total += 1;
+
+      return total;
+    }
+
     function routeVo112Question(question) {
       const scenarioActivation = detectVo112ScenarioActivation(question);
       if (!scenarioActivation.active) return null;
 
       const personaResolution = resolveVo112Persona(question);
-      const persona = personaResolution.persona || getPersona();
-      const vo112Scenario = findVo112ScenarioForPersona(persona);
-      if (!vo112Scenario) return null;
-
-      if (state.personaId !== persona.id) {
-        state.personaId = persona.id;
-        state.selectedPerspectives = [];
-      }
-      state.scenarioId = vo112Scenario.id;
-
-      const scenario = getScenario();
-      const personaSchema = getVo112PersonaSchema(persona);
       const questionType = classifyVo112QuestionType(question);
-      const emotion = inferVo112Emotion(question, persona);
-      const perspective = classifyVo112Perspective(question, persona, scenario, personaSchema, questionType.type);
-      const selectedPrimary = selectVo112PrimaryKpi(question, personaSchema, perspective.code, emotion.code);
-      const cellId = `${persona.code}_${emotion.code}_${perspective.code}`;
-      const cell = personaSchema?.cells?.[cellId] || null;
+      const currentOrResolvedPersona = personaResolution.persona || getPersona();
+      const currentOrResolvedScenario = getScenarioForPersona(currentOrResolvedPersona, findVo112ScenarioForPersona(currentOrResolvedPersona)?.id || state.scenarioId);
+      const explicitPerspectiveCode = getVo112ExplicitPerspectiveCode(question);
+      const explicitEmotionHint = inferVo112Emotion(question, currentOrResolvedPersona);
+      const hasExplicitEmotion = explicitEmotionHint.score > 0;
 
-      const scenarioScore = scenarioActivation.score > 0 ? 1 : 0.6;
-      const personaScore = personaResolution.score > 0 ? 1 : 0.7;
-      const perspectiveScore = Math.max(0.45, Math.min(1, 0.45 + (perspective.score || 0) * 0.08));
-      const emotionScore = emotion.score > 0 ? Math.min(1, 0.55 + emotion.score * 0.08) : 0.65;
-      const kpiScore = selectedPrimary.primary ? 0.8 : 0.45;
-      const confidence = Math.min(1, (scenarioScore + personaScore + perspectiveScore + emotionScore + kpiScore) / 5);
+      if (explicitPerspectiveCode) {
+        const directEmotionCode = hasExplicitEmotion
+          ? explicitEmotionHint.code
+          : getVo112PreferredEmotionForPerspective(currentOrResolvedPersona, explicitPerspectiveCode);
+        const directCandidate = buildVo112DirectCandidate(
+          currentOrResolvedPersona,
+          currentOrResolvedScenario,
+          explicitPerspectiveCode,
+          directEmotionCode
+        );
+        if (directCandidate) {
+          const selectedPrimary = selectVo112PrimaryKpi(question, getVo112PersonaSchema(directCandidate.persona), directCandidate.perspective.code, directCandidate.mode.code);
+          const reasonParts = [
+            `Matched ${directCandidate.perspective.code} ${directCandidate.perspective.label}`,
+            `${directCandidate.mode.label} mode selected`,
+            questionType.type ? `${VO112_ROUTER.responseLabels[questionType.type]}` : "",
+          ].filter(Boolean);
+          if (selectedPrimary.blindSpot) {
+            reasonParts.push(`Blind spot surfaced: ${formatVo112KpiName(selectedPrimary.blindSpot.kpiLabel)} ${formatVo112StateLabel(selectedPrimary.blindSpot.reading)}`);
+          }
+          return {
+            persona: directCandidate.persona,
+            scenario: directCandidate.scenario,
+            cell: directCandidate.cell,
+            questionType: questionType.type,
+            emotionCode: directCandidate.mode.code,
+            perspectiveCode: directCandidate.perspective.code,
+            primaryKpi: selectedPrimary.primary || directCandidate.cellSchema.primaryKpi,
+            blindSpot: selectedPrimary.blindSpot,
+            confidence: hasExplicitEmotion ? 0.94 : 0.9,
+            personaExplicit: personaResolution.explicit,
+            personaExplicitMatches: personaResolution.explicitMatches,
+            personaMatches: personaResolution.matches,
+            topCandidate: { ...directCandidate, score: 999 },
+            secondCandidate: null,
+            explanation: reasonParts.join(" · "),
+          };
+        }
+      }
+
+      const candidatePersonas = (() => {
+        if (personaResolution.explicit && personaResolution.matches?.length) {
+          return personaResolution.matches.map((item) => item.persona);
+        }
+        if (isVo112Scenario()) return [getPersona()];
+        return MODEL.personas.filter((persona) => findVo112ScenarioForPersona(persona));
+      })();
+
+      const scoredCandidates = [];
+      candidatePersonas.forEach((persona) => {
+        const vo112Scenario = findVo112ScenarioForPersona(persona);
+        if (!vo112Scenario) return;
+        const scenario = getScenarioForPersona(persona, vo112Scenario.id);
+        const personaSchema = getVo112PersonaSchema(persona);
+        if (!personaSchema) return;
+        const emotionHint = inferVo112Emotion(question, persona);
+        const perspectiveHint = classifyVo112Perspective(question, persona, scenario, personaSchema, questionType.type);
+        const modes = getVo112EmotionRows();
+        const perspectives = getActivePerspectives(persona, scenario);
+        modes.forEach((mode) => {
+          perspectives.forEach((perspective) => {
+            const cell = buildVo112Cell({ persona, scenario, perspective, mode });
+            const cellSchema = personaSchema.cells?.[`${persona.code}_${mode.code}_${perspective.code}`];
+            if (!cellSchema) return;
+            const score = scoreVo112CellCandidate(question, { persona, scenario, mode, perspective, cell, cellSchema }, questionType, emotionHint, perspectiveHint, personaResolution);
+            scoredCandidates.push({
+              persona,
+              scenario,
+              mode,
+              perspective,
+              cell,
+              cellSchema,
+              questionType: questionType.type,
+              emotionHint,
+              perspectiveHint,
+              score,
+            });
+          });
+        });
+      });
+
+      scoredCandidates.sort((a, b) => b.score - a.score);
+      const top = scoredCandidates[0];
+      const second = scoredCandidates[1];
+      if (!top) return null;
+
+      const selectedPrimary = selectVo112PrimaryKpi(question, getVo112PersonaSchema(top.persona), top.perspective.code, top.mode.code);
+      const gap = top.score - (second?.score || 0);
+      const rawConfidence = top.score >= 34 && gap >= 6 ? 0.92 : top.score >= 24 && gap >= 4 ? 0.84 : top.score >= 16 ? 0.74 : 0.62;
 
       const reasonParts = [
-        `Question matched ${perspective.code} ${perspective.perspective?.label || ""}`.trim(),
-        `${getVo112Schema().emotions?.[emotion.code]?.name || emotion.code} mode selected`,
+        `Matched ${top.perspective.code} ${top.perspective.label}`,
+        `${top.mode.label} mode selected`,
         questionType.type ? `${VO112_ROUTER.responseLabels[questionType.type]}` : "",
       ].filter(Boolean);
       if (selectedPrimary.blindSpot) {
-        reasonParts.push(`Blind spot surfaced: ${selectedPrimary.blindSpot.kpiLabel} ${formatVo112StateLabel(selectedPrimary.blindSpot.reading)}`);
+        reasonParts.push(`Blind spot surfaced: ${formatVo112KpiName(selectedPrimary.blindSpot.kpiLabel)} ${formatVo112StateLabel(selectedPrimary.blindSpot.reading)}`);
       }
 
       return {
-        persona,
-        scenario: vo112Scenario,
-        cell,
+        persona: top.persona,
+        scenario: top.scenario,
+        cell: top.cell,
         questionType: questionType.type,
-        emotionCode: emotion.code,
-        perspectiveCode: perspective.code,
-        primaryKpi: selectedPrimary.primary,
+        emotionCode: top.mode.code,
+        perspectiveCode: top.perspective.code,
+        primaryKpi: selectedPrimary.primary || top.cellSchema.primaryKpi,
         blindSpot: selectedPrimary.blindSpot,
-        confidence,
+        confidence: rawConfidence,
+        personaExplicit: personaResolution.explicit,
+        personaExplicitMatches: personaResolution.explicitMatches,
+        personaMatches: personaResolution.matches,
+        topCandidate: top,
+        secondCandidate: second || null,
         explanation: reasonParts.join(" · "),
       };
     }
@@ -1555,6 +2133,516 @@
         result.push(item);
       });
       return result.slice(0, limit);
+    }
+
+    function getQuestionIntent(question) {
+      const families = {
+        kpi_lookup: ["what is my variance", "what is the variance", "variance", "what is my commercials", "what is my commercial position", "commercial position", "commercial exposure", "contract exposure"],
+        action_selection: ["should", "what should", "do now", "best move", "what do we do", "next step", "action", "best option", "right path", "most defensible"],
+        comparison: ["compare", "versus", "vs", "better than", "which is better", "trade-off", "option a", "option b"],
+        stakeholder_signal: ["tell", "disclose", "notify", "inform", "announce", "who should know", "what signal", "if leaked"],
+        timing: ["when", "timing", "now or later", "wait", "delay", "how long"],
+        threshold: ["threshold", "trigger", "at what point", "red line", "limit", "stop", "minimum acceptable", "become unacceptable"],
+        probability: ["how likely", "probability", "expected value", "chance", "odds"],
+        reversibility: ["reversible", "reversibility", "point of no return", "preserves room to recover", "switching cost", "lock-in"],
+        risk: ["risk", "downside", "exposure", "what could go wrong", "danger"],
+        consequence: ["consequence", "impact", "what happens if", "fallout", "result", "second-order"],
+        sequencing: ["what should be done first", "first second third", "before escalation", "sequence", "gather before"],
+        legal_trigger: ["legal obligation", "mandatory", "obligation to disclose", "covenant", "grant", "materiality", "governance"],
+        data: ["data", "evidence", "what do we need to see", "which kpi", "what matters most"],
+        escalation: ["escalate", "board", "government", "dbet", "who first", "who to tell first"],
+      };
+      let winner = "action_selection";
+      let bestScore = 0;
+      const lower = (question || "").toLowerCase();
+      Object.entries(families).forEach(([intent, phrases]) => {
+        const score = scorePhraseMatches(lower, phrases, 2);
+        if (score > bestScore) {
+          winner = intent;
+          bestScore = score;
+        }
+      });
+      return { intent: winner, score: bestScore };
+    }
+
+    function getExplicitPerspectiveMatches(question, candidate) {
+      const lower = (question || "").toLowerCase();
+      const perspective = candidate.perspective;
+      if (!perspective) return 0;
+      const terms = dedupeItems([
+        perspective.label,
+        ...(perspective.keywords || []),
+        ...(perspective.kpis || []),
+      ], 24).map((item) => String(item || "").toLowerCase());
+      let score = 0;
+      terms.forEach((term) => {
+        if (term && lower.includes(term)) score += term === String(perspective.label || "").toLowerCase() ? 10 : 3;
+      });
+      return score;
+    }
+
+    function getExplicitEmotionMatches(question, candidate) {
+      const lower = (question || "").toLowerCase();
+      const mode = candidate.mode;
+      if (!mode) return 0;
+      const terms = dedupeItems([
+        mode.label,
+        mode.focus,
+        ...(mode.keywords || []),
+      ], 20).map((item) => String(item || "").toLowerCase());
+      let score = 0;
+      terms.forEach((term) => {
+        if (term && lower.includes(term)) score += term === String(mode.label || "").toLowerCase() ? 10 : 3;
+      });
+      return score;
+    }
+
+    function getExplicitKpiMatches(question, candidate) {
+      const lower = (question || "").toLowerCase();
+      const kpis = dedupeItems([
+        ...(candidate.cell?.kpis || []),
+        candidate.cell?.optionLabel,
+        ...(candidate.perspective?.kpis || []),
+      ], 24).map((item) => String(item || "").toLowerCase());
+      let score = 0;
+      kpis.forEach((kpi) => {
+        if (!kpi) return;
+        if (lower.includes(kpi)) {
+          score += 18;
+          return;
+        }
+        const parts = kpi.split(/[^a-z0-9]+/).filter((part) => part.length > 3);
+        const overlap = parts.reduce((sum, part) => sum + (lower.includes(part) ? 1 : 0), 0);
+        if (overlap >= 2) score += overlap * 4;
+      });
+      return score;
+    }
+
+    function normalizeKpiText(value = "") {
+      return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    }
+
+    function getScenarioKpiPriority(candidate) {
+      const scenarioKpis = candidate.scenario?.kpiFamilies || [];
+      const primary = normalizeKpiText(candidate.cell?.kpis?.[0] || "");
+      if (!primary) return { rank: -1, weight: 0 };
+      const rank = scenarioKpis.findIndex((item) => {
+        const label = normalizeKpiText(item?.label || item);
+        const code = normalizeKpiText(item?.code || "");
+        return label && (primary.includes(label) || label.includes(primary) || (code && primary.includes(code)));
+      });
+      if (rank === 0) return { rank, weight: 14 };
+      if (rank === 1) return { rank, weight: 10 };
+      if (rank === 2) return { rank, weight: 7 };
+      if (rank === 3) return { rank, weight: 5 };
+      return { rank, weight: 0 };
+    }
+
+    function getScenarioSearchTerms(persona, scenario) {
+      return dedupeItems([
+        scenario?.scenarioTitle,
+        scenario?.label,
+        scenario?.summary,
+        scenario?.tension,
+        scenario?.call,
+        persona?.role,
+        ...(scenario?.keywords || []),
+        ...(scenario?.options || []).flatMap((item) => [item.label, item.summary, item.risk]),
+        ...Object.values(scenario?.decisionContext || {}),
+        ...extractTextTokens([scenario?.scenarioTitle, scenario?.summary, scenario?.tension, scenario?.call].join(" ")),
+      ], 50);
+    }
+
+    function getPersonaSearchTerms(persona) {
+      return dedupeItems([
+        persona?.label,
+        persona?.role,
+        persona?.code,
+        ...(persona?.perspectives || []).flatMap((item) => [item.label, ...(item.kpis || []), ...(item.keywords || [])]),
+        ...extractTextTokens([persona?.label, persona?.role].join(" ")),
+      ], 50);
+    }
+
+    function getFrameworkModesForContext(frameworkCode, scenario) {
+      return isVo112Scenario(scenario) ? getVo112EmotionRows() : getFrameworkByCode(frameworkCode).modes;
+    }
+
+    function buildCellsForContext({ persona, scenario, frameworkCode, question = "" }) {
+      const framework = getFrameworkByCode(frameworkCode);
+      const perspectives = getActivePerspectives(persona, scenario).slice(0, 4);
+      const analysisVariant = (persona.id === state.personaId && scenario.id === state.scenarioId && frameworkCode === state.selectedFramework)
+        ? getAnalysisVariant(frameworkCode)
+        : null;
+      const modes = getFrameworkModesForContext(frameworkCode, scenario);
+      return {
+        framework,
+        modes,
+        perspectives,
+        cells: modes.flatMap((mode) => perspectives.map((perspective, perspectiveIndex) => (
+          isVo112Scenario(scenario)
+            ? buildVo112Cell({ persona, scenario, perspective, mode })
+            : buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex })
+        ))),
+      };
+    }
+
+    function buildRoutingInventory(question) {
+      return MODEL.personas.flatMap((persona) => {
+        const scenarios = persona.scenarios || [];
+        return scenarios.flatMap((scenarioMeta) => {
+          const scenario = getScenarioForPersona(persona, scenarioMeta.id);
+          return (persona.frameworks || [persona.recommendedFramework || "A"]).flatMap((frameworkCode) => {
+            const context = buildCellsForContext({ persona, scenario, frameworkCode, question });
+            return context.cells.map((cell) => {
+              const perspective = context.perspectives.find((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId) || null;
+              const mode = context.modes.find((item) => item.id === cell.modeId || item.code === cell.modeId) || null;
+              return { persona, scenario, frameworkCode, framework: context.framework, perspective, mode, cell };
+            });
+          });
+        });
+      });
+    }
+
+    function buildCurrentContextInventory(question) {
+      const persona = getPersona();
+      const scenario = getScenario();
+      const frameworkCode = state.selectedFramework;
+      const context = buildCellsForContext({ persona, scenario, frameworkCode, question });
+      return context.cells.map((cell) => {
+        const perspective = context.perspectives.find((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId) || null;
+        const mode = context.modes.find((item) => item.id === cell.modeId || item.code === cell.modeId) || null;
+        return { persona, scenario, frameworkCode, framework: context.framework, perspective, mode, cell };
+      });
+    }
+
+    function hasExplicitCrossContextSignal(question) {
+      const lower = (question || "").toLowerCase();
+      const currentPersona = getPersona();
+      const currentScenario = getScenario();
+      const otherPersonaMentioned = MODEL.personas.some((persona) => {
+        if (persona.id === currentPersona.id) return false;
+        const terms = getPersonaSearchTerms(persona);
+        return terms.some((term) => lower.includes(String(term).toLowerCase()));
+      });
+      const otherScenarioMentioned = MODEL.personas.some((persona) => {
+        return (persona.scenarios || []).some((scenarioMeta) => {
+          const scenario = getScenarioForPersona(persona, scenarioMeta.id);
+          if (!scenario || scenario.id === currentScenario?.id) return false;
+          return getScenarioSearchTerms(persona, scenario).some((term) => lower.includes(String(term).toLowerCase()));
+        });
+      });
+      return otherPersonaMentioned || otherScenarioMentioned;
+    }
+
+    function scoreCandidate(question, candidate, intentInfo) {
+      const lower = (question || "").toLowerCase();
+      const broadQuestion = isBroadQuestion(question);
+      const currentPersona = getPersona();
+      const currentScenario = getScenario();
+      const scenarioTerms = getScenarioSearchTerms(candidate.persona, candidate.scenario);
+      const personaTerms = getPersonaSearchTerms(candidate.persona);
+      const frameworkTerms = dedupeItems([
+        candidate.framework?.name,
+        candidate.framework?.note,
+        candidate.mode?.label,
+        candidate.mode?.focus,
+        ...(candidate.mode?.keywords || []),
+      ], 24);
+      const perspectiveTerms = dedupeItems([
+        candidate.perspective?.label,
+        ...(candidate.perspective?.kpis || []),
+        ...(candidate.perspective?.keywords || []),
+      ], 24);
+      const cellTerms = dedupeItems([
+        candidate.cell?.title,
+        candidate.cell?.optionLabel,
+        candidate.cell?.recommendedAction,
+        candidate.cell?.risk,
+        candidate.cell?.consequence,
+        ...(candidate.cell?.kpis || []),
+        ...(candidate.cell?.routeKeywords || []),
+        ...extractTextTokens([
+          candidate.cell?.title,
+          candidate.cell?.optionLabel,
+          candidate.cell?.recommendedAction,
+          candidate.cell?.risk,
+          candidate.cell?.consequence,
+          ...(candidate.cell?.kpis || []),
+        ].join(" ")),
+      ], 36);
+
+      const scenarioScore = scorePhraseMatches(lower, scenarioTerms, 2) + scoreTokenOverlap(lower, scenarioTerms, 1);
+      const personaScore = scorePhraseMatches(lower, personaTerms, 2) + scoreTokenOverlap(lower, personaTerms, 1);
+      const frameworkScore = scorePhraseMatches(lower, frameworkTerms, 2) + scoreTokenOverlap(lower, frameworkTerms, 1);
+      const perspectiveScore = scorePhraseMatches(lower, perspectiveTerms, 2) + scoreTokenOverlap(lower, perspectiveTerms, 1);
+      const cellScore = scorePhraseMatches(lower, cellTerms, 1) + scoreTokenOverlap(lower, cellTerms, 1);
+      const perspectiveKind = getPerspectiveQuestionKind(candidate.perspective?.label || "");
+      const explicitPerspectiveScore = getExplicitPerspectiveMatches(question, candidate);
+      const explicitEmotionScore = getExplicitEmotionMatches(question, candidate);
+      const explicitKpiScore = getExplicitKpiMatches(question, candidate);
+      const exactIntentBoost = (() => {
+        if (intentInfo.intent === "kpi_lookup" && /\bvariance\b|\bcommercial position\b|\bcommercials\b|\bcommercial exposure\b/i.test(lower)) return 6;
+        if (intentInfo.intent === "risk" && lower.includes("risk")) return 3;
+        if (intentInfo.intent === "consequence" && (lower.includes("happen") || lower.includes("consequence"))) return 3;
+        if (intentInfo.intent === "data" && (lower.includes("kpi") || lower.includes("data") || lower.includes("evidence"))) return 3;
+        if (intentInfo.intent === "stakeholder_signal" && (lower.includes("tell") || lower.includes("notify") || lower.includes("disclose"))) return 3;
+        return 0;
+      })();
+
+      const decisionWeight = Number(candidate.cell?.decisionWeight || 0);
+      let total = scenarioScore * 4 + personaScore * 3 + frameworkScore * 2 + perspectiveScore * 3 + cellScore + exactIntentBoost + explicitPerspectiveScore + explicitEmotionScore + explicitKpiScore;
+      total += Math.min(decisionWeight / 8, 8);
+      if (broadQuestion) total += Math.min(decisionWeight / 4, 12);
+      if (candidate.persona.id === currentPersona.id) total += 2;
+      if (candidate.scenario.id === currentScenario?.id) total += 3;
+      if (candidate.frameworkCode === state.selectedFramework) total += 1;
+      if (candidate.perspective?.id && state.selectedPerspectives.includes(candidate.perspective.id)) total += 1;
+      if (intentInfo.intent === "kpi_lookup") {
+        const scenarioPriority = getScenarioKpiPriority(candidate);
+        total += scenarioPriority.weight;
+        if (/\bvariance\b/i.test(lower)) {
+          if (["schedule", "financial", "commercial"].includes(perspectiveKind)) total += 6;
+          if ((candidate.cell?.kpis || []).some((item) => /\bvariance\b|\bcontingency\b|\bgrant\b|\bschedule\b|\bscope change\b|\bofftake\b|\brevenue\b/i.test(item))) total += 8;
+        }
+        if (/\bcommercials\b|\bcommercial position\b|\bcommercial exposure\b|\bcontract exposure\b/i.test(lower)) {
+          if (perspectiveKind === "commercial") total += 10;
+          if ((candidate.cell?.kpis || []).some((item) => /\bcustomer\b|\bofftake\b|\brevenue\b|\bcommercial\b|\bcontract\b/i.test(item))) total += 8;
+        }
+      }
+      if (intentInfo.intent === "threshold") {
+        if (["financial", "schedule"].includes(perspectiveKind)) total += 6;
+        if (candidate.mode?.code === "A") total += 3;
+      }
+      if (intentInfo.intent === "probability") {
+        if (["financial", "schedule"].includes(perspectiveKind)) total += 5;
+      }
+      if (intentInfo.intent === "comparison") {
+        if (perspectiveKind === "commercial") total += 5;
+        if (candidate.mode?.code === "B") total += 2;
+      }
+      if (intentInfo.intent === "legal_trigger") {
+        if (["financial", "people"].includes(perspectiveKind)) total += 6;
+        if (["A", "C"].includes(candidate.mode?.code)) total += 2;
+      }
+      if (intentInfo.intent === "reversibility") {
+        if (["commercial", "schedule"].includes(perspectiveKind)) total += 5;
+        if (candidate.mode?.code === "B") total += 3;
+      }
+      if (intentInfo.intent === "stakeholder_signal" || intentInfo.intent === "escalation") {
+        if (perspectiveKind === "people") total += 7;
+        if (candidate.mode?.code === "C") total += 3;
+      }
+      if (intentInfo.intent === "timing") {
+        if (perspectiveKind === "schedule") total += 5;
+      }
+      if (intentInfo.intent === "sequencing") {
+        if (perspectiveKind === "people") total += 5;
+        if (candidate.mode?.code === "D") total += 2;
+      }
+
+      return {
+        total,
+        scenarioScore,
+        personaScore,
+        frameworkScore,
+        perspectiveScore,
+        cellScore,
+        explicitKpiScore,
+        decisionWeight,
+      };
+    }
+
+    function compareScoredCandidates(a, b) {
+      const totalDelta = b.score.total - a.score.total;
+      if (totalDelta !== 0) return totalDelta;
+      const decisionDelta = (b.score.decisionWeight || 0) - (a.score.decisionWeight || 0);
+      if (decisionDelta !== 0) return decisionDelta;
+      const kpiDelta = (b.score.explicitKpiScore || 0) - (a.score.explicitKpiScore || 0);
+      if (kpiDelta !== 0) return kpiDelta;
+      const scenarioDelta = getScenarioKpiPriority(b.candidate).weight - getScenarioKpiPriority(a.candidate).weight;
+      if (scenarioDelta !== 0) return scenarioDelta;
+      return (b.score.cellScore || 0) - (a.score.cellScore || 0);
+    }
+
+    function getExplicitMatrixConstraints(question, candidates) {
+      const lower = (question || "").toLowerCase();
+      const perspectiveMatches = new Set();
+      const emotionMatches = new Set();
+      candidates.forEach((candidate) => {
+        const perspectiveTerms = dedupeItems([
+          candidate.perspective?.label,
+          ...(candidate.perspective?.keywords || []),
+          ...(candidate.perspective?.kpis || []),
+          ...(candidate.cell?.kpis || []),
+        ], 28).map((item) => String(item || "").toLowerCase());
+        if (perspectiveTerms.some((term) => term && lower.includes(term))) {
+          if (candidate.perspective?.id) perspectiveMatches.add(candidate.perspective.id);
+          if (candidate.perspective?.code) perspectiveMatches.add(candidate.perspective.code);
+        }
+
+        const emotionTerms = dedupeItems([
+          candidate.mode?.label,
+          candidate.mode?.focus,
+          ...(candidate.mode?.keywords || []),
+        ], 20).map((item) => String(item || "").toLowerCase());
+        if (emotionTerms.some((term) => term && lower.includes(term))) {
+          if (candidate.mode?.id) emotionMatches.add(candidate.mode.id);
+          if (candidate.mode?.code) emotionMatches.add(candidate.mode.code);
+        }
+      });
+      return {
+        perspectiveMatches,
+        emotionMatches,
+      };
+    }
+
+    function applyExplicitMatrixConstraints(candidates, constraints) {
+      let filtered = candidates;
+      if (constraints.perspectiveMatches?.size) {
+        const perspectiveFiltered = filtered.filter(({ candidate }) => (
+          constraints.perspectiveMatches.has(candidate.perspective?.id) || constraints.perspectiveMatches.has(candidate.perspective?.code)
+        ));
+        if (perspectiveFiltered.length) filtered = perspectiveFiltered;
+      }
+      if (constraints.emotionMatches?.size) {
+        const emotionFiltered = filtered.filter(({ candidate }) => (
+          constraints.emotionMatches.has(candidate.mode?.id) || constraints.emotionMatches.has(candidate.mode?.code)
+        ));
+        if (emotionFiltered.length) filtered = emotionFiltered;
+      }
+      return filtered;
+    }
+
+    function inferPreferredPerspectiveConstraint(question, candidates, intentInfo) {
+      const scores = new Map();
+      candidates.forEach((candidate) => {
+        const key = candidate.perspective?.id || candidate.perspective?.code;
+        if (!key) return;
+        let score = getExplicitPerspectiveMatches(question, candidate) + getExplicitKpiMatches(question, candidate);
+        const kind = getPerspectiveQuestionKind(candidate.perspective?.label || "");
+        if (intentInfo.intent === "stakeholder_signal" || intentInfo.intent === "escalation" || intentInfo.intent === "sequencing") {
+          if (kind === "people") score += 8;
+        } else if (intentInfo.intent === "timing" || intentInfo.intent === "cost_of_delay") {
+          if (kind === "schedule") score += 8;
+        } else if (intentInfo.intent === "comparison" || intentInfo.intent === "reversibility") {
+          if (kind === "commercial") score += 6;
+        } else if (intentInfo.intent === "threshold" || intentInfo.intent === "legal_trigger") {
+          if (kind === "financial") score += 6;
+        } else if (intentInfo.intent === "kpi_lookup" && /\bcommercial\b|\bsupplier\b|\bcustomer\b|\bcontract\b/i.test(question)) {
+          if (kind === "commercial") score += 8;
+        }
+        scores.set(key, Math.max(scores.get(key) || 0, score));
+      });
+      const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]);
+      if (!ranked.length || ranked[0][1] <= 0) return null;
+      if (ranked.length === 1 || ranked[0][1] - ranked[1][1] >= 3) return ranked[0][0];
+      return null;
+    }
+
+    function inferPreferredModeConstraint(question, candidates, intentInfo) {
+      const scores = new Map();
+      candidates.forEach((candidate) => {
+        const key = candidate.mode?.id || candidate.mode?.code;
+        if (!key) return;
+        let score = getExplicitEmotionMatches(question, candidate);
+        const modeTerms = dedupeItems([
+          candidate.mode?.label,
+          candidate.mode?.focus,
+          ...(candidate.mode?.keywords || []),
+        ], 20);
+        score += scorePhraseMatches(question.toLowerCase(), modeTerms, 2) + scoreTokenOverlap(question.toLowerCase(), modeTerms, 1);
+        if (intentInfo.intent === "stakeholder_signal" && /stakeholder|relationship|signal|who should know|tell first/i.test(modeTerms.join(" "))) score += 8;
+        if (intentInfo.intent === "timing" && /speed|checkpoint|indicator|threshold|trigger/i.test(modeTerms.join(" "))) score += 6;
+        if (intentInfo.intent === "risk" && /downside|safety|threshold|regret|risk/i.test(modeTerms.join(" "))) score += 6;
+        if (intentInfo.intent === "comparison" && /compar|sensitivity|tradeoff|optionality/i.test(modeTerms.join(" "))) score += 6;
+        if (intentInfo.intent === "action_selection" && /command|clarity|feasibility|continuity|long horizon|optionality/i.test(modeTerms.join(" "))) score += 4;
+        scores.set(key, Math.max(scores.get(key) || 0, score));
+      });
+      const ranked = [...scores.entries()].sort((a, b) => b[1] - a[1]);
+      if (!ranked.length || ranked[0][1] <= 0) return null;
+      if (ranked.length === 1 || ranked[0][1] - ranked[1][1] >= 3) return ranked[0][0];
+      return null;
+    }
+
+    function applySemanticFrameworkConstraints(question, candidates, intentInfo) {
+      let filtered = candidates;
+      const preferredPerspective = inferPreferredPerspectiveConstraint(question, filtered.map((item) => item.candidate || item), intentInfo);
+      if (preferredPerspective) {
+        const perspectiveFiltered = filtered.filter(({ candidate }) => (
+          candidate.perspective?.id === preferredPerspective || candidate.perspective?.code === preferredPerspective
+        ));
+        if (perspectiveFiltered.length) filtered = perspectiveFiltered;
+      }
+      const preferredMode = inferPreferredModeConstraint(question, filtered.map((item) => item.candidate || item), intentInfo);
+      if (preferredMode) {
+        const modeFiltered = filtered.filter(({ candidate }) => (
+          candidate.mode?.id === preferredMode || candidate.mode?.code === preferredMode
+        ));
+        if (modeFiltered.length) filtered = modeFiltered;
+      }
+      return filtered;
+    }
+
+    function buildClarification(top, second, originalQuestion) {
+      const optionA = top;
+      const optionB = second;
+      let prompt = "";
+      if (optionA.scenario.id !== optionB.scenario.id) {
+        prompt = `Do you mean ${optionA.scenario.scenarioTitle} for ${optionA.persona.role} or ${optionB.scenario.scenarioTitle} for ${optionB.persona.role}?`;
+      } else if (optionA.persona.id !== optionB.persona.id) {
+        prompt = `Are you asking from the ${optionA.persona.role} lens or the ${optionB.persona.role} lens?`;
+      } else if (optionA.frameworkCode !== optionB.frameworkCode) {
+        prompt = `Do you want the ${optionA.framework.name} path or the ${optionB.framework.name} path?`;
+      } else {
+        prompt = `Do you mean the ${optionA.perspective?.label || optionA.cell.title} view or the ${optionB.perspective?.label || optionB.cell.title} view?`;
+      }
+      return {
+        originalQuestion,
+        prompt,
+        candidates: [optionA, optionB],
+      };
+    }
+
+    function shouldUseRecovery(question, top, second) {
+      const intent = getQuestionIntent(question).intent;
+      const tokenCount = extractTextTokens(question).length;
+      const topScore = top?.score?.total || 0;
+      const secondScore = second?.score?.total || 0;
+      const gap = topScore - secondScore;
+      if (intent === "kpi_lookup") return false;
+      if (tokenCount <= 1) return true;
+      if (topScore < 8) return true;
+      if (topScore < 14 && gap < 3) return true;
+      return false;
+    }
+
+    function applyRouteCandidate(candidate, confidence, assumed = "") {
+      const currentPersona = getPersona();
+      const currentScenario = getScenario();
+      const currentFrameworkCode = state.selectedFramework;
+      state.personaId = candidate.persona.id;
+      state.scenarioId = candidate.scenario.id;
+      state.selectedFramework = candidate.frameworkCode;
+      state.selectedPerspectives = getDefaultSelectedPerspectives(candidate.persona, candidate.scenario);
+      if (candidate.perspective?.id && !state.selectedPerspectives.includes(candidate.perspective.id)) {
+        state.selectedPerspectives = [candidate.perspective.id, ...state.selectedPerspectives].slice(0, 4);
+      }
+      state.activeCellId = candidate.cell.id;
+      state.routedCellId = candidate.cell.id;
+      state.pendingClarification = null;
+      state.assistMode = "answered";
+      const switched = [];
+      if (candidate.persona.id !== currentPersona.id) switched.push(candidate.persona.role);
+      if (candidate.scenario.id !== currentScenario?.id) switched.push(candidate.scenario.scenarioTitle);
+      if (candidate.frameworkCode !== currentFrameworkCode) switched.push(candidate.framework.name);
+      const switchMessage = switched.length
+        ? `Switched to ${candidate.persona.role} -> ${candidate.scenario.scenarioTitle} -> ${candidate.framework.name}.`
+        : `Stayed in the current context.`;
+      state.routeExplanation = `${switchMessage} Routed to ${candidate.cell.title}. Confidence: ${confidence}. ${assumed}`.trim();
+      state.followUpSuggestions = buildFollowUpSuggestions(candidate.cell, candidate.persona, candidate.scenario, candidate.framework);
+      state.recoverySuggestions = [];
+      rerenderWorkspace();
+      els.routeNote.textContent = state.routeExplanation;
     }
 
     const COMMERCIAL_EMOTION_BIAS = {
@@ -1630,22 +2718,30 @@
         D: ["decisive", "now", "immediately", "best next move", "lock in", "commit", "act fast", "within 21 days", "urgent"],
       },
       questionTypes: {
-        recommendation: ["what should", "should ", "best option", "right move", "recommend"],
+        action_selection: ["what should", "should ", "best option", "right move", "recommend", "most defensible", "right path"],
         comparison: ["better than", "option a", "option b", "option c", "compare", "versus", "vs"],
         consequence: ["what happens if", "if we wait", "if he waits", "if she waits", "risk if", "consequence"],
-        action_plan: ["next 21 days", "next step", "action plan", "what do we do now", "what should happen next"],
+        sequencing: ["next 21 days", "next step", "action plan", "what do we do now", "what should happen next", "first second third", "before escalation"],
         threshold: ["at what point", "when does", "threshold", "become dominant", "flip"],
-        disclosure: ["who should know", "who to tell", "tell first", "disclose", "notify first"],
+        legal_trigger: ["legal obligation", "mandatory", "obligation to disclose", "grant covenant", "materiality", "governance"],
+        stakeholder_signal: ["who should know", "who to tell", "tell first", "disclose", "notify first", "what signal", "if leaked"],
+        cost_of_delay: ["what happens if you wait", "cost of delay", "cost of waiting", "if we wait longer", "delay cost"],
+        reversibility: ["reversible", "reversibility", "point of no return", "preserves room to recover", "lock-in"],
+        probability: ["how likely", "probability", "expected value", "chance", "odds"],
         kpi_lookup: ["which kpi", "what matters most", "dominant kpi", "priority kpi"],
         timing: ["when to act", "too early", "wait", "delay", "timing"],
       },
       responseLabels: {
-        recommendation: "best option + why",
+        action_selection: "best option + why",
         comparison: "side-by-side option tradeoff",
         consequence: "risk + downstream effects",
-        action_plan: "3-step action sequence",
+        sequencing: "3-step action sequence",
         threshold: "KPI threshold + trigger",
-        disclosure: "stakeholder sequence",
+        legal_trigger: "legal / governance trigger",
+        stakeholder_signal: "stakeholder sequence",
+        cost_of_delay: "delay cost + urgency",
+        reversibility: "reversibility + lock-in",
+        probability: "probability / confidence view",
         kpi_lookup: "highlighted KPI + rationale",
         timing: "urgency + deadline logic",
       }
@@ -1792,9 +2888,13 @@
     function buildCell(context) {
       const { perspective, mode, framework, analysisVariant, scenario, perspectiveIndex } = context;
       const tone = analysisVariant?.tone || framework.code === "A" ? "warn" : "accent";
-      const chosenOption = scenario?.options?.length
-        ? [...scenario.options].sort((a, b) => scoreScenarioOption(b, perspective, mode, scenario) - scoreScenarioOption(a, perspective, mode, scenario))[0]
-        : null;
+      const scoredOptions = scenario?.options?.length
+        ? [...scenario.options]
+            .map((option) => ({ option, score: scoreScenarioOption(option, perspective, mode, scenario) }))
+            .sort((a, b) => b.score - a.score)
+        : [];
+      const chosenOption = scoredOptions[0]?.option || null;
+      const chosenOptionScore = scoredOptions[0]?.score || 0;
       const scenarioKpi = scenario?.kpiFamilies?.[perspectiveIndex] || scenario?.kpiFamilies?.[0] || null;
       const commercialStack = isCommercialContext(state.question) ? resolveCommercialKpiStack({
         persona: getPersona(),
@@ -1852,6 +2952,11 @@
         risk,
         consequence,
         blind,
+        decisionWeight: Math.max(
+          chosenOptionScore + (scenarioKpi ? Math.max(0, 10 - perspectiveIndex * 2) : 0),
+          commercialStack?.primary?.score || 0,
+          1
+        ),
         rationale: `This cell combines ${framework.name} / ${mode.label} with the ${perspective.label} perspective for the selected scenario.`,
         routeKeywords: dedupeItems([...(commercialStack?.routeKeywords || []), ...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || []), ...(chosenOption?.keywords || []), perspective.label.toLowerCase(), mode.label.toLowerCase()], 20)
       };
@@ -1885,7 +2990,8 @@
       }
 
       const formattedState = formatVo112StateLabel(cellSchema.primaryKpi?.currentState);
-      const primaryState = formattedState ? `${cellSchema.primaryKpi.label} — ${formattedState}` : cellSchema.primaryKpi?.label;
+      const primaryLabel = formatVo112KpiName(cellSchema.primaryKpi?.label);
+      const primaryState = formattedState ? `${primaryLabel} — ${formattedState}` : primaryLabel;
       const actionPrefix = schema.emotions?.[mode.code]?.actionPattern || cellSchema.actionPattern || "";
       const resolverLead = personaSchema?.resolverHints?.[0] || "";
 
@@ -1896,7 +3002,7 @@
         title: `${mode.label} × ${perspective.label}`,
         tone: cellSchema.primaryKpi?.currentState?.toLowerCase().includes("red") ? "warn" : "accent",
         summary: perspective.consequence || mode.focus,
-        kpis: cellSchema.kpis?.length ? cellSchema.kpis : [cellSchema.primaryKpi?.label].filter(Boolean),
+        kpis: (cellSchema.kpis?.length ? cellSchema.kpis : [cellSchema.primaryKpi?.label].filter(Boolean)).map((item) => formatVo112KpiName(item)),
         dataRequirements: (cellSchema.dataRequirements || perspective.data || []).map((item) => formatVo112StateLabel(item)),
         chartType: cellSchema.chartType || perspective.chart || "timeline",
         chartBars: (cellSchema.kpis || []).slice(0, 3).map((label, index) => ({
@@ -1910,6 +3016,7 @@
         blind: cellSchema.blindSpotScan
           ? `Blind-spot scan triggered. ${perspective.blind || ""}`.trim()
           : (perspective.blind || ""),
+        decisionWeight: Number(cellSchema.weight || 0),
         rationale: `${personaSchema?.name || persona.code}: ${personaSchema?.decision || scenario?.scenarioTitle || ""}`,
         routeKeywords: dedupeItems([
           ...(cellSchema.routeKeywords || []),
@@ -1917,6 +3024,7 @@
           ...(mode.keywords || []),
           ...extractTextTokens(personaSchema?.decision || ""),
           ...extractTextTokens(personaSchema?.tension || ""),
+          ...extractTextTokens(primaryLabel),
         ], 24)
       };
     }
@@ -1948,6 +3056,7 @@
           const routed = state.routedCellId === cell.id;
           return `
             <button class="matrix-cell ${active ? "active" : ""} ${routed ? "routed" : ""}" type="button" data-cell-id="${cell.id}">
+              ${routed ? `<div class="cell-badge">Answer Match</div>` : ""}
               <div class="cell-title">${cell.optionLabel}</div>
               <div class="cell-kpis">${cell.kpis.slice(0, 2).join(" / ")}</div>
               <div class="cell-meta">${cell.summary}</div>
@@ -1974,49 +3083,278 @@
     }
 
     function ensureActiveCell(cells) {
-      const available = cells.find((item) => item.id === state.activeCellId) || cells[0] || null;
+      const available = cells.find((item) => item.id === state.routedCellId)
+        || cells.find((item) => item.id === state.activeCellId)
+        || cells[0]
+        || null;
       state.activeCellId = available?.id || null;
       return available;
     }
 
-    function renderChartBars(cell) {
-      els.chartTitle.textContent = cell.chartType;
-      els.chartBars.innerHTML = cell.chartBars.map((bar) => `
-        <div class="bar">
-          <div class="bar-top"><span>${bar.label}</span><span>${bar.value}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${bar.value}%"></div></div>
-        </div>
-      `).join("");
-      els.chartCaption.textContent = `The chart block is tuned to the selected cell. Here it emphasizes the signals most likely to move the decision inside ${cell.title}.`;
+    function firstSentence(text = "") {
+      const match = String(text || "").trim().match(/^(.+?[.!?])(\s|$)/);
+      return match ? match[1].trim() : String(text || "").trim();
     }
 
-    function renderInsight(cell) {
-      if (!cell) return;
-      if (isVo112Scenario()) {
-        const emotionMeta = getVo112Schema().emotions?.[cell.modeId];
-        els.insightTag.textContent = emotionMeta?.name || cell.modeId;
-      } else {
-        els.insightTag.textContent = getFramework().name;
+    function lowerFirst(value = "") {
+      return value ? value.charAt(0).toLowerCase() + value.slice(1) : value;
+    }
+
+    function isVarianceQuestion(question = "") {
+      return /\bvariance\b/i.test(question || "");
+    }
+
+    function isCommercialPositionQuestion(question = "") {
+      return /\bcommercials\b|\bcommercial position\b|\bcommercial exposure\b|\bcontract exposure\b/i.test(question || "");
+    }
+
+    function getAnswerConfidenceLevel() {
+      const note = state.routeExplanation || "";
+      if (/high confidence/i.test(note) || /\bConfidence:\s*high\b/i.test(note)) return "high";
+      if (/low confidence/i.test(note) || /\bConfidence:\s*low\b/i.test(note)) return "low";
+      if (/medium confidence/i.test(note) || /\bConfidence:\s*medium\b/i.test(note)) return "medium";
+      return state.assistMode === "answered" ? "medium" : "low";
+    }
+
+    function inferBaselineLabel(cell, scenario = getScenario()) {
+      const primaryKpi = (cell.kpis?.[0] || "").toLowerCase();
+      const perspectiveKind = getPerspectiveQuestionKind(cell.title.split(" × ")[1] || cell.optionLabel || "");
+      if (primaryKpi.includes("schedule") || primaryKpi.includes("milestone") || primaryKpi.includes("float")) {
+        return "programme milestone / commissioning baseline";
       }
-      els.insightReason.textContent = state.routeExplanation || cell.rationale;
-      els.insightTitle.textContent = cell.title;
-      els.insightSummary.textContent = `${cell.rationale} ${cell.summary}`;
-      els.insightKpis.innerHTML = cell.kpis.map((item) => `<li>${item}</li>`).join("");
-      els.insightData.innerHTML = cell.dataRequirements.map((item) => `<li>${item}</li>`).join("");
-      renderChartBars(cell);
-      els.insightAction.textContent = cell.recommendedAction;
-      els.insightRisk.textContent = cell.risk;
-      els.insightConsequence.textContent = cell.consequence;
-      els.insightBlind.textContent = cell.blind;
+      if (primaryKpi.includes("scope change") || primaryKpi.includes("change order")) {
+        return "contracted scope / approved change baseline";
+      }
+      if (primaryKpi.includes("grant") || primaryKpi.includes("covenant") || primaryKpi.includes("clawback")) {
+        return "grant covenant / drawdown baseline";
+      }
+      if (primaryKpi.includes("contingency") || primaryKpi.includes("budget") || primaryKpi.includes("cash") || primaryKpi.includes("cost")) {
+        return "approved budget / contingency baseline";
+      }
+      if (primaryKpi.includes("customer") || primaryKpi.includes("offtake") || primaryKpi.includes("revenue") || primaryKpi.includes("commercial")) {
+        return "contracted commercial position / expected customer baseline";
+      }
+      if (primaryKpi.includes("stakeholder") || primaryKpi.includes("governance") || primaryKpi.includes("workforce")) {
+        return "stakeholder trust / governance baseline";
+      }
+      if (perspectiveKind === "schedule") return "programme milestone / commissioning baseline";
+      if (perspectiveKind === "financial") return "approved budget, contingency, or grant baseline";
+      if (perspectiveKind === "people") return "stakeholder trust / governance baseline";
+      if (perspectiveKind === "commercial") return "contracted commercial position / expected customer baseline";
+      return `${scenario?.scenarioTitle || "scenario"} baseline`;
+    }
+
+    function extractCurrentReading(cell) {
+      const currentStateLine = (cell.dataRequirements || []).find((item) => /^current state:/i.test(item));
+      if (currentStateLine) return currentStateLine.replace(/^current state:\s*/i, "").trim();
+      const firstBar = cell.chartBars?.[0];
+      if (firstBar?.label) return `${firstBar.label}: ${firstBar.value}`;
+      return "See supporting evidence in the matrix cell.";
+    }
+
+    function getRoleVarianceReason(cell, persona = getPersona()) {
+      const perspectiveKind = getPerspectiveQuestionKind(cell.title.split(" × ")[1] || cell.optionLabel || "");
+      if (perspectiveKind === "schedule") {
+        return `${persona.role} is most exposed to delivery slippage, milestone movement, and live scope-change pressure.`;
+      }
+      if (perspectiveKind === "financial") {
+        return `${persona.role} is most exposed to capital, contingency, grant, and covenant deviation from plan.`;
+      }
+      if (perspectiveKind === "people") {
+        return `${persona.role} is most exposed to stakeholder confidence, governance pressure, and disclosure handling.`;
+      }
+      if (perspectiveKind === "commercial") {
+        return `${persona.role} is most exposed to customer, counterparty, and contract-position deviation from plan.`;
+      }
+      return `${persona.role} is most exposed through the ${cell.title} lens in this scenario.`;
+    }
+
+    function extractBlindSpotKpi(cell) {
+      const text = cell.blind || "";
+      const match = text.match(/(?:around|signal:|on)\s+([^.,]+?)(?:\s+should|\s+can|\s+may|[.,]|$)/i);
+      return match ? match[1].trim() : cell.kpis?.[1] || cell.kpis?.[0] || "No secondary KPI identified";
+    }
+
+    function getContextCellsForAnswer(persona = getPersona(), scenario = getScenario(), frameworkCode = state.selectedFramework) {
+      return buildCellsForContext({ persona, scenario, frameworkCode, question: state.question || "" }).cells;
+    }
+
+    function getSecondaryVarianceCandidate(cell, persona = getPersona(), scenario = getScenario()) {
+      const currentPerspective = cell.perspectiveId || "";
+      const currentPrimary = cell.kpis?.[0] || "";
+      const preferredKind = getPerspectiveQuestionKind(cell.title.split(" × ")[1] || cell.optionLabel || "");
+      const candidates = getContextCellsForAnswer(persona, scenario).filter((candidate) => {
+        if (candidate.id === cell.id) return false;
+        if ((candidate.kpis?.[0] || "") === currentPrimary) return false;
+        return true;
+      }).map((candidate) => {
+        const kind = getPerspectiveQuestionKind(candidate.title.split(" × ")[1] || candidate.optionLabel || "");
+        let score = 0;
+        if (candidate.perspectiveId !== currentPerspective) score += 2;
+        if (kind !== preferredKind) score += 2;
+        if (candidate.kpis?.length) score += 1;
+        return { candidate, score };
+      }).sort((a, b) => b.score - a.score);
+      return candidates[0]?.candidate || null;
+    }
+
+    function buildVarianceAnswer(cell, persona = getPersona(), scenario = getScenario()) {
+      const primaryVariance = cell.kpis?.[0] || cell.optionLabel || "the dominant variance";
+      const currentReading = extractCurrentReading(cell);
+      const baseline = inferBaselineLabel(cell, scenario);
+      const why = getRoleVarianceReason(cell, persona);
+      const risk = firstSentence(cell.risk);
+      const nextAction = firstSentence(cell.recommendedAction);
+      const blindSpot = extractBlindSpotKpi(cell);
+      const confidence = getAnswerConfidenceLevel();
+      const secondary = confidence === "medium" ? getSecondaryVarianceCandidate(cell, persona, scenario) : null;
+      return {
+        title: `Your primary variance: ${primaryVariance}`,
+        summary: [
+          `Variance vs baseline: ${baseline}`,
+          `Current reading: ${currentReading}`,
+          `Why this surfaced: ${why}`,
+          secondary ? `Secondary variance candidate: ${secondary.kpis?.[0] || secondary.optionLabel || secondary.title}` : "",
+          `Immediate consequence: ${risk}`,
+          `Next action: ${nextAction}`,
+          `Blind-spot KPI: ${blindSpot}`,
+        ].filter(Boolean).join("\n"),
+        why: `The answer resolves to ${primaryVariance} because that is the strongest variance signal for ${persona.role} in ${scenario?.scenarioTitle || "this scenario"}.`,
+      };
+    }
+
+    function buildCommercialPositionAnswer(cell, persona = getPersona(), scenario = getScenario()) {
+      const primarySignal = cell.kpis?.[0] || "commercial position";
+      const currentReading = extractCurrentReading(cell);
+      return {
+        title: `Your commercial position is anchored to ${lowerFirst(primarySignal)}`,
+        summary: [
+          `Baseline: ${inferBaselineLabel(cell, scenario)}`,
+          `Current reading: ${currentReading}`,
+          `Why this surfaced: ${getRoleVarianceReason(cell, persona)}`,
+          `Immediate consequence: ${firstSentence(cell.risk)}`,
+          `Next action: ${firstSentence(cell.recommendedAction)}`,
+          `Blind-spot KPI: ${extractBlindSpotKpi(cell)}`,
+        ].join("\n"),
+        why: `This answer is grounded in the strongest commercial signal for the active persona and scenario.`,
+      };
+    }
+
+    function buildDirectAnswer(cell) {
+      const question = state.question || "";
+      const intent = getQuestionIntent(question).intent;
+      if (isCommercialPositionQuestion(question)) return buildCommercialPositionAnswer(cell).title;
+      if (isVarianceQuestion(question)) return buildVarianceAnswer(cell).title;
+      const primaryKpi = cell.kpis?.[0] || "the primary signal";
+      if (intent === "data") {
+        return `The leading signal in this scenario is ${lowerFirst(primaryKpi)}.`;
+      }
+      if (intent === "threshold" || intent === "legal_trigger") {
+        return `The practical trigger sits around ${lowerFirst(primaryKpi)}; once that signal worsens further, Tata should move from monitoring to action.`;
+      }
+      if (intent === "stakeholder_signal" || intent === "escalation") {
+        return `The answer depends on stakeholder handling through the ${cell.title} lens, anchored to ${lowerFirst(primaryKpi)}.`;
+      }
+      if (intent === "consequence" || intent === "cost_of_delay" || intent === "risk") {
+        return `If Tata waits, the first material downside is ${lowerFirst(firstSentence(cell.risk).replace(/\.$/, ""))}.`;
+      }
+      if (intent === "sequencing") {
+        return `The next move should start with ${lowerFirst(firstSentence(cell.recommendedAction).replace(/\.$/, ""))}.`;
+      }
+      if (intent === "comparison") {
+        return `The stronger route is ${lowerFirst(cell.optionLabel)} because it best protects ${lowerFirst(primaryKpi)}.`;
+      }
+      return firstSentence(cell.recommendedAction) || `The best-supported answer sits in ${cell.title}.`;
+    }
+
+    function buildAnswerWhy(cell) {
+      const question = state.question || "";
+      if (isCommercialPositionQuestion(question)) return buildCommercialPositionAnswer(cell).why;
+      if (isVarianceQuestion(question)) return buildVarianceAnswer(cell).why;
+      const leading = cell.kpis?.slice(0, 2).join(" and ") || cell.optionLabel;
+      return `This answer is supported by ${cell.title} because the strongest scenario signals are concentrated around ${lowerFirst(leading)}.`;
+    }
+
+    function buildAnswerSummary(cell) {
+      const question = state.question || "";
+      if (isCommercialPositionQuestion(question)) return buildCommercialPositionAnswer(cell).summary;
+      if (isVarianceQuestion(question)) return buildVarianceAnswer(cell).summary;
+      return buildAnswerWhy(cell);
+    }
+
+    function renderQuestionAnswerBox(cell) {
+      if (!state.question) {
+        els.questionAnswerTag.textContent = "Awaiting question";
+        els.questionAnswerTitle.textContent = "Ask a scenario question";
+        els.questionAnswerSummary.textContent = "The system will answer from the selected scenario, then use the matrix as supporting evidence.";
+        els.questionAnswerAction.textContent = "The action will appear after the system answers the question.";
+        els.questionAnswerRisk.textContent = "The main risk will appear here.";
+        els.questionAnswerConsequence.textContent = "The likely consequence will appear here.";
+        els.questionSupportCellTitle.textContent = "No cell selected";
+        els.questionSupportCellSummary.textContent = "The selected matrix cell will explain why the answer is grounded in this perspective and emotion mode.";
+        els.questionAnswerEvidenceList.innerHTML = "<li>The supporting evidence will appear here.</li>";
+        return;
+      }
+      if (state.assistMode === "clarify") {
+        els.questionAnswerTag.textContent = "Clarification";
+        els.questionAnswerTitle.textContent = "I need one more distinction before I answer";
+        els.questionAnswerSummary.textContent = state.pendingClarification?.prompt || state.routeExplanation || "Reply in the question box and I’ll route it before highlighting anything.";
+        els.questionAnswerAction.textContent = "Waiting for a narrower question before recommending an action.";
+        els.questionAnswerRisk.textContent = "The answer is still ambiguous across more than one plausible lens.";
+        els.questionAnswerConsequence.textContent = "Once clarified, the answer will resolve to one matrix-supported decision path.";
+        els.questionSupportCellTitle.textContent = "No cell selected yet";
+        els.questionSupportCellSummary.textContent = "The system is waiting for enough context to select the right supporting matrix cell.";
+        els.questionAnswerEvidenceList.innerHTML = "<li>Clarification is required before the scenario evidence can be resolved cleanly.</li>";
+        return;
+      }
+      if (state.assistMode === "suggest") {
+        els.questionAnswerTag.textContent = "Suggestions";
+        els.questionAnswerTitle.textContent = "I need a more specific question";
+        els.questionAnswerSummary.textContent = state.routeExplanation || "Try one of the scenario-specific questions below.";
+        els.questionAnswerAction.textContent = "Choose one of the relevant questions below to generate a scenario-grounded answer.";
+        els.questionAnswerRisk.textContent = "The current wording is too broad to anchor a reliable answer.";
+        els.questionAnswerConsequence.textContent = "Once the question is more specific, the matrix can support a concrete decision path.";
+        els.questionSupportCellTitle.textContent = "No cell selected yet";
+        els.questionSupportCellSummary.textContent = "The selected scenario still has enough evidence, but the question needs to be more specific.";
+        els.questionAnswerEvidenceList.innerHTML = "<li>The current scenario evidence is available, but the question is not specific enough to resolve one dominant answer.</li>";
+        return;
+      }
+      if (!cell) {
+        els.questionAnswerTag.textContent = "Searching";
+        els.questionAnswerTitle.textContent = "Working on your question";
+        els.questionAnswerSummary.textContent = "I’m resolving the scenario context and the best supporting matrix cell.";
+        els.questionAnswerAction.textContent = "Resolving the right recommendation from the active scenario.";
+        els.questionAnswerRisk.textContent = "Evaluating which downside is dominant for this question.";
+        els.questionAnswerConsequence.textContent = "The likely consequence will appear once the answer is grounded.";
+        els.questionSupportCellTitle.textContent = "Resolving supporting cell";
+        els.questionSupportCellSummary.textContent = "The system is resolving the best-fit matrix evidence.";
+        els.questionAnswerEvidenceList.innerHTML = "<li>Searching active scenario evidence…</li>";
+        return;
+      }
+      els.questionAnswerTag.textContent = getAnswerConfidenceLevel() === "high" ? "High confidence"
+        : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
+        : "Low confidence";
+      els.questionAnswerTitle.textContent = buildDirectAnswer(cell);
+      els.questionAnswerSummary.textContent = [
+        buildAnswerSummary(cell),
+        `Highlighting ${cell.title} because this emotion × perspective route is the best-fit support for the current answer.`
+      ].join("\n");
+      els.questionAnswerAction.textContent = cell.recommendedAction;
+      els.questionAnswerRisk.textContent = cell.risk;
+      els.questionAnswerConsequence.textContent = cell.consequence;
+      els.questionSupportCellTitle.textContent = cell.title;
+      els.questionSupportCellSummary.textContent = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
+      els.questionAnswerEvidenceList.innerHTML = cell.dataRequirements.map((item) => `<li>${item}</li>`).join("");
     }
 
     function rerenderWorkspace() {
       renderHero();
       renderSelectOptions();
       renderFrameworkRecommendations();
+      renderQuestionAssist();
       const cells = getMatrixCells();
       const activeCell = ensureActiveCell(cells);
-      renderInsight(activeCell);
+      renderQuestionAnswerBox(activeCell);
       buildMatrix();
     }
 
@@ -2030,6 +3368,10 @@
       state.activeCellId = null;
       state.routedCellId = null;
       state.routeExplanation = "";
+      state.assistMode = "idle";
+      state.pendingClarification = null;
+      state.recoverySuggestions = [];
+      state.followUpSuggestions = [];
       rerenderWorkspace();
     }
 
@@ -2039,13 +3381,186 @@
       state.activeCellId = null;
       state.routedCellId = null;
       state.routeExplanation = "";
+      state.assistMode = "idle";
+      state.pendingClarification = null;
+      state.recoverySuggestions = [];
+      state.followUpSuggestions = [];
       rerenderWorkspace();
     }
 
-    function routeQuestion() {
-      const question = els.questionInput.value.trim().toLowerCase();
-      state.question = question;
+    function buildQuestionIntelligenceContext(questionText) {
+      const persona = getPersona();
+      const scenario = getScenario();
+      const framework = getFramework();
+      const built = buildCellsForContext({ persona, scenario, frameworkCode: framework.code, question: questionText });
+      const visiblePerspectives = built.perspectives.filter((item) => state.selectedPerspectives.includes(item.id));
+      const visibleModes = built.modes;
+      const visibleCells = built.cells.filter((cell) => visiblePerspectives.some((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId));
+
+      return {
+        persona_id: persona.id,
+        persona_role: persona.role,
+        scenario_id: scenario?.id,
+        scenario_title: scenario?.scenarioTitle || scenario?.label,
+        scenario_summary: scenario?.summary || scenario?.about || "",
+        scenario_kpis: (scenario?.kpiFamilies || []).map((item) => ({
+          code: item.code || "",
+          label: item.label || String(item || ""),
+        })),
+        persona_tension: scenario?.personaOverride?.tension || scenario?.tension || "",
+        framework_code: framework.code,
+        active_cell_id: state.activeCellId,
+        perspectives: visiblePerspectives.map((item) => ({
+          id: item.id,
+          code: item.code || item.id,
+          label: item.label,
+        })),
+        emotion_modes: visibleModes.map((item) => ({
+          id: item.id,
+          code: item.code || item.id,
+          label: item.label,
+          focus: item.focus || item.note || "",
+        })),
+        matrix_cells: visibleCells.map((cell) => {
+          const perspective = visiblePerspectives.find((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId);
+          const mode = visibleModes.find((item) => item.id === cell.modeId || item.code === cell.modeId);
+          return {
+            cell_id: cell.id,
+            emotion_mode: cell.modeId,
+            emotion_mode_label: mode?.label || cell.modeId,
+            perspective_code: perspective?.code || cell.perspectiveId,
+            perspective_label: perspective?.label || cell.perspectiveId,
+            primary_kpi: cell.kpis?.[0] || cell.optionLabel || "",
+            supporting_kpis: cell.kpis?.slice(1) || [],
+            recommended_action: cell.recommendedAction || "",
+            risk: cell.risk || "",
+            consequence: cell.consequence || "",
+            decision_weight: cell.decisionWeight || 0,
+            question_tags: cell.routeKeywords || [],
+          };
+        }),
+      };
+    }
+
+    function applyBackendQuestionResult(payload, rawQuestion) {
+      const router = payload?.router;
+      if (!router || !router.mode) return false;
+
+      if (router.mode === "answer" && router.target_cell_id) {
+        const currentPersona = getPersona();
+        const currentScenario = getScenario();
+        if (router.persona_id && router.persona_id !== currentPersona.id) {
+          state.personaId = router.persona_id;
+        }
+        if (router.scenario_id && router.scenario_id !== currentScenario?.id) {
+          state.scenarioId = router.scenario_id;
+        }
+        if (router.framework_code) {
+          state.selectedFramework = router.framework_code;
+        }
+        ensurePerspectiveSelection();
+        const perspectiveCode = router.perspective_code;
+        if (perspectiveCode) {
+          const activePerspectives = getActivePerspectives(getPersona(), getScenario());
+          const matchedPerspective = activePerspectives.find((item) => item.code === perspectiveCode || item.id === perspectiveCode);
+          if (matchedPerspective && !state.selectedPerspectives.includes(matchedPerspective.id)) {
+            state.selectedPerspectives = [matchedPerspective.id, ...state.selectedPerspectives].slice(0, 4);
+          }
+        }
+        state.question = rawQuestion;
+        state.pendingClarification = null;
+        state.assistMode = "answered";
+        state.recoverySuggestions = [];
+        state.followUpSuggestions = router.follow_up_questions || [];
+        state.routedCellId = router.target_cell_id;
+        state.activeCellId = router.target_cell_id;
+        state.routeExplanation = router.reason || "Question routed through the backend matrix router.";
+        rerenderWorkspace();
+        if (!state.followUpSuggestions.length) {
+          const cells = getMatrixCells();
+          const activeCell = cells.find((item) => item.id === state.activeCellId) || null;
+          state.followUpSuggestions = buildFollowUpSuggestions(activeCell, getPersona(), getScenario(), getFramework());
+          renderQuestionAssist();
+        }
+        els.routeNote.textContent = state.routeExplanation;
+        return true;
+      }
+
+      if (router.mode === "clarify") {
+        state.question = rawQuestion;
+        state.pendingClarification = {
+          originalQuestion: state.pendingClarification?.originalQuestion || rawQuestion,
+          prompt: router.clarifying_question || router.reason || "I need one more distinction before routing this question.",
+          candidates: [],
+          suggestions: router.suggested_questions || [],
+        };
+        state.assistMode = "clarify";
+        state.recoverySuggestions = [];
+        state.followUpSuggestions = [];
+        state.routedCellId = null;
+        state.routeExplanation = state.pendingClarification.prompt;
+        rerenderWorkspace();
+        els.routeNote.textContent = state.routeExplanation;
+        return true;
+      }
+
+      if (router.mode === "suggest") {
+        state.question = rawQuestion;
+        state.pendingClarification = null;
+        state.assistMode = "recovery";
+        state.recoverySuggestions = router.suggested_questions || [];
+        state.followUpSuggestions = [];
+        state.routedCellId = null;
+        state.routeExplanation = router.reason || "That question is too broad for this scenario. Try one of these instead.";
+        rerenderWorkspace();
+        els.routeNote.textContent = state.routeExplanation;
+        return true;
+      }
+
+      return false;
+    }
+
+    async function routeQuestion() {
+      const rawQuestion = els.questionInput.value.trim();
+      if (!rawQuestion) {
+        routeQuestionLocal();
+        return;
+      }
+      try {
+        const response = await fetch("/question-intelligence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: rawQuestion,
+            clarification_context: state.pendingClarification
+              ? {
+                  original_question: state.pendingClarification.originalQuestion,
+                  prompt: state.pendingClarification.prompt,
+                  suggestions: state.pendingClarification.suggestions || [],
+                }
+              : null,
+            context: buildQuestionIntelligenceContext(rawQuestion),
+          }),
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          if (applyBackendQuestionResult(payload, rawQuestion)) return;
+        }
+      } catch (error) {
+        console.warn("question-intelligence backend unavailable, using local router", error);
+      }
+      routeQuestionLocal();
+    }
+
+    function routeQuestionLocal() {
+      const rawQuestion = els.questionInput.value.trim();
+      const question = rawQuestion.toLowerCase();
+      state.question = rawQuestion;
       if (!question) {
+        state.pendingClarification = null;
+        state.assistMode = "idle";
+        state.recoverySuggestions = [];
+        state.followUpSuggestions = [];
         state.routeExplanation = "No question routed yet. You can also click any matrix cell directly.";
         state.routedCellId = null;
         rerenderWorkspace();
@@ -2053,46 +3568,193 @@
         return;
       }
 
-      const vo112Route = routeVo112Question(question);
+      const effectiveQuestion = state.pendingClarification
+        ? `${state.pendingClarification.originalQuestion} ${rawQuestion}`
+        : rawQuestion;
+      const broadQuestion = !state.pendingClarification && isBroadQuestion(effectiveQuestion);
+      const useCrossContext = hasExplicitCrossContextSignal(effectiveQuestion);
+
+      const vo112Route = routeVo112Question(effectiveQuestion.toLowerCase());
       if (vo112Route?.cell) {
-        state.activeCellId = `${vo112Route.emotionCode}::${vo112Route.perspectiveCode}`;
-        state.routedCellId = state.activeCellId;
-        const confidenceLabel = vo112Route.confidence >= 0.85
-          ? "High confidence"
-          : vo112Route.confidence >= 0.7
-            ? "Moderate confidence"
-            : "Low confidence";
-        state.routeExplanation = `${vo112Route.explanation} · Primary KPI: ${vo112Route.primaryKpi?.kpiLabel || vo112Route.primaryKpi?.label || "n/a"} · ${confidenceLabel}.`;
+        const vo112Confidence = vo112Route.confidence >= 0.88
+          ? "high"
+          : vo112Route.confidence >= 0.78
+            ? "medium"
+            : "low";
+        const explicitVo112PersonaAmbiguity = vo112Route.personaExplicitMatches > 1;
+        const vo112Gap = (vo112Route.topCandidate?.score || 0) - (vo112Route.secondCandidate?.score || 0);
+        if (explicitVo112PersonaAmbiguity || (vo112Confidence === "low" && vo112Gap < 4 && vo112Route.secondCandidate)) {
+          const primaryCandidate = {
+            persona: vo112Route.topCandidate.persona,
+            scenario: vo112Route.topCandidate.scenario,
+            frameworkCode: vo112Route.topCandidate.mode.code,
+            framework: getFrameworkByCode(vo112Route.topCandidate.mode.code),
+            perspective: vo112Route.topCandidate.perspective,
+            cell: vo112Route.topCandidate.cell
+          };
+          const alternateCandidate = {
+            persona: vo112Route.secondCandidate.persona,
+            scenario: vo112Route.secondCandidate.scenario,
+            frameworkCode: vo112Route.secondCandidate.mode.code,
+            framework: getFrameworkByCode(vo112Route.secondCandidate.mode.code),
+            perspective: vo112Route.secondCandidate.perspective,
+            cell: vo112Route.secondCandidate.cell
+          };
+          state.pendingClarification = {
+            originalQuestion: effectiveQuestion,
+            prompt: explicitVo112PersonaAmbiguity
+              ? `Do you mean the VO112 view for ${primaryCandidate.persona.role} or ${alternateCandidate.persona.role}?`
+              : `Do you want the ${primaryCandidate.perspective.label} / ${primaryCandidate.framework.name} view or the ${alternateCandidate.perspective.label} / ${alternateCandidate.framework.name} view?`,
+            candidates: [primaryCandidate, alternateCandidate]
+          };
+          state.assistMode = "clarify";
+          state.recoverySuggestions = [];
+          state.followUpSuggestions = [];
+          state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
+          state.routedCellId = null;
+          els.routeNote.textContent = state.routeExplanation;
+          rerenderWorkspace();
+          return;
+        }
+
+        state.question = effectiveQuestion;
+        applyRouteCandidate({
+          persona: vo112Route.persona,
+          scenario: vo112Route.scenario,
+          frameworkCode: vo112Route.emotionCode,
+          framework: getFrameworkByCode(vo112Route.emotionCode),
+          perspective: vo112Route.topCandidate?.perspective || { id: vo112Route.perspectiveCode, code: vo112Route.perspectiveCode, label: vo112Route.cell.title },
+          cell: vo112Route.cell
+        }, vo112Confidence, "");
+        state.routeExplanation = `${vo112Route.explanation} · Primary KPI: ${formatVo112KpiName(vo112Route.primaryKpi?.kpiLabel || vo112Route.primaryKpi?.label || "n/a")} · ${vo112Confidence} confidence.`;
         if (vo112Route.blindSpot) {
-          state.routeExplanation += ` Blind-spot warning: ${vo112Route.blindSpot.kpiLabel} ${formatVo112StateLabel(vo112Route.blindSpot.reading)}.`;
+          state.routeExplanation += ` Blind-spot warning: ${formatVo112KpiName(vo112Route.blindSpot.kpiLabel)} ${formatVo112StateLabel(vo112Route.blindSpot.reading)}.`;
         }
         els.routeNote.textContent = state.routeExplanation;
         rerenderWorkspace();
         return;
       }
 
-      const cells = getMatrixCells();
-      let bestCell = null;
-      let bestScore = -1;
-      cells.forEach((cell) => {
-        let score = 0;
-        cell.routeKeywords.forEach((keyword) => {
-          if (question.includes(keyword)) score += 3;
-        });
-        ["risk", "data", "evidence", "action", "consequence", "recommend"].forEach((keyword) => {
-          if (question.includes(keyword)) score += 1;
-        });
-        if (score > bestScore) {
-          bestScore = score;
-          bestCell = cell;
+      const intentInfo = getQuestionIntent(effectiveQuestion);
+      const currentInventory = buildCurrentContextInventory(effectiveQuestion);
+      const routingInventory = useCrossContext ? buildRoutingInventory(effectiveQuestion) : currentInventory;
+      const constraints = getExplicitMatrixConstraints(effectiveQuestion, routingInventory);
+      const currentCandidates = currentInventory
+        .map((candidate) => ({ candidate, score: scoreCandidate(effectiveQuestion, candidate, intentInfo) }))
+        .sort(compareScoredCandidates);
+      const scoredCandidates = applySemanticFrameworkConstraints(effectiveQuestion, applyExplicitMatrixConstraints(routingInventory
+        .map((candidate) => ({ candidate, score: scoreCandidate(effectiveQuestion, candidate, intentInfo) }))
+        .sort(compareScoredCandidates), constraints), intentInfo);
+      const constrainedCurrentCandidates = applySemanticFrameworkConstraints(effectiveQuestion, applyExplicitMatrixConstraints(currentCandidates, constraints), intentInfo);
+
+      const top = scoredCandidates[0];
+      const second = scoredCandidates[1];
+      if (!top) {
+        state.pendingClarification = null;
+        state.assistMode = "recovery";
+        state.routedCellId = null;
+        state.recoverySuggestions = buildRecoverySuggestions(effectiveQuestion, getPersona(), getScenario(), getFramework());
+        state.followUpSuggestions = [];
+        if (isVo112Scenario()) {
+          state.routeExplanation = "That question is too broad for this scenario. Try one of these instead.";
+        } else {
+          state.routeExplanation = "That question is too broad for this scenario. Try one of these instead.";
         }
-      });
-      if (!bestCell) return;
-      state.activeCellId = bestCell.id;
-      state.routedCellId = bestCell.id;
-      state.routeExplanation = `Question routed to ${bestCell.title} because it matches the strongest combination of perspective and emotional sub-mode signals in the prompt.`;
-      els.routeNote.textContent = state.routeExplanation;
-      rerenderWorkspace();
+        els.routeNote.textContent = state.routeExplanation;
+        rerenderWorkspace();
+        return;
+      }
+
+      const topScore = top.score.total;
+      const secondScore = second?.score.total || 0;
+      const gap = topScore - secondScore;
+      const confidenceBand = topScore >= 28 && gap >= 6
+        ? "high"
+        : topScore >= 18 && gap >= 3
+          ? "medium"
+          : "low";
+
+      const currentTop = constrainedCurrentCandidates[0];
+      const currentSecond = constrainedCurrentCandidates[1];
+      const currentTopScore = currentTop?.score?.total || 0;
+      const currentGap = currentTopScore - (currentSecond?.score?.total || 0);
+      const currentConfidence = currentTopScore >= 28 && currentGap >= 6
+        ? "high"
+        : currentTopScore >= 20 && currentGap >= 3
+          ? "medium"
+          : "low";
+
+      if (!useCrossContext && currentTop && currentTopScore >= topScore) {
+        const assumption = currentConfidence === "medium"
+          ? `I kept the current scenario because your question did not explicitly point to another context.`
+          : "";
+        state.question = effectiveQuestion;
+        applyRouteCandidate(currentTop.candidate, currentConfidence === "high" ? "high" : "medium", assumption);
+        return;
+      }
+
+      if (broadQuestion && topScore >= 10) {
+        const assumption = `Broad question. I selected the best-fit current outcome from the strongest scenario signals.`;
+        state.question = effectiveQuestion;
+        applyRouteCandidate(top.candidate, "low", assumption);
+        state.followUpSuggestions = buildBroadQuestionSuggestions(effectiveQuestion, getPersona(), getScenario());
+        renderQuestionAssist();
+        return;
+      }
+
+      if (shouldUseRecovery(effectiveQuestion, top, second)) {
+        state.pendingClarification = null;
+        state.assistMode = "recovery";
+        state.routedCellId = null;
+        state.recoverySuggestions = buildRecoverySuggestions(effectiveQuestion, getPersona(), getScenario(), getFramework());
+        state.followUpSuggestions = [];
+        state.routeExplanation = "That question is too broad for this scenario. Try one of these instead.";
+        els.routeNote.textContent = state.routeExplanation;
+        rerenderWorkspace();
+        return;
+      }
+
+      if (confidenceBand === "low") {
+        if (intentInfo.intent === "kpi_lookup") {
+          state.pendingClarification = {
+            originalQuestion: effectiveQuestion,
+            prompt: "Do you mean schedule variance, financial variance, people/governance exposure, or contract/commercial variance?",
+            candidates: [top.candidate, second?.candidate || top.candidate],
+          };
+          state.assistMode = "clarify";
+          state.recoverySuggestions = [];
+          state.followUpSuggestions = [];
+          state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll answer from the selected scenario before highlighting anything.`;
+          state.routedCellId = null;
+          els.routeNote.textContent = state.routeExplanation;
+          rerenderWorkspace();
+          return;
+        }
+        state.pendingClarification = buildClarification(top.candidate, second?.candidate || top.candidate, effectiveQuestion);
+        state.assistMode = "clarify";
+        state.recoverySuggestions = [];
+        state.followUpSuggestions = [];
+        if (isVo112Scenario() || isVo112Scenario(top.candidate.scenario)) {
+          const understood = [
+            top.candidate.persona?.role,
+            top.candidate.scenario?.scenarioTitle,
+            top.candidate.perspective?.label,
+          ].filter(Boolean).join(" / ");
+          state.routeExplanation = `I think you may mean ${understood}, but it is still ambiguous. ${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
+        } else {
+          state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
+        }
+        state.routedCellId = null;
+        els.routeNote.textContent = state.routeExplanation;
+        rerenderWorkspace();
+        return;
+      }
+
+      const assumption = confidenceBand === "medium"
+        ? `I assumed ${top.candidate.persona.role} / ${top.candidate.scenario.scenarioTitle} based on the strongest context signals.`
+        : "";
+      state.question = effectiveQuestion;
+      applyRouteCandidate(top.candidate, confidenceBand, assumption);
     }
 
     els.domainSelect.addEventListener("change", (event) => {
@@ -2132,9 +3794,22 @@
       if (!cellButton) return;
       state.activeCellId = cellButton.dataset.cellId;
       state.routedCellId = null;
+      state.assistMode = "answered";
+      state.pendingClarification = null;
+      state.recoverySuggestions = [];
       state.routeExplanation = `Manual exploration active. This cell is showing the selected emotional sub-mode and perspective intersection.`;
       els.routeNote.textContent = state.routeExplanation;
+      const cells = getMatrixCells();
+      const activeCell = cells.find((item) => item.id === state.activeCellId) || null;
+      state.followUpSuggestions = buildFollowUpSuggestions(activeCell, getPersona(), getScenario(), getFramework());
       rerenderWorkspace();
+    });
+
+    els.questionAssist.addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-question-chip]");
+      if (!chip) return;
+      els.questionInput.value = chip.dataset.questionChip;
+      routeQuestion();
     });
 
     els.routeQuestionButton.addEventListener("click", routeQuestion);

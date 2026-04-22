@@ -16,6 +16,7 @@ from decision_engine import (
     resolve_question,
 )
 from matrix_catalog import PERSONA_DIR, _parse_persona_file, load_matrix_bootstrap
+from question_intelligence import route_question_with_llm
 
 # In-memory cache for the last shared scenario analysis
 # {persona_code: full analyze_markdown result}
@@ -131,6 +132,8 @@ class DecisionAppHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path == "/analyze":
             self._handle_analyze()
+        elif self.path == "/question-intelligence":
+            self._handle_question_intelligence()
         elif self.path == "/resolve-question":
             self._handle_resolve_question()
         elif self.path == "/analyze-shared":
@@ -208,6 +211,43 @@ class DecisionAppHandler(BaseHTTPRequestHandler):
             matrix_emotion_modes=matrix_emotion_modes,
         )
         self.respond_json({"status": "ok", "resolution": result})
+
+    def _handle_question_intelligence(self) -> None:
+        content_length = int(self.headers.get("Content-Length", 0))
+        raw_body = self.rfile.read(content_length)
+        try:
+            body = json.loads(raw_body.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self.respond_json(
+                {"status": "error", "message": "Request body must be valid JSON."},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        question = body.get("question", "").strip()
+        context = body.get("context", {})
+        clarification_context = body.get("clarification_context")
+
+        if not question:
+            self.respond_json(
+                {"status": "error", "message": "Missing required field: question"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        if not isinstance(context, dict) or not context.get("matrix_cells"):
+            self.respond_json(
+                {"status": "error", "message": "Missing required context field: matrix_cells"},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        result = route_question_with_llm(
+            question=question,
+            context=context,
+            clarification_context=clarification_context if isinstance(clarification_context, dict) else None,
+        )
+        self.respond_json(result)
 
     def _handle_analyze_shared(self) -> None:
         global _shared_cache, _shared_scenario_meta
