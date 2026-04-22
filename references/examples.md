@@ -32,6 +32,9 @@ What Is Driving The Decision
 - Explicit: investor timing pressure.
 - Inferred: reputation risk seems more important than speed right now.
 
+Consequence Risk
+Cautious mode may push toward delay even when launching with a scoped demo would be stronger. Confirm whether the bugs affect the investor-critical path before anchoring on postponement.
+
 Missing But Important
 - Whether the bugs affect core demo flows.
 
@@ -75,6 +78,9 @@ Key Trade-Offs
 - The cheaper option lowers financial pressure but increases commute cost and time.
 - The better-located option improves daily life and family access but raises fixed cost.
 - Waiting preserves optionality but delays certainty.
+
+Consequence Risk
+Analytical mode may under-weight the relational value of proximity, which is harder to quantify. Ask explicitly: would I regret this choice in two years if the commute became a daily source of friction?
 
 Inferred Assumptions
 - You have enough stability to tolerate a longer decision cycle.
@@ -138,6 +144,13 @@ Key Trade-Offs
 - Reallocating now may reduce patient and operational risk but weakens planned improvement work.
 - Holding the current plan protects the elective roadmap but raises near-term strain and service risk.
 - A partial move spreads the pain but may under-solve the urgent problem.
+
+Consequence Risk
+Diplomatic mode may preserve the elective roadmap because stakeholder voices already invested in that plan carry weight. Verify that no internal coalition is blocking the structurally better answer.
+
+Blind Spots
+- Timeline KPI: temporary staffing takes days to onboard. If wait-time pressure is already critical, the relief window matters.
+- Customer KPI: patient and family trust erodes quickly under sustained wait-time pressure — this is under-weighted in a cost-focused frame.
 
 Inferred Assumptions
 - Inferred from scenario: immediate continuity risk appears more salient than elective improvement timing.
@@ -214,6 +227,11 @@ Refinance now or delay — the covenant clock is ticking.
 Persona Lens
 Decisive mode reads this through the CFO lens. It weights timeline and regulatory KPIs over cost and debt structure nuance.
 
+Relevant Facts
+- Covenant review is due in eight weeks.
+- Refinancing now removes near-term covenant risk but locks in higher cost.
+- Waiting preserves rate optionality but extends covenant exposure.
+
 Key Trade-Offs
 - Refinancing now clears the covenant risk and creates a known cost baseline.
 - Waiting introduces rate and review uncertainty with limited upside.
@@ -228,65 +246,3 @@ Set a 72-hour checkpoint: confirm covenant headroom and rate desk availability. 
 ### Key Difference
 
 Same facts. Cautious (A) prioritises avoiding the downside of the wrong move. Decisive (D) prioritises removing the uncertainty quickly. The KPI weight shift produces a different emphasis even when the recommended option is the same.
-
-## Example 7: Webapp Upload Format
-
-### Purpose
-
-Show the markdown format the webapp accepts as an uploaded file.
-
-### Example File
-
-```markdown
-# Scenario: Infrastructure Investment Decision
-
-## Persona
-
-CFO of a mid-size manufacturing company. Responsible for capital allocation, balance-sheet management, and investor relations. Risk-oriented. Time horizon is typically 12–36 months.
-
-## Scenario
-
-The company is evaluating whether to fund a EUR 40M green infrastructure upgrade now using project finance, defer the investment by 18 months until cash flow improves, or pursue a hybrid split-funded approach combining 50% project finance and 50% balance-sheet debt.
-
-## Time Horizon
-
-3 years
-
-## Stakeholders
-
-Board, investors, operations team, sustainability committee
-
-## KPI Families
-
-Debt capacity, cost of capital, cash flow, regulatory compliance, emissions reduction, customer rating
-
-## Decision Call
-
-Fund now vs. defer vs. split
-
-## Tension
-
-Emissions reduction targets are tied to regulatory compliance deadlines. Deferring risks non-compliance penalties and rating exposure.
-
-## Role enrichment
-
-false
-```
-
-### What the Backend Does With This File
-
-1. Parses all labeled sections into structured fields
-2. Normalizes the persona into the internal profile shape
-3. Extracts options from the `Decision Call` section
-4. Maps `KPI Families` to the eight standard categories
-5. Scores each option across all KPIs under all six emotion codes
-6. Returns a JSON payload with baseline + six emotion variants
-7. The frontend renders an emotion switcher, KPI matrix, and blind spot panel
-
-### Clarification Behavior
-
-If `Persona` or `Scenario` sections are missing from the uploaded file, the webapp renders a targeted prompt instead of an empty result.
-
-```text
-The uploaded file is missing a persona. Who is making this decision?
-```
