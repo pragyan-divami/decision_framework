@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"from app.decision_engine import analyze_markdown; print\\('import OK'\\)\")",
+      "Bash(python3 -c \"import app.matrix_catalog as mc; print\\(dir\\(mc\\)\\)\")",
+      "Read(//private/tmp/**)",
+      "Read(//Users/pragyan/**)",
+      "Bash(curl -s http://127.0.0.1:8010/health)",
+      "Bash(curl -s http://127.0.0.1:8010/shared-cache)",
+      "Bash(kill 2128)",
+      "Bash(python server.py)",
+      "Bash(python3 server.py)",
+      "Bash(curl -s http://127.0.0.1:8010/matrix-bootstrap)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('uploaded, personas:', d.get\\('personaCount'\\)\\)\")"
+    ]
+  }
+}

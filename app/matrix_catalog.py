@@ -3,6 +3,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
+try:
+    from .fixed_matrix import build_fixed_matrix_bootstrap, build_fixed_matrix_cell_runtime, build_persona_perspective_labels, normalize_persona_for_fixed_matrix, normalize_scenario_for_fixed_matrix  # type: ignore
+except Exception:  # pragma: no cover
+    from fixed_matrix import build_fixed_matrix_bootstrap, build_fixed_matrix_cell_runtime, build_persona_perspective_labels, normalize_persona_for_fixed_matrix, normalize_scenario_for_fixed_matrix
+
 
 ROOT = Path(__file__).resolve().parent
 PERSONA_DIR = ROOT / "data" / "personas"
@@ -485,6 +490,24 @@ def _build_pack_summary(trigger: str, tension: str, options: List[Dict[str, str]
     return "\n\n".join(parts)
 
 
+def _build_pack_explanation(
+    trigger: str,
+    tension: str,
+    options: List[Dict[str, str]],
+    commercial_variance: str,
+    compliance_variance: str,
+    bid_variance: str,
+) -> str:
+    parts = [_build_pack_summary(trigger, tension, options)]
+    if commercial_variance:
+        parts.append(f"Commercial variance focus: {commercial_variance.strip()}")
+    if compliance_variance:
+        parts.append(f"Compliance variance focus: {compliance_variance.strip()}")
+    if bid_variance:
+        parts.append(f"Bid variance focus: {bid_variance.strip()}")
+    return "\n\n".join(part for part in parts if part)
+
+
 def _derive_perspectives(kpis: List[Dict[str, str]], context_bullets: List[str], lens: str, tension: str, role: str, platform: str) -> List[Dict[str, Any]]:
     base_bullets = context_bullets[:2]
     perspectives: List[Dict[str, Any]] = []
@@ -559,6 +582,19 @@ def _parse_persona_file(path: Path) -> Dict[str, Any]:
         "kpiFamilies": kpis,
         "decisionStyleNotes": decision_notes,
         "perspectives": _derive_perspectives(kpis, context_bullets, lens, tension, persona or name, platform),
+        "fixedMatrixPerspectiveLabels": build_persona_perspective_labels(code),
+        "normalizedDecisionProfile": normalize_persona_for_fixed_matrix(
+            {
+                "id": f"{code.lower()}-{_slugify(name)}",
+                "code": code,
+                "role": persona or role_section.split(".")[0].strip(),
+                "summary": background.split("\n\n")[0].strip(),
+                "primaryStakeholders": stakeholders,
+                "hardestTension": tension,
+                "lens": lens,
+                "kpiFamilies": kpis,
+            }
+        ),
         "commercialOverlay": _build_commercial_overlay(code),
         "frameworks": frameworks["frameworks"],
         "recommendedFramework": frameworks["recommended"],
@@ -667,6 +703,21 @@ def _parse_scenario_file(path: Path) -> Dict[str, Any]:
         "personaOverrides": persona_overrides,
         "scenarioKinds": ["commercial-contracts"] if _is_commercial_context(domain, platform, scenario_title, summary, tension, call, about) else [],
         "keywords": _keywords(scenario_title, summary, tension, call, *(item["label"] for item in kpis)),
+        "normalizedScenarioProfile": normalize_scenario_for_fixed_matrix(
+            {
+                "id": f"{code.lower()}-{_slugify(path.stem.replace('_Scenario', ''))}-scenario",
+                "scenarioTitle": scenario_title,
+                "label": scenario_title or (cross_match.group(1).strip() if cross_match else f"{name} scenario"),
+                "summary": summary,
+                "about": about,
+                "tension": tension,
+                "decisionContext": decision_context,
+                "options": options,
+                "kpiFamilies": kpis,
+                "scenarioKinds": ["commercial-contracts"] if _is_commercial_context(domain, platform, scenario_title, summary, tension, call, about) else [],
+                "sharedAcrossPersonas": shared_across_personas,
+            }
+        ),
     }
 
 
@@ -688,11 +739,31 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
         number, title, block = match.groups()
         trigger = _extract_section_body(block, "### Trigger")
         tension = _extract_section_body(block, "### Decision tension")
+        commercial_variance = _extract_section_body(block, "### Commercial variance")
+        compliance_variance = _extract_section_body(block, "### Compliance variance")
+        bid_variance = _extract_section_body(block, "### Bid variance")
         options_text = _extract_section_body(block, "### Options")
         kpi_text = _extract_section_body(block, "### KPI families")
         options = _extract_pack_options(options_text)
         kpis = _extract_pack_kpis(kpi_text)
         summary = _build_pack_summary(trigger, tension, options)
+        explanation = _build_pack_explanation(
+            trigger,
+            tension,
+            options,
+            commercial_variance,
+            compliance_variance,
+            bid_variance,
+        )
+        decision_context = {
+            key: value
+            for key, value in {
+                "commercialVariance": commercial_variance.strip(),
+                "complianceVariance": compliance_variance.strip(),
+                "bidVariance": bid_variance.strip(),
+            }.items()
+            if value
+        }
         scenarios.append(
             {
                 "id": f"cross-{_slugify(path.stem)}-{number}-scenario",
@@ -701,7 +772,7 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
                 "label": title.strip(),
                 "personaCode": "CROSS",
                 "personaName": "All personas",
-                "domain": "Contracts & Commercial Variance",
+                "domain": "Contracts, Commercial, Compliance & Bid Variance",
                 "platform": "Port Talbot Transformation Programme",
                 "persona": "All personas",
                 "scenarioDate": "",
@@ -711,16 +782,40 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
                 "scenarioTitle": title.strip(),
                 "scenarioBody": block.strip(),
                 "summary": summary,
-                "explanation": summary,
+                "explanation": explanation,
                 "call": "Choose the most defensible path across the available options.",
                 "tension": tension.strip(),
-                "decisionContext": {},
+                "decisionContext": decision_context,
                 "kpiFamilies": kpis,
                 "options": options,
                 "sharedAcrossPersonas": True,
                 "personaOverrides": {},
-                "scenarioKinds": ["commercial-contracts"],
-                "keywords": _keywords(title, trigger, tension, *(item["label"] for item in kpis), *(item["label"] for item in options)),
+                "scenarioKinds": ["commercial-contracts", "commercial-variance", "compliance", "bids"],
+                "keywords": _keywords(
+                    title,
+                    trigger,
+                    tension,
+                    commercial_variance,
+                    compliance_variance,
+                    bid_variance,
+                    *(item["label"] for item in kpis),
+                    *(item["label"] for item in options),
+                ),
+                "normalizedScenarioProfile": normalize_scenario_for_fixed_matrix(
+                    {
+                        "id": f"cross-{_slugify(path.stem)}-{number}-scenario",
+                        "scenarioTitle": title.strip(),
+                        "label": title.strip(),
+                        "summary": summary,
+                        "about": trigger.strip(),
+                        "tension": tension.strip(),
+                        "decisionContext": decision_context,
+                        "options": options,
+                        "kpiFamilies": kpis,
+                        "scenarioKinds": ["commercial-contracts", "commercial-variance", "compliance", "bids"],
+                        "sharedAcrossPersonas": True,
+                    }
+                ),
             }
         )
     return scenarios
@@ -898,12 +993,26 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
         else:
             scenario_map.setdefault(scenario["personaCode"], []).append(scenario)
     for persona in personas:
-        persona["scenarios"] = scenario_map.get(persona["code"], [])
+        persona_scenarios: List[Dict[str, Any]] = []
+        for scenario in scenario_map.get(persona["code"], []):
+            scenario_copy = dict(scenario)
+            normalized_scenario = dict(scenario_copy.get("normalizedScenarioProfile", {}))
+            fixed_runtime = build_fixed_matrix_cell_runtime(
+                persona.get("normalizedDecisionProfile", {}),
+                normalized_scenario,
+            )
+            normalized_scenario["visible_data_catalog"] = fixed_runtime["visibleDataCatalog"]
+            scenario_copy["normalizedScenarioProfile"] = normalized_scenario
+            scenario_copy["fixedMatrixCellData"] = fixed_runtime["cells"]
+            scenario_copy["fixedMatrixVisibleDataCatalog"] = fixed_runtime["visibleDataCatalog"]
+            persona_scenarios.append(scenario_copy)
+        persona["scenarios"] = persona_scenarios
         persona["defaultScenarioId"] = persona["scenarios"][0]["id"] if persona["scenarios"] else ""
     return {
         "project": PROJECT,
         "domains": DOMAINS,
         "platforms": PLATFORMS,
+        "fixedDecisionFramework": build_fixed_matrix_bootstrap(),
         "personas": personas,
         "scenarios": scenarios,
         "commercialLogic": {
