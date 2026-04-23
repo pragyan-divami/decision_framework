@@ -34,6 +34,104 @@ INTENT_PATTERNS = {
     "data": ["what data", "what evidence", "which kpi", "what matters most", "evidence required"],
 }
 
+DECISION_FAMILY_PATTERNS = {
+    "contract-entitlement": [
+        "entitlement",
+        "contractual cover",
+        "under the clause",
+        "under clause",
+        "notice compliance",
+        "certification rules",
+        "compensable",
+        "variation claim",
+        "change order",
+        "valid under clause",
+    ],
+    "commercial-exposure": [
+        "commercial position",
+        "commercial exposure",
+        "customer exposure",
+        "revenue at risk",
+        "margin erosion",
+        "offtake",
+        "portfolio precedent",
+        "commercials",
+        "contract exposure",
+        "counterparty",
+    ],
+    "variance": [
+        "variance",
+        "drift",
+        "overrun",
+        "vs plan",
+        "vs budget",
+        "contingency burn",
+        "cost drift",
+        "schedule variance",
+        "funding-case variance",
+    ],
+    "bids-pricing": [
+        "bid",
+        "bids",
+        "pricing",
+        "price protection",
+        "repricing",
+        "rebid",
+        "tender",
+        "win probability",
+        "priced risk",
+        "award stage",
+    ],
+    "disclosure": [
+        "disclose",
+        "notify",
+        "late-notice",
+        "governance",
+        "audit",
+        "dbet",
+        "board reporting",
+        "materiality",
+        "fairness concerns",
+        "stakeholder signal",
+    ],
+    "timing": [
+        "when",
+        "now",
+        "wait",
+        "delay",
+        "timing",
+        "trigger",
+        "deadline",
+        "slip",
+    ],
+    "risk": [
+        "risk",
+        "riskiest",
+        "exposure",
+        "downside",
+        "danger",
+        "worst",
+        "consequence",
+    ],
+    "strategy": [
+        "strategic",
+        "long-term",
+        "long horizon",
+        "optionality",
+        "precedent",
+        "positioning",
+        "best decision",
+    ],
+    "data-needed": [
+        "what data",
+        "what evidence",
+        "which kpi",
+        "what matters most",
+        "evidence required",
+        "confirm",
+    ],
+}
+
 
 def _perspective_kind(label: str) -> str:
     lower = (label or "").lower()
@@ -72,6 +170,22 @@ def _normalize_kpi_text(value: str) -> str:
     return " ".join("".join(ch if ch.isalnum() else " " for ch in (value or "").lower()).split())
 
 
+def _lower_first(value: str) -> str:
+    if not value:
+        return ""
+    return value[:1].lower() + value[1:]
+
+
+def _first_sentence(value: str) -> str:
+    text = " ".join((value or "").split()).strip()
+    if not text:
+        return ""
+    for marker in [". ", "? ", "! "]:
+        if marker in text:
+            return text.split(marker, 1)[0].strip() + marker.strip()
+    return text
+
+
 def _is_broad_question(question: str) -> bool:
     lower = (question or "").strip().lower()
     if not lower:
@@ -95,6 +209,148 @@ def _classify_intent(question: str) -> str:
             best = score
             winner = intent
     return winner
+
+
+def _classify_outcome_preference(question: str) -> str:
+    lower = (question or "").lower()
+    if any(term in lower for term in ["worst", "riskiest", "most risky", "highest risk", "dangerous", "least defensible", "disastrous"]):
+        return "worst"
+    if any(term in lower for term in ["risky", "high risk", "downside", "exposure"]):
+        return "risky"
+    if any(term in lower for term in ["moderate", "balanced", "middle ground", "hybrid", "pragmatic", "measured"]):
+        return "moderate"
+    if any(term in lower for term in ["strategic", "long-term", "long horizon", "optionality", "precedent", "institutional"]):
+        return "strategic"
+    if any(term in lower for term in ["best", "safest", "optimal", "most defensible", "right choice", "best choice"]):
+        return "best"
+    return "default"
+
+
+def _classify_decision_family(question: str, context: Dict[str, Any]) -> str:
+    lower = (question or "").lower()
+    winner = "strategy"
+    best = 0
+    for family, phrases in DECISION_FAMILY_PATTERNS.items():
+        score = sum(3 for phrase in phrases if phrase in lower)
+        score += sum(1 for token in _extract_tokens(lower) if any(token in phrase for phrase in phrases))
+        if score > best:
+            best = score
+            winner = family
+
+    scenario_context = " ".join(
+        [
+            str(context.get("scenario_summary") or ""),
+            *[str(item) for item in (context.get("scenario_decision_context") or {}).values()],
+            *[str(item.get("label") or "") for item in (context.get("scenario_kpis") or []) if isinstance(item, dict)],
+        ]
+    ).lower()
+    if winner == "strategy" and "variance" in lower and "variance" in scenario_context:
+        return "variance"
+    if winner == "strategy" and any(term in lower for term in ["commercial", "customer", "revenue", "margin", "offtake"]):
+        return "commercial-exposure"
+    if winner == "strategy" and any(term in lower for term in ["contract", "entitlement", "clause", "notice"]):
+        return "contract-entitlement"
+    if winner == "strategy" and any(term in lower for term in ["bid", "pricing", "tender", "price"]):
+        return "bids-pricing"
+    if winner == "strategy" and any(term in lower for term in ["disclose", "notify", "governance", "audit", "dbet"]):
+        return "disclosure"
+    if winner == "strategy" and any(term in lower for term in ["risk", "worst", "danger", "downside", "exposure"]):
+        return "risk"
+    if winner == "strategy" and any(term in lower for term in ["when", "wait", "delay", "timing", "trigger"]):
+        return "timing"
+    if winner == "strategy" and any(term in lower for term in ["data", "evidence", "kpi", "confirm"]):
+        return "data-needed"
+    return winner
+
+
+def _find_cell_by_id(context: Dict[str, Any], cell_id: Optional[str]) -> Optional[Dict[str, Any]]:
+    if not cell_id:
+        return None
+    for cell in context.get("matrix_cells", []) or []:
+        if cell.get("cell_id") == cell_id:
+            return cell
+    return None
+
+
+def _build_evidence_used(cell: Dict[str, Any], context: Dict[str, Any]) -> List[str]:
+    scenario_context = context.get("scenario_decision_context") or {}
+    return _dedupe(
+        [
+            f"Primary KPI: {cell.get('primary_kpi')}" if cell.get("primary_kpi") else "",
+            *[f"Supporting KPI: {item}" for item in (cell.get("supporting_kpis") or [])[:2]],
+            *[f"Scenario context: {item}" for item in scenario_context.values()],
+            f"Scenario summary: {context.get('scenario_summary')}" if context.get("scenario_summary") else "",
+        ],
+        5,
+    )
+
+
+def _build_direct_answer(question: str, cell: Dict[str, Any], context: Dict[str, Any], decision_family: str) -> str:
+    primary_kpi = cell.get("primary_kpi") or "the dominant signal"
+    option = cell.get("recommended_action") or cell.get("primary_kpi") or cell.get("perspective_label") or "the recommended route"
+    outcome_preference = _classify_outcome_preference(question)
+    if decision_family == "variance":
+        return f"Your primary variance is {_lower_first(primary_kpi)}."
+    if decision_family == "commercial-exposure":
+        return f"Your commercial position is most exposed through {_lower_first(primary_kpi)}."
+    if decision_family == "contract-entitlement":
+        return f"The strongest contract position is the route anchored to {_lower_first(primary_kpi)}."
+    if decision_family == "bids-pricing":
+        return f"The bid and pricing pressure is concentrated around {_lower_first(primary_kpi)}."
+    if decision_family == "disclosure":
+        return f"The disclosure decision is best judged through {_lower_first(primary_kpi)}."
+    if decision_family == "data-needed":
+        return f"The first signal to inspect is {_lower_first(primary_kpi)}."
+    if outcome_preference == "worst":
+        return f"The worst choice is to lean into the route that leaves Tata most exposed through {_lower_first(primary_kpi)}."
+    if outcome_preference == "risky":
+        return f"The riskiest route is the one that amplifies downside around {_lower_first(primary_kpi)}."
+    if outcome_preference == "moderate":
+        return f"The most balanced route is the one that stabilizes {_lower_first(primary_kpi)} without overcommitting."
+    if outcome_preference == "strategic":
+        return f"The most strategic route is the one that protects the longer-term position around {_lower_first(primary_kpi)}."
+    return _first_sentence(option) or f"The best-supported answer is the route anchored to {_lower_first(primary_kpi)}."
+
+
+def _build_why_this_answer(cell: Dict[str, Any], context: Dict[str, Any], decision_family: str) -> str:
+    scenario_title = context.get("scenario_title") or "this scenario"
+    perspective = cell.get("perspective_label") or cell.get("perspective_code") or "this perspective"
+    lens = cell.get("decision_lens_label") or cell.get("emotion_mode_label") or cell.get("emotion_mode") or "this decision lens"
+    primary_kpi = cell.get("primary_kpi") or "the dominant KPI"
+    if decision_family == "variance":
+        return f"In {scenario_title}, the strongest variance signal for this persona sits in {primary_kpi}, so the answer routes through {lens} × {perspective}."
+    if decision_family == "commercial-exposure":
+        return f"In {scenario_title}, the strongest commercial exposure clusters around {primary_kpi}, so the answer routes through {lens} × {perspective}."
+    if decision_family == "contract-entitlement":
+        return f"In {scenario_title}, the strongest entitlement logic sits in the {perspective} perspective and is anchored to {primary_kpi}."
+    if decision_family == "bids-pricing":
+        return f"In {scenario_title}, the bid and pricing implications are concentrated around {primary_kpi}, so {lens} × {perspective} is the strongest support."
+    if decision_family == "disclosure":
+        return f"In {scenario_title}, disclosure defensibility is concentrated around {primary_kpi}, making {lens} × {perspective} the best-fit route."
+    return f"This answer is grounded in {lens} × {perspective} because the strongest scenario signals are concentrated around {primary_kpi}."
+
+
+def _build_answer_fields(
+    question: str,
+    cell: Dict[str, Any],
+    context: Dict[str, Any],
+    confidence: float,
+    reason: str,
+) -> Dict[str, Any]:
+    decision_family = _classify_decision_family(question, context)
+    return {
+        "decision_family": decision_family,
+        "decision_lens": cell.get("decision_lens_label") or cell.get("emotion_mode_label") or cell.get("emotion_mode"),
+        "direct_answer": _build_direct_answer(question, cell, context, decision_family),
+        "why_this_answer": _build_why_this_answer(cell, context, decision_family),
+        "supporting_kpis": _dedupe([cell.get("primary_kpi") or "", *(cell.get("supporting_kpis") or [])], 4),
+        "recommended_action": _first_sentence(cell.get("recommended_action") or ""),
+        "primary_risk": _first_sentence(cell.get("risk") or ""),
+        "likely_consequence": _first_sentence(cell.get("consequence") or ""),
+        "evidence_used": _build_evidence_used(cell, context),
+        "confidence": confidence,
+        "reason": reason,
+    }
 
 
 def _build_question_for_cell(cell: Dict[str, Any], context: Dict[str, Any], family: str) -> str:
@@ -438,10 +694,43 @@ def _apply_semantic_preferences(question: str, ranked: List[Dict[str, Any]], int
     return filtered
 
 
+def _resolve_framework_intersection(ranked: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    perspective_scores: Dict[str, float] = {}
+    mode_scores: Dict[str, float] = {}
+    for item in ranked:
+        cell = item["cell"]
+        perspective_key = cell.get("perspective_code") or cell.get("perspective_label")
+        mode_key = cell.get("emotion_mode") or cell.get("emotion_mode_label")
+        if perspective_key:
+            perspective_scores[perspective_key] = max(perspective_scores.get(perspective_key, 0.0), item["score"])
+        if mode_key:
+            mode_scores[mode_key] = max(mode_scores.get(mode_key, 0.0), item["score"])
+
+    preferred_perspective = max(perspective_scores.items(), key=lambda item: item[1])[0] if perspective_scores else None
+    preferred_mode = max(mode_scores.items(), key=lambda item: item[1])[0] if mode_scores else None
+    if not preferred_perspective and not preferred_mode:
+        return ranked
+
+    intersected = [
+        item for item in ranked
+        if (
+            not preferred_perspective
+            or item["cell"].get("perspective_code") == preferred_perspective
+            or item["cell"].get("perspective_label") == preferred_perspective
+        ) and (
+            not preferred_mode
+            or item["cell"].get("emotion_mode") == preferred_mode
+            or item["cell"].get("emotion_mode_label") == preferred_mode
+        )
+    ]
+    return intersected or ranked
+
+
 def _score_cell(question: str, cell: Dict[str, Any], context: Dict[str, Any]) -> float:
     lower = (question or "").lower()
     tokens = set(_extract_tokens(lower))
     intent = _classify_intent(question)
+    outcome_preference = _classify_outcome_preference(question)
     broad_question = _is_broad_question(question)
     haystack_parts = [
         cell.get("cell_id"),
@@ -464,6 +753,22 @@ def _score_cell(question: str, cell: Dict[str, Any], context: Dict[str, Any]) ->
     if broad_question:
         score += min(decision_weight / 4.0, 12.0)
     perspective_kind = _perspective_kind(cell.get("perspective_label") or "")
+    risk_text = f"{cell.get('risk') or ''} {cell.get('consequence') or ''} {cell.get('question_tags') or ''}".lower()
+    risk_severity = 0.0
+    if any(term in risk_text for term in ["critical", "clawback", "breach", "halt", "irreversible", "unacceptable", "suspension", "damage", "loss", "exposure", "slip", "political"]):
+        risk_severity += 8.0
+    if any(term in str(cell.get("emotion_mode_label") or "").lower() for term in ["downside", "safety", "regret", "risk"]):
+        risk_severity += 4.0
+    strategic_strength = 0.0
+    strategic_text = f"{cell.get('emotion_mode_label') or ''} {cell.get('recommended_action') or ''} {cell.get('question_tags') or ''}".lower()
+    if context.get("framework_code") == "B":
+        strategic_strength += 3.0
+    if any(term in strategic_text for term in ["long-horizon", "long horizon", "optionality", "future", "precedent", "institutional", "second-order", "thesis"]):
+        strategic_strength += 8.0
+    moderation_strength = 0.0
+    moderate_text = f"{cell.get('recommended_action') or ''} {cell.get('question_tags') or ''}".lower()
+    if any(term in moderate_text for term in ["hybrid", "phased", "joint", "balanced", "time-limited", "minimum", "continuity", "feasible", "measured", "bridge"]):
+        moderation_strength += 8.0
     score += _explicit_perspective_score(question, cell)
     score += _explicit_emotion_score(question, cell)
     score += _explicit_kpi_score(question, cell)
@@ -553,6 +858,17 @@ def _score_cell(question: str, cell: Dict[str, Any], context: Dict[str, Any]) ->
         if perspective_kind in {"financial", "schedule"}:
             score += 4
 
+    if outcome_preference == "best":
+        score += decision_weight * 0.6 + strategic_strength * 0.5 - risk_severity * 0.25
+    elif outcome_preference == "worst":
+        score += risk_severity * 1.4 + max(0.0, 12.0 - decision_weight * 0.25)
+    elif outcome_preference == "risky":
+        score += risk_severity * 1.1 - decision_weight * 0.1
+    elif outcome_preference == "moderate":
+        score += moderation_strength * 1.2 + max(0.0, 8.0 - abs(decision_weight - 14.0))
+    elif outcome_preference == "strategic":
+        score += strategic_strength * 1.4 + decision_weight * 0.2
+
     current_framework = context.get("framework_code")
     if current_framework and current_framework == cell.get("emotion_mode"):
         score += 1.5
@@ -566,11 +882,14 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
     question = (question or "").strip()
     intent = _classify_intent(question)
     broad_question = _is_broad_question(question)
+    decision_family = _classify_decision_family(question, context)
 
     cells = context.get("matrix_cells") or []
     if not cells:
         return {
             "mode": "suggest",
+            "decision_family": decision_family,
+            "decision_lens": None,
             "persona_id": context.get("persona_id"),
             "scenario_id": context.get("scenario_id"),
             "framework_code": context.get("framework_code"),
@@ -579,6 +898,13 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "target_cell_id": None,
             "confidence": 0.0,
             "reason": "No matrix cells were available for this scenario.",
+            "direct_answer": "",
+            "why_this_answer": "",
+            "supporting_kpis": [],
+            "recommended_action": "",
+            "primary_risk": "",
+            "likely_consequence": "",
+            "evidence_used": [],
             "clarifying_question": None,
             "suggested_questions": [],
             "follow_up_questions": [],
@@ -595,12 +921,15 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
     )
     ranked = _apply_matrix_constraints(ranked, _extract_matrix_constraints(question, cells))
     ranked = _apply_semantic_preferences(question, ranked, intent)
+    ranked = _resolve_framework_intersection(ranked)
     top = ranked[0]
     second = ranked[1] if len(ranked) > 1 else None
     gap = top["score"] - (second["score"] if second else 0)
     if intent == "kpi_lookup" and top["score"] < 4:
         return {
             "mode": "clarify",
+            "decision_family": decision_family,
+            "decision_lens": None,
             "persona_id": context.get("persona_id"),
             "scenario_id": context.get("scenario_id"),
             "framework_code": context.get("framework_code"),
@@ -609,6 +938,13 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "target_cell_id": None,
             "confidence": 0.35,
             "reason": "I can answer this, but I need to know which kind of variance or exposure you mean.",
+            "direct_answer": "",
+            "why_this_answer": "",
+            "supporting_kpis": [],
+            "recommended_action": "",
+            "primary_risk": "",
+            "likely_consequence": "",
+            "evidence_used": [],
             "clarifying_question": "Do you mean schedule variance, financial variance, people/governance exposure, or contract/commercial variance?",
             "suggested_questions": _dedupe([
                 "What is my schedule variance in this scenario?",
@@ -627,6 +963,8 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
                 prompt += f" For {persona_role}, do you want to explore it from the {', '.join(labels).replace(', ' + labels[-1], ', or ' + labels[-1]) if len(labels) > 1 else labels[0]} perspective?"
             return {
                 "mode": "suggest",
+                "decision_family": decision_family,
+                "decision_lens": None,
                 "persona_id": context.get("persona_id"),
                 "scenario_id": context.get("scenario_id"),
                 "framework_code": context.get("framework_code"),
@@ -635,12 +973,21 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
                 "target_cell_id": None,
                 "confidence": 0.15,
                 "reason": prompt,
+                "direct_answer": "",
+                "why_this_answer": "",
+                "supporting_kpis": [],
+                "recommended_action": "",
+                "primary_risk": "",
+                "likely_consequence": "",
+                "evidence_used": [],
                 "clarifying_question": None,
                 "suggested_questions": _build_broad_suggestions(context, question),
                 "follow_up_questions": [],
             }
         return {
             "mode": "suggest",
+            "decision_family": decision_family,
+            "decision_lens": None,
             "persona_id": context.get("persona_id"),
             "scenario_id": context.get("scenario_id"),
             "framework_code": context.get("framework_code"),
@@ -649,6 +996,13 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "target_cell_id": None,
             "confidence": 0.2,
             "reason": "That question is too broad for this scenario. Try one of these instead.",
+            "direct_answer": "",
+            "why_this_answer": "",
+            "supporting_kpis": [],
+            "recommended_action": "",
+            "primary_risk": "",
+            "likely_consequence": "",
+            "evidence_used": [],
             "clarifying_question": None,
             "suggested_questions": _build_recovery_suggestions(question, context),
             "follow_up_questions": [],
@@ -658,6 +1012,8 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
         if intent == "kpi_lookup":
             return {
                 "mode": "clarify",
+                "decision_family": decision_family,
+                "decision_lens": None,
                 "persona_id": context.get("persona_id"),
                 "scenario_id": context.get("scenario_id"),
                 "framework_code": context.get("framework_code"),
@@ -666,6 +1022,13 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
                 "target_cell_id": None,
                 "confidence": 0.45,
                 "reason": "Your question maps to more than one plausible variance signal in this scenario.",
+                "direct_answer": "",
+                "why_this_answer": "",
+                "supporting_kpis": [],
+                "recommended_action": "",
+                "primary_risk": "",
+                "likely_consequence": "",
+                "evidence_used": [],
                 "clarifying_question": "Do you mean schedule variance, financial variance, people/governance exposure, or contract/commercial variance?",
                 "suggested_questions": _dedupe([
                     f"What is my variance from the {top['cell'].get('perspective_label')} perspective?",
@@ -675,6 +1038,8 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             }
         return {
             "mode": "clarify",
+            "decision_family": decision_family,
+            "decision_lens": None,
             "persona_id": context.get("persona_id"),
             "scenario_id": context.get("scenario_id"),
             "framework_code": context.get("framework_code"),
@@ -683,6 +1048,13 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "target_cell_id": None,
             "confidence": 0.45,
             "reason": "The question could map to more than one matrix cell.",
+            "direct_answer": "",
+            "why_this_answer": "",
+            "supporting_kpis": [],
+            "recommended_action": "",
+            "primary_risk": "",
+            "likely_consequence": "",
+            "evidence_used": [],
             "clarifying_question": _build_clarification(top["cell"], second["cell"] if second else None),
             "suggested_questions": _dedupe([
                 f"What is the right path through the {top['cell'].get('perspective_label')} perspective?",
@@ -693,30 +1065,34 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
 
     cell = top["cell"]
     if broad_question:
+        confidence = min(0.55, 0.28 + min(top["score"], 10) * 0.02)
+        reason = f"Broad question. I selected the best-fit current outcome from {cell.get('emotion_mode_label') or cell.get('emotion_mode')} × {cell.get('perspective_label')} based on the strongest scenario signals."
+        answer_fields = _build_answer_fields(question, cell, context, confidence, reason)
         return {
             "mode": "answer",
+            **answer_fields,
             "persona_id": context.get("persona_id"),
             "scenario_id": context.get("scenario_id"),
             "framework_code": context.get("framework_code"),
             "emotion_mode": cell.get("emotion_mode"),
             "perspective_code": cell.get("perspective_code"),
             "target_cell_id": cell.get("cell_id"),
-            "confidence": min(0.55, 0.28 + min(top["score"], 10) * 0.02),
-            "reason": f"Broad question. I selected the best-fit current outcome from {cell.get('emotion_mode_label') or cell.get('emotion_mode')} × {cell.get('perspective_label')} based on the strongest scenario signals.",
             "clarifying_question": None,
             "suggested_questions": [],
             "follow_up_questions": _build_broad_suggestions(context, question),
         }
+    confidence = min(0.9, 0.55 + min(top["score"], 10) * 0.03)
+    reason = f"Matched {cell.get('emotion_mode_label') or cell.get('emotion_mode')} × {cell.get('perspective_label')} based on the strongest scenario and KPI overlap."
+    answer_fields = _build_answer_fields(question, cell, context, confidence, reason)
     return {
         "mode": "answer",
+        **answer_fields,
         "persona_id": context.get("persona_id"),
         "scenario_id": context.get("scenario_id"),
         "framework_code": context.get("framework_code"),
         "emotion_mode": cell.get("emotion_mode"),
         "perspective_code": cell.get("perspective_code"),
         "target_cell_id": cell.get("cell_id"),
-        "confidence": min(0.9, 0.55 + min(top["score"], 10) * 0.03),
-        "reason": f"Matched {cell.get('emotion_mode_label') or cell.get('emotion_mode')} × {cell.get('perspective_label')} based on the strongest scenario and KPI overlap.",
         "clarifying_question": None,
         "suggested_questions": [],
         "follow_up_questions": _build_follow_ups(cell, context),
@@ -728,18 +1104,25 @@ def _build_system_prompt() -> str:
         "You are a constrained decision-matrix routing engine. "
         "You receive one active scenario context, one active persona, visible matrix rows, visible matrix columns, "
         "and a compact inventory of matrix cells. "
+        "In this app, matrix rows are called Decision Lenses and matrix columns are called Perspectives. "
+        "Treat user phrases like 'through the <decision lens>', 'from the <perspective>', 'using the <lens>', "
+        "or 'under the <perspective>' as explicit routing signals. "
         "You must choose exactly one mode: answer, clarify, or suggest. "
         "Rules: "
         "1. Stay inside the provided scenario context. Do not invent scenarios, personas, KPIs, or cells. "
         "2. First classify the question into one intent: kpi_lookup, threshold, probability, comparison, legal_trigger, reversibility, stakeholder_signal, cost_of_delay, action_selection, consequence, sequencing, or data. "
+        "2b. Also detect whether the user is asking for a best, worst, risky, moderate, or strategic choice, and use that as an outcome preference when selecting the target cell. "
         "3. If the question maps clearly to one cell, return mode=answer with the exact target_cell_id from the inventory. "
+        "When mode=answer, also return decision_family, decision_lens, direct_answer, why_this_answer, supporting_kpis, recommended_action, primary_risk, likely_consequence, and evidence_used. "
+        "If the question explicitly names a Decision Lens or Perspective that exists in the provided matrix, constrain routing to matching cells first. "
         "4. If one important distinction is missing, return mode=clarify with exactly one short clarifying question. "
         "5. If the question is too broad or malformed, return mode=suggest with 3 to 5 better scenario-specific questions. "
         "6. Treat shorthand executive questions like 'what is my variance' or 'what is my commercial position' as kpi_lookup queries, not as broad generic prompts. Answer directly if one dominant KPI is clear; otherwise ask one short clarification. "
         "7. When returning suggested_questions or follow_up_questions, make them varied across perspective, intent, and decision angle. "
         "Do not return five versions of the same 'best path' question. Use a mix of action, risk, data, threshold, and stakeholder prompts when relevant. "
         "8. Use the matrix cells as the answer surface. Do not invent new cells or new KPIs. "
-        "9. Return valid JSON only."
+        "9. Use the active scenario decision context and commercial logic to reason about contracts, commercials, variance, bids/pricing, compliance, and disclosure. "
+        "10. Return valid JSON only."
     )
 
 
@@ -752,16 +1135,21 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
             "scenario_id": context.get("scenario_id"),
             "scenario_title": context.get("scenario_title"),
             "scenario_summary": context.get("scenario_summary"),
+            "scenario_decision_context": context.get("scenario_decision_context"),
             "scenario_kpis": context.get("scenario_kpis", []),
             "persona_tension": context.get("persona_tension"),
             "framework_code": context.get("framework_code"),
         },
+        "commercial_logic": context.get("commercial_logic") or {},
         "visible_perspectives": context.get("perspectives", []),
+        "visible_decision_lenses": context.get("emotion_modes", []),
         "visible_emotion_modes": context.get("emotion_modes", []),
         "matrix_cells": context.get("matrix_cells", []),
         "clarification_context": clarification_context,
         "required_output_keys": [
             "mode",
+            "decision_family",
+            "decision_lens",
             "persona_id",
             "scenario_id",
             "framework_code",
@@ -770,6 +1158,13 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
             "target_cell_id",
             "confidence",
             "reason",
+            "direct_answer",
+            "why_this_answer",
+            "supporting_kpis",
+            "recommended_action",
+            "primary_risk",
+            "likely_consequence",
+            "evidence_used",
             "clarifying_question",
             "suggested_questions",
             "follow_up_questions",
@@ -801,6 +1196,8 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                     "additionalProperties": False,
                     "properties": {
                         "mode": {"type": "string", "enum": ["answer", "clarify", "suggest"]},
+                        "decision_family": {"type": ["string", "null"]},
+                        "decision_lens": {"type": ["string", "null"]},
                         "persona_id": {"type": ["string", "null"]},
                         "scenario_id": {"type": ["string", "null"]},
                         "framework_code": {"type": ["string", "null"]},
@@ -809,12 +1206,21 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                         "target_cell_id": {"type": ["string", "null"]},
                         "confidence": {"type": "number"},
                         "reason": {"type": "string"},
+                        "direct_answer": {"type": ["string", "null"]},
+                        "why_this_answer": {"type": ["string", "null"]},
+                        "supporting_kpis": {"type": "array", "items": {"type": "string"}},
+                        "recommended_action": {"type": ["string", "null"]},
+                        "primary_risk": {"type": ["string", "null"]},
+                        "likely_consequence": {"type": ["string", "null"]},
+                        "evidence_used": {"type": "array", "items": {"type": "string"}},
                         "clarifying_question": {"type": ["string", "null"]},
                         "suggested_questions": {"type": "array", "items": {"type": "string"}},
                         "follow_up_questions": {"type": "array", "items": {"type": "string"}},
                     },
                     "required": [
                         "mode",
+                        "decision_family",
+                        "decision_lens",
                         "persona_id",
                         "scenario_id",
                         "framework_code",
@@ -823,6 +1229,13 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                         "target_cell_id",
                         "confidence",
                         "reason",
+                        "direct_answer",
+                        "why_this_answer",
+                        "supporting_kpis",
+                        "recommended_action",
+                        "primary_risk",
+                        "likely_consequence",
+                        "evidence_used",
                         "clarifying_question",
                         "suggested_questions",
                         "follow_up_questions",
@@ -878,10 +1291,36 @@ def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any]) -> 
     if perspective_code and perspective_code not in valid_perspectives:
         result["perspective_code"] = None
 
+    result["decision_family"] = (result.get("decision_family") or "").strip() or _classify_decision_family("", context)
+    result["decision_lens"] = (result.get("decision_lens") or "").strip()
     result["suggested_questions"] = _dedupe(result.get("suggested_questions") or [], 5)
     result["follow_up_questions"] = _dedupe(result.get("follow_up_questions") or [], 5)
+    result["supporting_kpis"] = _dedupe(result.get("supporting_kpis") or [], 5)
+    result["evidence_used"] = _dedupe(result.get("evidence_used") or [], 5)
     result["reason"] = (result.get("reason") or "").strip()
+    result["direct_answer"] = (result.get("direct_answer") or "").strip()
+    result["why_this_answer"] = (result.get("why_this_answer") or "").strip()
+    result["recommended_action"] = (result.get("recommended_action") or "").strip()
+    result["primary_risk"] = (result.get("primary_risk") or "").strip()
+    result["likely_consequence"] = (result.get("likely_consequence") or "").strip()
     result["confidence"] = float(result.get("confidence") or 0.0)
+    if mode == "answer":
+        cell = _find_cell_by_id(context, target_cell_id)
+        if cell:
+            filled = _build_answer_fields("", cell, context, result["confidence"], result["reason"])
+            for key in [
+                "decision_family",
+                "decision_lens",
+                "direct_answer",
+                "why_this_answer",
+                "supporting_kpis",
+                "recommended_action",
+                "primary_risk",
+                "likely_consequence",
+                "evidence_used",
+            ]:
+                if not result.get(key):
+                    result[key] = filled.get(key)
     return result
 
 

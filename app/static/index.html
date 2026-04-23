@@ -541,20 +541,6 @@
       outline: 2px solid rgba(31, 112, 85, 0.22);
       outline-offset: 0;
     }
-    .cell-badge {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(31, 112, 85, 0.1);
-      color: var(--good);
-      font-size: 0.66rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      line-height: 1;
-    }
     .cell-title {
       font-size: 0.78rem;
       letter-spacing: 0.1em;
@@ -727,7 +713,7 @@
           <div class="eyebrow">Decision Matrix</div>
           <h1 id="heroTitle">Tata Steel UK Dynamic Decision Matrix</h1>
           <p class="hero-copy" id="heroCopy">
-            Build a Tata UK decision context step by step, choose the best-fit emotional framework, and explore how emotional sub-modes and persona perspectives change the action, evidence, risk, and consequence profile.
+            Build a Tata UK decision context step by step, choose the best-fit decision framework, and explore how framework lenses and persona perspectives change the action, evidence, risk, and consequence profile.
           </p>
         </div>
       </div>
@@ -798,7 +784,7 @@
                   <div class="panel-block">
                     <div class="summary-label">Supporting Matrix Cell</div>
                     <div class="insight-title" id="questionSupportCellTitle">No cell selected</div>
-                    <div class="insight-copy" id="questionSupportCellSummary">The selected matrix cell will explain why the answer is grounded in this perspective and emotion mode.</div>
+                    <div class="insight-copy" id="questionSupportCellSummary">The selected matrix cell will explain why the answer is grounded in this perspective and decision lens.</div>
                   </div>
                   <div class="panel-block">
                     <div class="summary-label">Evidence Used</div>
@@ -816,7 +802,7 @@
           <div class="card-header">
             <div>
               <h2 class="card-title">Decision Matrix</h2>
-              <p class="card-note">X-axis uses persona-dependent perspectives. Y-axis uses sub-modes inside the selected emotional framework. Every cell is clickable.</p>
+              <p class="card-note">X-axis uses persona-dependent perspectives. Y-axis uses the active decision lenses inside the selected framework. Every cell is clickable.</p>
             </div>
           </div>
           <div class="matrix-grid" id="matrixGrid"></div>
@@ -1169,6 +1155,7 @@
       activeCellId: null,
       routedCellId: null,
       routeExplanation: "",
+      backendAnswer: null,
       pendingClarification: null,
       assistMode: "idle",
       recoverySuggestions: [],
@@ -1298,7 +1285,7 @@
       els.heroCopy.textContent = state.analysis?.parsed?.scenario
         || scenario?.summary
         || scenario?.about
-        || "Use the wizard to resolve Tata UK context, then explore how the selected emotional framework changes what matters across commissioning, commercial, workforce, grant, and energy decisions.";
+        || "Use the wizard to resolve Tata UK context, then explore how the selected decision framework changes what matters across commissioning, commercial, workforce, grant, and energy decisions.";
     }
 
     function renderSelectOptions() {
@@ -2165,6 +2152,48 @@
       return { intent: winner, score: bestScore };
     }
 
+    function getOutcomePreference(question = "") {
+      const lower = String(question || "").toLowerCase();
+      if (/\bworst\b|\briskiest\b|\bmost risky\b|\bhighest risk\b|\bdangerous\b|\bleast defensible\b|\bdisastrous\b/.test(lower)) return "worst";
+      if (/\brisky\b|\briskiest\b|\bhigh risk\b|\bdownside\b|\bexposure\b/.test(lower)) return "risky";
+      if (/\bmoderate\b|\bbalanced\b|\bmiddle ground\b|\bhybrid\b|\bpragmatic\b|\bmeasured\b/.test(lower)) return "moderate";
+      if (/\bstrategic\b|\blong[- ]term\b|\blong horizon\b|\boptionality\b|\bprecedent\b|\binstitutional\b/.test(lower)) return "strategic";
+      if (/\bbest\b|\bsafest\b|\boptimal\b|\bmost defensible\b|\bright choice\b|\bbest choice\b/.test(lower)) return "best";
+      return "default";
+    }
+
+    function getCellRiskSeverity(candidate) {
+      const text = `${candidate.cell?.risk || ""} ${candidate.cell?.consequence || ""} ${candidate.cell?.blind || ""}`.toLowerCase();
+      let score = 0;
+      if (candidate.cell?.tone === "warn") score += 8;
+      ["critical", "clawback", "breach", "halt", "irreversible", "unacceptable", "suspension", "damage", "loss", "exposure", "slip", "political"].forEach((term) => {
+        if (text.includes(term)) score += 2;
+      });
+      if (candidate.mode?.id && /downside|safety|regret|signaling-risk/.test(candidate.mode.id)) score += 4;
+      if (candidate.mode?.label && /downside|safety|regret|risk/i.test(candidate.mode.label)) score += 3;
+      return score;
+    }
+
+    function getCellStrategicStrength(candidate) {
+      const text = `${candidate.mode?.label || ""} ${candidate.mode?.focus || ""} ${candidate.cell?.recommendedAction || ""} ${candidate.cell?.optionLabel || ""}`.toLowerCase();
+      let score = 0;
+      if (candidate.frameworkCode === "B") score += 8;
+      ["long-horizon", "long horizon", "optionality", "future", "precedent", "institutional", "second-order", "market position", "thesis"].forEach((term) => {
+        if (text.includes(term)) score += 2;
+      });
+      return score;
+    }
+
+    function getCellModerationStrength(candidate) {
+      const text = `${candidate.cell?.recommendedAction || ""} ${candidate.cell?.optionLabel || ""} ${candidate.cell?.risk || ""}`.toLowerCase();
+      let score = 0;
+      ["hybrid", "phased", "joint", "balanced", "time-limited", "minimum", "continuity", "feasible", "measured", "bridge"].forEach((term) => {
+        if (text.includes(term)) score += 2;
+      });
+      if (candidate.frameworkCode === "F" || candidate.frameworkCode === "E") score += 4;
+      return score;
+    }
+
     function getExplicitPerspectiveMatches(question, candidate) {
       const lower = (question || "").toLowerCase();
       const perspective = candidate.perspective;
@@ -2337,6 +2366,7 @@
     function scoreCandidate(question, candidate, intentInfo) {
       const lower = (question || "").toLowerCase();
       const broadQuestion = isBroadQuestion(question);
+      const outcomePreference = getOutcomePreference(question);
       const currentPersona = getPersona();
       const currentScenario = getScenario();
       const scenarioTerms = getScenarioSearchTerms(candidate.persona, candidate.scenario);
@@ -2390,6 +2420,9 @@
       })();
 
       const decisionWeight = Number(candidate.cell?.decisionWeight || 0);
+      const riskSeverity = getCellRiskSeverity(candidate);
+      const strategicStrength = getCellStrategicStrength(candidate);
+      const moderationStrength = getCellModerationStrength(candidate);
       let total = scenarioScore * 4 + personaScore * 3 + frameworkScore * 2 + perspectiveScore * 3 + cellScore + exactIntentBoost + explicitPerspectiveScore + explicitEmotionScore + explicitKpiScore;
       total += Math.min(decisionWeight / 8, 8);
       if (broadQuestion) total += Math.min(decisionWeight / 4, 12);
@@ -2440,6 +2473,18 @@
         if (candidate.mode?.code === "D") total += 2;
       }
 
+      if (outcomePreference === "best") {
+        total += decisionWeight * 0.6 + strategicStrength * 0.5 - riskSeverity * 0.25;
+      } else if (outcomePreference === "worst") {
+        total += riskSeverity * 1.4 + Math.max(0, 12 - decisionWeight * 0.25);
+      } else if (outcomePreference === "risky") {
+        total += riskSeverity * 1.1 - decisionWeight * 0.1;
+      } else if (outcomePreference === "moderate") {
+        total += moderationStrength * 1.2 + Math.max(0, 8 - Math.abs(decisionWeight - 14));
+      } else if (outcomePreference === "strategic") {
+        total += strategicStrength * 1.4 + decisionWeight * 0.2;
+      }
+
       return {
         total,
         scenarioScore,
@@ -2449,6 +2494,9 @@
         cellScore,
         explicitKpiScore,
         decisionWeight,
+        riskSeverity,
+        strategicStrength,
+        moderationStrength,
       };
     }
 
@@ -2583,6 +2631,34 @@
       return filtered;
     }
 
+    function resolveFrameworkIntersection(candidates) {
+      const perspectiveScores = new Map();
+      const modeScores = new Map();
+      candidates.forEach(({ candidate, score }) => {
+        const perspectiveKey = candidate.perspective?.id || candidate.perspective?.code;
+        const modeKey = candidate.mode?.id || candidate.mode?.code;
+        if (perspectiveKey) {
+          perspectiveScores.set(perspectiveKey, Math.max(perspectiveScores.get(perspectiveKey) || 0, score.total));
+        }
+        if (modeKey) {
+          modeScores.set(modeKey, Math.max(modeScores.get(modeKey) || 0, score.total));
+        }
+      });
+
+      const rankedPerspectives = [...perspectiveScores.entries()].sort((a, b) => b[1] - a[1]);
+      const rankedModes = [...modeScores.entries()].sort((a, b) => b[1] - a[1]);
+      const preferredPerspective = rankedPerspectives[0]?.[0] || null;
+      const preferredMode = rankedModes[0]?.[0] || null;
+      if (!preferredPerspective && !preferredMode) return candidates;
+
+      const intersected = candidates.filter(({ candidate }) => {
+        const perspectiveMatch = !preferredPerspective || candidate.perspective?.id === preferredPerspective || candidate.perspective?.code === preferredPerspective;
+        const modeMatch = !preferredMode || candidate.mode?.id === preferredMode || candidate.mode?.code === preferredMode;
+        return perspectiveMatch && modeMatch;
+      });
+      return intersected.length ? intersected : candidates;
+    }
+
     function buildClarification(top, second, originalQuestion) {
       const optionA = top;
       const optionB = second;
@@ -2629,6 +2705,7 @@
       }
       state.activeCellId = candidate.cell.id;
       state.routedCellId = candidate.cell.id;
+      state.backendAnswer = null;
       state.pendingClarification = null;
       state.assistMode = "answered";
       const switched = [];
@@ -3040,7 +3117,7 @@
       const modes = isVo112Scenario(scenario) ? getVo112EmotionRows() : framework.modes;
       const headerRow = `
         <div class="matrix-row" style="--perspective-count:${selectedPerspectives.length}">
-          <div class="matrix-head">Emotion mode / Perspective</div>
+          <div class="matrix-head">Decision Lens / Perspective</div>
           ${selectedPerspectives.map((perspective) => `<div class="matrix-head">${perspective.label}</div>`).join("")}
         </div>
       `;
@@ -3056,7 +3133,6 @@
           const routed = state.routedCellId === cell.id;
           return `
             <button class="matrix-cell ${active ? "active" : ""} ${routed ? "routed" : ""}" type="button" data-cell-id="${cell.id}">
-              ${routed ? `<div class="cell-badge">Answer Match</div>` : ""}
               <div class="cell-title">${cell.optionLabel}</div>
               <div class="cell-kpis">${cell.kpis.slice(0, 2).join(" / ")}</div>
               <div class="cell-meta">${cell.summary}</div>
@@ -3088,6 +3164,9 @@
         || cells[0]
         || null;
       state.activeCellId = available?.id || null;
+      if (available && state.assistMode === "answered") {
+        state.routedCellId = available.id;
+      }
       return available;
     }
 
@@ -3243,9 +3322,22 @@
     function buildDirectAnswer(cell) {
       const question = state.question || "";
       const intent = getQuestionIntent(question).intent;
+      const outcomePreference = getOutcomePreference(question);
       if (isCommercialPositionQuestion(question)) return buildCommercialPositionAnswer(cell).title;
       if (isVarianceQuestion(question)) return buildVarianceAnswer(cell).title;
       const primaryKpi = cell.kpis?.[0] || "the primary signal";
+      if (outcomePreference === "worst") {
+        return `The worst choice is ${lowerFirst(cell.optionLabel)} because it leaves Tata most exposed through ${lowerFirst(primaryKpi)}.`;
+      }
+      if (outcomePreference === "risky") {
+        return `The riskiest route is ${lowerFirst(cell.optionLabel)} because downside around ${lowerFirst(primaryKpi)} dominates quickly.`;
+      }
+      if (outcomePreference === "moderate") {
+        return `The most balanced route is ${lowerFirst(cell.optionLabel)} because it spreads risk more evenly around ${lowerFirst(primaryKpi)}.`;
+      }
+      if (outcomePreference === "strategic") {
+        return `The most strategic route is ${lowerFirst(cell.optionLabel)} because it best protects the longer-term position around ${lowerFirst(primaryKpi)}.`;
+      }
       if (intent === "data") {
         return `The leading signal in this scenario is ${lowerFirst(primaryKpi)}.`;
       }
@@ -3291,7 +3383,7 @@
         els.questionAnswerRisk.textContent = "The main risk will appear here.";
         els.questionAnswerConsequence.textContent = "The likely consequence will appear here.";
         els.questionSupportCellTitle.textContent = "No cell selected";
-        els.questionSupportCellSummary.textContent = "The selected matrix cell will explain why the answer is grounded in this perspective and emotion mode.";
+        els.questionSupportCellSummary.textContent = "The selected matrix cell will explain why the answer is grounded in this perspective and decision lens.";
         els.questionAnswerEvidenceList.innerHTML = "<li>The supporting evidence will appear here.</li>";
         return;
       }
@@ -3334,17 +3426,21 @@
       els.questionAnswerTag.textContent = getAnswerConfidenceLevel() === "high" ? "High confidence"
         : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
         : "Low confidence";
-      els.questionAnswerTitle.textContent = buildDirectAnswer(cell);
+      state.activeCellId = cell.id;
+      state.routedCellId = cell.id;
+      const backendAnswer = state.backendAnswer || null;
+      els.questionAnswerTitle.textContent = backendAnswer?.directAnswer || buildDirectAnswer(cell);
       els.questionAnswerSummary.textContent = [
-        buildAnswerSummary(cell),
-        `Highlighting ${cell.title} because this emotion × perspective route is the best-fit support for the current answer.`
+        backendAnswer?.whyThisAnswer || buildAnswerSummary(cell),
+        `Highlighting ${cell.title} because this decision lens × perspective route is the best-fit support for the current answer.`
       ].join("\n");
-      els.questionAnswerAction.textContent = cell.recommendedAction;
-      els.questionAnswerRisk.textContent = cell.risk;
-      els.questionAnswerConsequence.textContent = cell.consequence;
+      els.questionAnswerAction.textContent = backendAnswer?.recommendedAction || cell.recommendedAction;
+      els.questionAnswerRisk.textContent = backendAnswer?.primaryRisk || cell.risk;
+      els.questionAnswerConsequence.textContent = backendAnswer?.likelyConsequence || cell.consequence;
       els.questionSupportCellTitle.textContent = cell.title;
       els.questionSupportCellSummary.textContent = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
-      els.questionAnswerEvidenceList.innerHTML = cell.dataRequirements.map((item) => `<li>${item}</li>`).join("");
+      const evidenceItems = backendAnswer?.evidenceUsed?.length ? backendAnswer.evidenceUsed : cell.dataRequirements;
+      els.questionAnswerEvidenceList.innerHTML = (evidenceItems || []).map((item) => `<li>${item}</li>`).join("");
     }
 
     function rerenderWorkspace() {
@@ -3368,6 +3464,7 @@
       state.activeCellId = null;
       state.routedCellId = null;
       state.routeExplanation = "";
+      state.backendAnswer = null;
       state.assistMode = "idle";
       state.pendingClarification = null;
       state.recoverySuggestions = [];
@@ -3381,6 +3478,7 @@
       state.activeCellId = null;
       state.routedCellId = null;
       state.routeExplanation = "";
+      state.backendAnswer = null;
       state.assistMode = "idle";
       state.pendingClarification = null;
       state.recoverySuggestions = [];
@@ -3403,12 +3501,14 @@
         scenario_id: scenario?.id,
         scenario_title: scenario?.scenarioTitle || scenario?.label,
         scenario_summary: scenario?.summary || scenario?.about || "",
+        scenario_decision_context: scenario?.decisionContext || {},
         scenario_kpis: (scenario?.kpiFamilies || []).map((item) => ({
           code: item.code || "",
           label: item.label || String(item || ""),
         })),
         persona_tension: scenario?.personaOverride?.tension || scenario?.tension || "",
         framework_code: framework.code,
+        commercial_logic: MODEL.commercialLogic || {},
         active_cell_id: state.activeCellId,
         perspectives: visiblePerspectives.map((item) => ({
           id: item.id,
@@ -3419,6 +3519,7 @@
           id: item.id,
           code: item.code || item.id,
           label: item.label,
+          decision_lens_label: item.label,
           focus: item.focus || item.note || "",
         })),
         matrix_cells: visibleCells.map((cell) => {
@@ -3428,6 +3529,7 @@
             cell_id: cell.id,
             emotion_mode: cell.modeId,
             emotion_mode_label: mode?.label || cell.modeId,
+            decision_lens_label: mode?.label || cell.modeId,
             perspective_code: perspective?.code || cell.perspectiveId,
             perspective_label: perspective?.label || cell.perspectiveId,
             primary_kpi: cell.kpis?.[0] || cell.optionLabel || "",
@@ -3470,6 +3572,17 @@
         state.question = rawQuestion;
         state.pendingClarification = null;
         state.assistMode = "answered";
+        state.backendAnswer = {
+          decisionFamily: router.decision_family || "",
+          decisionLens: router.decision_lens || "",
+          directAnswer: router.direct_answer || "",
+          whyThisAnswer: router.why_this_answer || "",
+          supportingKpis: router.supporting_kpis || [],
+          recommendedAction: router.recommended_action || "",
+          primaryRisk: router.primary_risk || "",
+          likelyConsequence: router.likely_consequence || "",
+          evidenceUsed: router.evidence_used || [],
+        };
         state.recoverySuggestions = [];
         state.followUpSuggestions = router.follow_up_questions || [];
         state.routedCellId = router.target_cell_id;
@@ -3488,6 +3601,7 @@
 
       if (router.mode === "clarify") {
         state.question = rawQuestion;
+        state.backendAnswer = null;
         state.pendingClarification = {
           originalQuestion: state.pendingClarification?.originalQuestion || rawQuestion,
           prompt: router.clarifying_question || router.reason || "I need one more distinction before routing this question.",
@@ -3506,6 +3620,7 @@
 
       if (router.mode === "suggest") {
         state.question = rawQuestion;
+        state.backendAnswer = null;
         state.pendingClarification = null;
         state.assistMode = "recovery";
         state.recoverySuggestions = router.suggested_questions || [];
@@ -3557,6 +3672,7 @@
       const question = rawQuestion.toLowerCase();
       state.question = rawQuestion;
       if (!question) {
+        state.backendAnswer = null;
         state.pendingClarification = null;
         state.assistMode = "idle";
         state.recoverySuggestions = [];
@@ -3608,6 +3724,7 @@
             candidates: [primaryCandidate, alternateCandidate]
           };
           state.assistMode = "clarify";
+          state.backendAnswer = null;
           state.recoverySuggestions = [];
           state.followUpSuggestions = [];
           state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
@@ -3618,6 +3735,7 @@
         }
 
         state.question = effectiveQuestion;
+        state.backendAnswer = null;
         applyRouteCandidate({
           persona: vo112Route.persona,
           scenario: vo112Route.scenario,
@@ -3645,13 +3763,17 @@
       const scoredCandidates = applySemanticFrameworkConstraints(effectiveQuestion, applyExplicitMatrixConstraints(routingInventory
         .map((candidate) => ({ candidate, score: scoreCandidate(effectiveQuestion, candidate, intentInfo) }))
         .sort(compareScoredCandidates), constraints), intentInfo);
-      const constrainedCurrentCandidates = applySemanticFrameworkConstraints(effectiveQuestion, applyExplicitMatrixConstraints(currentCandidates, constraints), intentInfo);
+      const constrainedCurrentCandidates = resolveFrameworkIntersection(
+        applySemanticFrameworkConstraints(effectiveQuestion, applyExplicitMatrixConstraints(currentCandidates, constraints), intentInfo)
+      );
+      const resolvedScoredCandidates = resolveFrameworkIntersection(scoredCandidates);
 
-      const top = scoredCandidates[0];
-      const second = scoredCandidates[1];
+      const top = resolvedScoredCandidates[0];
+      const second = resolvedScoredCandidates[1];
       if (!top) {
         state.pendingClarification = null;
         state.assistMode = "recovery";
+        state.backendAnswer = null;
         state.routedCellId = null;
         state.recoverySuggestions = buildRecoverySuggestions(effectiveQuestion, getPersona(), getScenario(), getFramework());
         state.followUpSuggestions = [];
@@ -3696,6 +3818,7 @@
       if (broadQuestion && topScore >= 10) {
         const assumption = `Broad question. I selected the best-fit current outcome from the strongest scenario signals.`;
         state.question = effectiveQuestion;
+        state.backendAnswer = null;
         applyRouteCandidate(top.candidate, "low", assumption);
         state.followUpSuggestions = buildBroadQuestionSuggestions(effectiveQuestion, getPersona(), getScenario());
         renderQuestionAssist();
@@ -3705,6 +3828,7 @@
       if (shouldUseRecovery(effectiveQuestion, top, second)) {
         state.pendingClarification = null;
         state.assistMode = "recovery";
+        state.backendAnswer = null;
         state.routedCellId = null;
         state.recoverySuggestions = buildRecoverySuggestions(effectiveQuestion, getPersona(), getScenario(), getFramework());
         state.followUpSuggestions = [];
@@ -3722,6 +3846,7 @@
             candidates: [top.candidate, second?.candidate || top.candidate],
           };
           state.assistMode = "clarify";
+          state.backendAnswer = null;
           state.recoverySuggestions = [];
           state.followUpSuggestions = [];
           state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll answer from the selected scenario before highlighting anything.`;
@@ -3732,6 +3857,7 @@
         }
         state.pendingClarification = buildClarification(top.candidate, second?.candidate || top.candidate, effectiveQuestion);
         state.assistMode = "clarify";
+        state.backendAnswer = null;
         state.recoverySuggestions = [];
         state.followUpSuggestions = [];
         if (isVo112Scenario() || isVo112Scenario(top.candidate.scenario)) {
@@ -3785,6 +3911,7 @@
       state.selectedFramework = card.dataset.frameworkCode;
       state.activeCellId = null;
       state.routedCellId = null;
+      state.backendAnswer = null;
       state.routeExplanation = "";
       rerenderWorkspace();
     });
@@ -3794,10 +3921,11 @@
       if (!cellButton) return;
       state.activeCellId = cellButton.dataset.cellId;
       state.routedCellId = null;
+      state.backendAnswer = null;
       state.assistMode = "answered";
       state.pendingClarification = null;
       state.recoverySuggestions = [];
-      state.routeExplanation = `Manual exploration active. This cell is showing the selected emotional sub-mode and perspective intersection.`;
+      state.routeExplanation = `Manual exploration active. This cell is showing the selected decision lens and perspective intersection.`;
       els.routeNote.textContent = state.routeExplanation;
       const cells = getMatrixCells();
       const activeCell = cells.find((item) => item.id === state.activeCellId) || null;

@@ -485,6 +485,24 @@ def _build_pack_summary(trigger: str, tension: str, options: List[Dict[str, str]
     return "\n\n".join(parts)
 
 
+def _build_pack_explanation(
+    trigger: str,
+    tension: str,
+    options: List[Dict[str, str]],
+    commercial_variance: str,
+    compliance_variance: str,
+    bid_variance: str,
+) -> str:
+    parts = [_build_pack_summary(trigger, tension, options)]
+    if commercial_variance:
+        parts.append(f"Commercial variance focus: {commercial_variance.strip()}")
+    if compliance_variance:
+        parts.append(f"Compliance variance focus: {compliance_variance.strip()}")
+    if bid_variance:
+        parts.append(f"Bid variance focus: {bid_variance.strip()}")
+    return "\n\n".join(part for part in parts if part)
+
+
 def _derive_perspectives(kpis: List[Dict[str, str]], context_bullets: List[str], lens: str, tension: str, role: str, platform: str) -> List[Dict[str, Any]]:
     base_bullets = context_bullets[:2]
     perspectives: List[Dict[str, Any]] = []
@@ -688,11 +706,31 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
         number, title, block = match.groups()
         trigger = _extract_section_body(block, "### Trigger")
         tension = _extract_section_body(block, "### Decision tension")
+        commercial_variance = _extract_section_body(block, "### Commercial variance")
+        compliance_variance = _extract_section_body(block, "### Compliance variance")
+        bid_variance = _extract_section_body(block, "### Bid variance")
         options_text = _extract_section_body(block, "### Options")
         kpi_text = _extract_section_body(block, "### KPI families")
         options = _extract_pack_options(options_text)
         kpis = _extract_pack_kpis(kpi_text)
         summary = _build_pack_summary(trigger, tension, options)
+        explanation = _build_pack_explanation(
+            trigger,
+            tension,
+            options,
+            commercial_variance,
+            compliance_variance,
+            bid_variance,
+        )
+        decision_context = {
+            key: value
+            for key, value in {
+                "commercialVariance": commercial_variance.strip(),
+                "complianceVariance": compliance_variance.strip(),
+                "bidVariance": bid_variance.strip(),
+            }.items()
+            if value
+        }
         scenarios.append(
             {
                 "id": f"cross-{_slugify(path.stem)}-{number}-scenario",
@@ -701,7 +739,7 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
                 "label": title.strip(),
                 "personaCode": "CROSS",
                 "personaName": "All personas",
-                "domain": "Contracts & Commercial Variance",
+                "domain": "Contracts, Commercial, Compliance & Bid Variance",
                 "platform": "Port Talbot Transformation Programme",
                 "persona": "All personas",
                 "scenarioDate": "",
@@ -711,16 +749,25 @@ def _parse_scenario_pack_file(path: Path) -> List[Dict[str, Any]]:
                 "scenarioTitle": title.strip(),
                 "scenarioBody": block.strip(),
                 "summary": summary,
-                "explanation": summary,
+                "explanation": explanation,
                 "call": "Choose the most defensible path across the available options.",
                 "tension": tension.strip(),
-                "decisionContext": {},
+                "decisionContext": decision_context,
                 "kpiFamilies": kpis,
                 "options": options,
                 "sharedAcrossPersonas": True,
                 "personaOverrides": {},
-                "scenarioKinds": ["commercial-contracts"],
-                "keywords": _keywords(title, trigger, tension, *(item["label"] for item in kpis), *(item["label"] for item in options)),
+                "scenarioKinds": ["commercial-contracts", "commercial-variance", "compliance", "bids"],
+                "keywords": _keywords(
+                    title,
+                    trigger,
+                    tension,
+                    commercial_variance,
+                    compliance_variance,
+                    bid_variance,
+                    *(item["label"] for item in kpis),
+                    *(item["label"] for item in options),
+                ),
             }
         )
     return scenarios
