@@ -743,7 +743,7 @@
               <label for="scenarioSelect">4. Scenario</label>
               <select id="scenarioSelect"></select>
             </div>
-            <div class="field framework-field">
+            <div class="field framework-field" id="frameworkField">
               <label>5. Recommended Emotional Frameworks</label>
               <div class="framework-grid" id="frameworkGrid"></div>
             </div>
@@ -759,39 +759,6 @@
                 </button>
               </div>
               <div class="hero-route-note" id="routeNote">No question routed yet. You can also click any matrix cell directly.</div>
-              <div class="question-answer-box" id="questionAnswerBox">
-                <div class="question-answer-head">
-                  <div class="summary-label">Answer</div>
-                  <div class="framework-tag" id="questionAnswerTag">Awaiting question</div>
-                </div>
-                <div class="question-answer-title" id="questionAnswerTitle">Ask a scenario question</div>
-                <div class="question-answer-copy" id="questionAnswerSummary">The system will answer from the selected scenario, then use the matrix as supporting evidence.</div>
-                <div class="question-answer-meta" id="questionAnswerMeta">
-                  <div class="panel-block">
-                    <div class="summary-label">Recommended Action</div>
-                    <div class="panel-note" id="questionAnswerAction">The action will appear after the system answers the question.</div>
-                  </div>
-                  <div class="panel-block">
-                    <div class="summary-label">Primary Risk</div>
-                    <div class="panel-note" id="questionAnswerRisk">The main risk will appear here.</div>
-                  </div>
-                  <div class="panel-block">
-                    <div class="summary-label">Likely Consequence</div>
-                    <div class="panel-note" id="questionAnswerConsequence">The likely consequence will appear here.</div>
-                  </div>
-                </div>
-                <div class="question-answer-evidence" id="questionAnswerEvidence">
-                  <div class="panel-block">
-                    <div class="summary-label">Supporting Matrix Cell</div>
-                    <div class="insight-title" id="questionSupportCellTitle">No cell selected</div>
-                    <div class="insight-copy" id="questionSupportCellSummary">The selected matrix cell will explain why the answer is grounded in this perspective and decision lens.</div>
-                  </div>
-                  <div class="panel-block">
-                    <div class="summary-label">Evidence Used</div>
-                    <ul class="insight-list" id="questionAnswerEvidenceList"></ul>
-                  </div>
-                </div>
-              </div>
               <div class="question-assist" id="questionAssist" hidden></div>
             </div>
           </div>
@@ -802,10 +769,46 @@
           <div class="card-header">
             <div>
               <h2 class="card-title">Decision Matrix</h2>
-              <p class="card-note">X-axis uses persona-dependent perspectives. Y-axis uses the active decision lenses inside the selected framework. Every cell is clickable.</p>
+              <p class="card-note">The matrix uses fixed decision lenses against persona-specific perspectives. Each cell shows a light summary, and the answer area expands the active cell.</p>
             </div>
           </div>
           <div class="matrix-grid" id="matrixGrid"></div>
+        </section>
+
+        <section class="surface card">
+          <div class="question-answer-box" id="questionAnswerBox">
+            <div class="question-answer-head">
+              <div class="summary-label">Answer</div>
+              <div class="framework-tag" id="questionAnswerTag">Awaiting question</div>
+            </div>
+            <div class="question-answer-title" id="questionAnswerTitle">Ask a scenario question</div>
+            <div class="question-answer-copy" id="questionAnswerSummary">The system will answer from the selected scenario, then use the matrix as supporting evidence.</div>
+            <div class="question-answer-meta" id="questionAnswerMeta">
+              <div class="panel-block">
+                <div class="summary-label">Recommended Action</div>
+                <div class="panel-note" id="questionAnswerAction">The action will appear after the system answers the question.</div>
+              </div>
+              <div class="panel-block">
+                <div class="summary-label">Primary Risk</div>
+                <div class="panel-note" id="questionAnswerRisk">The main risk will appear here.</div>
+              </div>
+              <div class="panel-block">
+                <div class="summary-label">Likely Consequence</div>
+                <div class="panel-note" id="questionAnswerConsequence">The likely consequence will appear here.</div>
+              </div>
+            </div>
+            <div class="question-answer-evidence" id="questionAnswerEvidence">
+              <div class="panel-block">
+                <div class="summary-label">Supporting Matrix Cell</div>
+                <div class="insight-title" id="questionSupportCellTitle">No cell selected</div>
+                <div class="insight-copy" id="questionSupportCellSummary">The selected matrix cell will explain why the answer is grounded in this perspective and decision lens.</div>
+              </div>
+              <div class="panel-block">
+                <div class="summary-label">Evidence Used</div>
+                <ul class="insight-list" id="questionAnswerEvidenceList"></ul>
+              </div>
+            </div>
+          </div>
         </section>
 
       </section>
@@ -904,6 +907,7 @@
           ]
         }
       },
+      fixedDecisionFramework: null,
       commercialLogic: null,
       scenarios: [],
       personas: [
@@ -1170,6 +1174,7 @@
       platformSelect: document.getElementById("platformSelect"),
       personaSelect: document.getElementById("personaSelect"),
       scenarioSelect: document.getElementById("scenarioSelect"),
+      frameworkField: document.getElementById("frameworkField"),
       frameworkGrid: document.getElementById("frameworkGrid"),
       matrixGrid: document.getElementById("matrixGrid"),
       questionInput: document.getElementById("questionInput"),
@@ -1248,6 +1253,18 @@
 
     function getCommercialLogic() {
       return MODEL.commercialLogic || { universalKpis: [], questionFamilies: {}, personaEmphasis: {} };
+    }
+
+    function getFixedDecisionFramework() {
+      return MODEL.fixedDecisionFramework || { decisionLenses: [], canonicalPerspectives: [], cells: [], visibleDataTypes: [] };
+    }
+
+    function usesFixedMatrixScenario(scenario = getScenario()) {
+      return Boolean(
+        scenario
+        && Array.isArray(scenario.fixedMatrixCellData)
+        && scenario.fixedMatrixCellData.length === 16
+      );
     }
 
     function getAnalysisVariant(code) {
@@ -1386,6 +1403,29 @@
     }
 
     function getActivePerspectives(persona = getPersona(), scenario = getScenario()) {
+      if (usesFixedMatrixScenario(scenario)) {
+        const labels = persona?.fixedMatrixPerspectiveLabels || persona?.normalizedDecisionProfile?.perspective_labels || [];
+        return labels.map((item) => ({
+          id: item.canonicalCode,
+          code: item.canonicalCode,
+          label: item.uiLabel || item.canonicalLabel,
+          canonicalLabel: item.canonicalLabel,
+          kpis: [],
+          data: [],
+          chart: `${item.uiLabel || item.canonicalLabel} summary`,
+          action: `Test the scenario through the ${String(item.uiLabel || item.canonicalLabel).toLowerCase()} perspective.`,
+          risk: `If this perspective is ignored, the active decision path may underweight ${String(item.uiLabel || item.canonicalLabel).toLowerCase()}.`,
+          consequence: `This perspective keeps ${String(item.uiLabel || item.canonicalLabel).toLowerCase()} visible in the decision frame.`,
+          blind: `Over-focusing here can hide the other fixed perspectives in the matrix.`,
+          keywords: dedupeItems([
+            item.canonicalCode,
+            item.canonicalLabel,
+            item.uiLabel,
+            ...extractTextTokens(item.canonicalLabel),
+            ...extractTextTokens(item.uiLabel || ""),
+          ], 16),
+        }));
+      }
       if (isVo112Scenario(scenario)) {
         const schema = getVo112Schema();
         const personaSchema = getVo112PersonaSchema(persona);
@@ -1448,6 +1488,106 @@
             item.displayDensity,
           ], 12)
         }));
+    }
+
+    function getFixedDecisionLenses() {
+      return getFixedDecisionFramework().decisionLenses.map((item) => ({
+        id: item.code,
+        code: item.code,
+        label: item.label,
+        focus: `${item.label} decision lens`,
+        note: `${item.label} framing`,
+        keywords: dedupeItems([
+          item.code,
+          item.label,
+          ...extractTextTokens(item.label),
+        ], 12),
+      }));
+    }
+
+    function getFixedMatrixRuntimeCell(scenario, lensCode, perspectiveCode) {
+      return (scenario?.fixedMatrixCellData || []).find((item) => (
+        item.decisionLensCode === lensCode && item.canonicalPerspectiveCode === perspectiveCode
+      )) || null;
+    }
+
+    function buildFixedMatrixCell({ persona, scenario, perspective, mode }) {
+      const runtimeCell = getFixedMatrixRuntimeCell(scenario, mode.code, perspective.code);
+      if (!runtimeCell) {
+        return {
+          id: `${mode.code}::${perspective.id}`,
+          modeId: mode.code,
+          perspectiveId: perspective.id,
+          title: `${mode.label} × ${perspective.label}`,
+          tone: "accent",
+          summary: `${mode.label} decision lens`,
+          kpis: [],
+          dataRequirements: [],
+          chartType: "Fixed matrix summary",
+          chartBars: [],
+          optionLabel: perspective.label,
+          recommendedAction: `Run the ${mode.label.toLowerCase()} lens against ${perspective.label.toLowerCase()} once fixed-matrix data is available.`,
+          risk: `This cell is missing fixed-matrix runtime data for ${perspective.label}.`,
+          consequence: `The renderer needs the fixed cell runtime before this matrix cell can expand fully.`,
+          blind: `Missing runtime data prevents this perspective from contributing to the answer layer.`,
+          rationale: `Fixed matrix fallback for ${mode.label} × ${perspective.label}.`,
+          decisionWeight: 1,
+          routeKeywords: dedupeItems([mode.label, perspective.label], 8),
+        };
+      }
+
+      const ranked = runtimeCell.rankedVisibleData || [];
+      const preview = runtimeCell.preview || [];
+      const top = ranked[0] || null;
+      const second = ranked[1] || null;
+      const evidence = ranked.flatMap((item) => item.evidence || []).filter(Boolean);
+      const tone = ["threshold", "harm_potential", "downside", "approval_requirement"].includes(top?.type)
+        ? "warn"
+        : "accent";
+
+      return {
+        id: runtimeCell.id,
+        modeId: mode.code,
+        perspectiveId: perspective.id,
+        title: `${mode.label} × ${perspective.label}`,
+        tone,
+        summary: runtimeCell.decisionStyle,
+        kpis: ranked.slice(0, 3).map((item) => item.label),
+        dataRequirements: dedupeItems([
+          ...preview.map((item) => item.preview),
+          ...evidence.slice(0, 3),
+        ], 4),
+        chartType: runtimeCell.frameworkStackHint,
+        chartBars: ranked.slice(0, 3).map((item) => ({
+          label: item.label,
+          value: Math.round((item.score || 0) * 100),
+        })),
+        optionLabel: top?.label || perspective.label,
+        recommendedAction: top
+          ? `Prioritize ${top.label.toLowerCase()} through the ${mode.label.toLowerCase()} lens for ${perspective.label.toLowerCase()}.`
+          : `Use the ${mode.label.toLowerCase()} lens to interpret ${perspective.label.toLowerCase()}.`,
+        risk: second
+          ? `The main risk is underweighting ${second.label.toLowerCase()} while the decision stays anchored to ${top?.label?.toLowerCase() || perspective.label.toLowerCase()}.`
+          : `The main risk is over-committing to a single reading of ${perspective.label.toLowerCase()} without checking the supporting data.`,
+        consequence: runtimeCell.whyThisData || `${mode.label} changes what becomes visible in ${perspective.label.toLowerCase()}.`,
+        blind: `Persona adjustment: ${top?.summary || runtimeCell.whyThisData || "the answer should stay anchored to the highest-ranked visible data."}`,
+        rationale: `${runtimeCell.frameworkStackHint}. ${runtimeCell.whyThisData}`,
+        decisionWeight: Math.round((top?.score || 0.5) * 100),
+        routeKeywords: dedupeItems([
+          mode.label,
+          perspective.label,
+          runtimeCell.decisionStyle,
+          runtimeCell.whyThisData,
+          ...ranked.map((item) => item.label),
+          ...ranked.flatMap((item) => item.evidence || []),
+        ], 24),
+        frameworkStack: runtimeCell.frameworkStack || [],
+        frameworkStackHint: runtimeCell.frameworkStackHint || "",
+        decisionStyle: runtimeCell.decisionStyle || "",
+        whyThisData: runtimeCell.whyThisData || "",
+        rankedVisibleData: ranked,
+        visibleDataPreview: preview,
+      };
     }
 
     function formatVo112StateLabel(value) {
@@ -2293,24 +2433,30 @@
     }
 
     function getFrameworkModesForContext(frameworkCode, scenario) {
+      if (usesFixedMatrixScenario(scenario)) return getFixedDecisionLenses();
       return isVo112Scenario(scenario) ? getVo112EmotionRows() : getFrameworkByCode(frameworkCode).modes;
     }
 
     function buildCellsForContext({ persona, scenario, frameworkCode, question = "" }) {
-      const framework = getFrameworkByCode(frameworkCode);
+      const fixedMatrix = usesFixedMatrixScenario(scenario);
+      const framework = fixedMatrix
+        ? { code: "fixed-matrix", name: "Fixed Matrix", note: "Canonical 4x4 decision framework" }
+        : getFrameworkByCode(frameworkCode);
       const perspectives = getActivePerspectives(persona, scenario).slice(0, 4);
       const analysisVariant = (persona.id === state.personaId && scenario.id === state.scenarioId && frameworkCode === state.selectedFramework)
         ? getAnalysisVariant(frameworkCode)
         : null;
-      const modes = getFrameworkModesForContext(frameworkCode, scenario);
+      const modes = fixedMatrix ? getFixedDecisionLenses() : getFrameworkModesForContext(frameworkCode, scenario);
       return {
         framework,
         modes,
         perspectives,
         cells: modes.flatMap((mode) => perspectives.map((perspective, perspectiveIndex) => (
-          isVo112Scenario(scenario)
-            ? buildVo112Cell({ persona, scenario, perspective, mode })
-            : buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex })
+          fixedMatrix
+            ? buildFixedMatrixCell({ persona, scenario, perspective, mode })
+            : isVo112Scenario(scenario)
+              ? buildVo112Cell({ persona, scenario, perspective, mode })
+              : buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex })
         ))),
       };
     }
@@ -2890,6 +3036,13 @@
 
     function renderFrameworkRecommendations() {
       const persona = getPersona();
+      const scenario = getScenario();
+      if (usesFixedMatrixScenario(scenario)) {
+        els.frameworkField.hidden = true;
+        els.frameworkGrid.innerHTML = "";
+        return;
+      }
+      els.frameworkField.hidden = false;
       const frameworks = persona.frameworks.map((code) => MODEL.frameworks[code]);
       if (!frameworks.find((item) => item.code === state.selectedFramework)) {
         state.selectedFramework = persona.recommendedFramework;
@@ -2949,6 +3102,7 @@
         if (payload.domains?.length) MODEL.domains = payload.domains;
         if (payload.platforms?.length) MODEL.platforms = payload.platforms;
         if (payload.scenarios?.length) MODEL.scenarios = payload.scenarios;
+        if (payload.fixedDecisionFramework) MODEL.fixedDecisionFramework = payload.fixedDecisionFramework;
         if (payload.commercialLogic) MODEL.commercialLogic = payload.commercialLogic;
         if (payload.vo112Schema) MODEL.vo112Schema = payload.vo112Schema;
         if (payload.personas?.length) {
@@ -3110,11 +3264,16 @@
       const persona = getPersona();
       ensurePerspectiveSelection();
       ensureScenarioSelection();
-      const framework = getFramework();
       const scenario = getScenario();
-      const selectedPerspectives = getActivePerspectives(persona, scenario).filter((item) => state.selectedPerspectives.includes(item.id));
-      const analysisVariant = getAnalysisVariant(framework.code);
-      const modes = isVo112Scenario(scenario) ? getVo112EmotionRows() : framework.modes;
+      const built = buildCellsForContext({
+        persona,
+        scenario,
+        frameworkCode: state.selectedFramework,
+        question: state.question,
+      });
+      const selectedPerspectives = built.perspectives.filter((item) => state.selectedPerspectives.includes(item.id));
+      const modes = built.modes;
+      const cells = built.cells.filter((cell) => selectedPerspectives.some((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId));
       const headerRow = `
         <div class="matrix-row" style="--perspective-count:${selectedPerspectives.length}">
           <div class="matrix-head">Decision Lens / Perspective</div>
@@ -3122,13 +3281,13 @@
         </div>
       `;
 
-      const cells = [];
       const rows = modes.map((mode) => {
-        const rowCells = selectedPerspectives.map((perspective, perspectiveIndex) => {
-          const cell = isVo112Scenario(scenario)
-            ? buildVo112Cell({ persona, scenario, perspective, mode })
-            : buildCell({ perspective, mode, framework, analysisVariant, scenario, perspectiveIndex });
-          cells.push(cell);
+        const rowCells = selectedPerspectives.map((perspective) => {
+          const cell = cells.find((item) => (
+            (item.modeId === mode.id || item.modeId === mode.code)
+            && (item.perspectiveId === perspective.id || item.perspectiveId === perspective.code)
+          )) || null;
+          if (!cell) return `<div class="matrix-cell"></div>`;
           const active = state.activeCellId === cell.id;
           const routed = state.routedCellId === cell.id;
           return `
@@ -3374,8 +3533,54 @@
       return buildAnswerWhy(cell);
     }
 
+    function buildBackendAnswerFromFixedCell(cell) {
+      if (!cell?.frameworkStackHint) return null;
+      const rankedVisibleData = cell.rankedVisibleData || [];
+      const top = rankedVisibleData[0] || null;
+      const second = rankedVisibleData[1] || null;
+      const evidenceUsed = dedupeItems([
+        ...(top?.evidence || []),
+        ...(second?.evidence || []),
+        ...(cell.dataRequirements || []),
+      ], 5);
+      const frameworkStack = (cell.frameworkStack || []).filter(Boolean);
+      const reasoningSummary = [
+        cell.frameworkStackHint || "",
+        top ? `${top.label} is the strongest visible decision signal in this cell.` : "",
+        second ? `${second.label} is the main supporting signal.` : "",
+      ].filter(Boolean).join(" ");
+      const missingEvidence = rankedVisibleData.find((item) => item.type === "missing_evidence") || null;
+      const thresholdSignal = rankedVisibleData.find((item) => item.type === "threshold") || null;
+      const recommendedDecision = top
+        ? `Use ${top.label.toLowerCase()} as the primary decision anchor through ${cell.title}.`
+        : `Use ${cell.title} as the active decision route.`;
+      return {
+        decisionFamily: "fixed-matrix-manual",
+        decisionLens: cell.title.split(" × ")[0] || "",
+        directAnswer: recommendedDecision,
+        whyThisAnswer: [
+          cell.rationale,
+          top?.summary || "",
+        ].filter(Boolean).join(" "),
+        supportingKpis: rankedVisibleData.slice(0, 3).map((item) => item.label),
+        recommendedDecision,
+        decisionRisk: cell.risk,
+        suggestedNextStep: cell.recommendedAction,
+        reasoningSummary,
+        watchItem: thresholdSignal?.summary || second?.summary || "",
+        missingData: missingEvidence?.summary || "",
+        answerMode: "manual_cell_review",
+        recommendedAction: cell.recommendedAction,
+        primaryRisk: cell.risk,
+        likelyConsequence: cell.consequence,
+        evidenceUsed,
+        frameworkStack,
+      };
+    }
+
     function renderQuestionAnswerBox(cell) {
-      if (!state.question) {
+      const backendAnswer = state.backendAnswer || null;
+      if (!state.question && !backendAnswer) {
         els.questionAnswerTag.textContent = "Awaiting question";
         els.questionAnswerTitle.textContent = "Ask a scenario question";
         els.questionAnswerSummary.textContent = "The system will answer from the selected scenario, then use the matrix as supporting evidence.";
@@ -3423,19 +3628,23 @@
         els.questionAnswerEvidenceList.innerHTML = "<li>Searching active scenario evidence…</li>";
         return;
       }
-      els.questionAnswerTag.textContent = getAnswerConfidenceLevel() === "high" ? "High confidence"
-        : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
-        : "Low confidence";
+      els.questionAnswerTag.textContent = backendAnswer?.answerMode === "manual_cell_review"
+        ? "Manual exploration"
+        : getAnswerConfidenceLevel() === "high" ? "High confidence"
+          : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
+          : "Low confidence";
       state.activeCellId = cell.id;
       state.routedCellId = cell.id;
-      const backendAnswer = state.backendAnswer || null;
-      els.questionAnswerTitle.textContent = backendAnswer?.directAnswer || buildDirectAnswer(cell);
+      els.questionAnswerTitle.textContent = backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell);
       els.questionAnswerSummary.textContent = [
         backendAnswer?.whyThisAnswer || buildAnswerSummary(cell),
+        backendAnswer?.reasoningSummary || "",
+        backendAnswer?.watchItem ? `Watch item: ${backendAnswer.watchItem}` : "",
+        backendAnswer?.missingData ? `Missing data: ${backendAnswer.missingData}` : "",
         `Highlighting ${cell.title} because this decision lens × perspective route is the best-fit support for the current answer.`
-      ].join("\n");
-      els.questionAnswerAction.textContent = backendAnswer?.recommendedAction || cell.recommendedAction;
-      els.questionAnswerRisk.textContent = backendAnswer?.primaryRisk || cell.risk;
+      ].filter(Boolean).join("\n");
+      els.questionAnswerAction.textContent = backendAnswer?.suggestedNextStep || backendAnswer?.recommendedAction || cell.recommendedAction;
+      els.questionAnswerRisk.textContent = backendAnswer?.decisionRisk || backendAnswer?.primaryRisk || cell.risk;
       els.questionAnswerConsequence.textContent = backendAnswer?.likelyConsequence || cell.consequence;
       els.questionSupportCellTitle.textContent = cell.title;
       els.questionSupportCellSummary.textContent = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
@@ -3506,8 +3715,20 @@
           code: item.code || "",
           label: item.label || String(item || ""),
         })),
+        uses_fixed_matrix: usesFixedMatrixScenario(scenario),
+        vo112_persona_schema: isVo112Scenario(scenario) ? {
+          code: getVo112PersonaSchema(persona)?.code || "",
+          name: getVo112PersonaSchema(persona)?.name || "",
+          role: getVo112PersonaSchema(persona)?.role || "",
+          decision: getVo112PersonaSchema(persona)?.decision || "",
+          tension: getVo112PersonaSchema(persona)?.tension || "",
+          kpi_spine: getVo112PersonaSchema(persona)?.kpiSpine || [],
+          resolver_hints: getVo112PersonaSchema(persona)?.resolverHints || [],
+        } : null,
+        normalized_decision_profile: persona?.normalizedDecisionProfile || {},
+        normalized_scenario_profile: scenario?.normalizedScenarioProfile || {},
         persona_tension: scenario?.personaOverride?.tension || scenario?.tension || "",
-        framework_code: framework.code,
+        framework_code: built.framework?.code || framework.code,
         commercial_logic: MODEL.commercialLogic || {},
         active_cell_id: state.activeCellId,
         perspectives: visiblePerspectives.map((item) => ({
@@ -3539,6 +3760,18 @@
             consequence: cell.consequence || "",
             decision_weight: cell.decisionWeight || 0,
             question_tags: cell.routeKeywords || [],
+            framework_stack: cell.frameworkStack || null,
+            decision_style: cell.summary || "",
+            rationale: cell.rationale || "",
+            visible_data_preview: cell.preview || [],
+            ranked_visible_data: (cell.rankedVisibleData || []).slice(0, 3).map((item) => ({
+              type: item.type,
+              label: item.label,
+              summary: item.summary,
+              preview: item.preview,
+              score: item.score,
+              evidence: item.evidence || [],
+            })),
           };
         }),
       };
@@ -3557,7 +3790,7 @@
         if (router.scenario_id && router.scenario_id !== currentScenario?.id) {
           state.scenarioId = router.scenario_id;
         }
-        if (router.framework_code) {
+        if (router.framework_code && router.framework_code !== "fixed-matrix" && MODEL.frameworks[router.framework_code]) {
           state.selectedFramework = router.framework_code;
         }
         ensurePerspectiveSelection();
@@ -3578,6 +3811,13 @@
           directAnswer: router.direct_answer || "",
           whyThisAnswer: router.why_this_answer || "",
           supportingKpis: router.supporting_kpis || [],
+          recommendedDecision: router.recommended_decision || "",
+          decisionRisk: router.decision_risk || "",
+          suggestedNextStep: router.suggested_next_step || "",
+          reasoningSummary: router.reasoning_summary || "",
+          watchItem: router.watch_item || "",
+          missingData: router.missing_data || "",
+          answerMode: router.answer_mode || "",
           recommendedAction: router.recommended_action || "",
           primaryRisk: router.primary_risk || "",
           likelyConsequence: router.likely_consequence || "",
@@ -3690,7 +3930,7 @@
       const broadQuestion = !state.pendingClarification && isBroadQuestion(effectiveQuestion);
       const useCrossContext = hasExplicitCrossContextSignal(effectiveQuestion);
 
-      const vo112Route = routeVo112Question(effectiveQuestion.toLowerCase());
+      const vo112Route = !usesFixedMatrixScenario(getScenario()) ? routeVo112Question(effectiveQuestion.toLowerCase()) : null;
       if (vo112Route?.cell) {
         const vo112Confidence = vo112Route.confidence >= 0.88
           ? "high"
@@ -3921,7 +4161,6 @@
       if (!cellButton) return;
       state.activeCellId = cellButton.dataset.cellId;
       state.routedCellId = null;
-      state.backendAnswer = null;
       state.assistMode = "answered";
       state.pendingClarification = null;
       state.recoverySuggestions = [];
@@ -3929,6 +4168,7 @@
       els.routeNote.textContent = state.routeExplanation;
       const cells = getMatrixCells();
       const activeCell = cells.find((item) => item.id === state.activeCellId) || null;
+      state.backendAnswer = usesFixedMatrixScenario(getScenario()) ? buildBackendAnswerFromFixedCell(activeCell) : null;
       state.followUpSuggestions = buildFollowUpSuggestions(activeCell, getPersona(), getScenario(), getFramework());
       rerenderWorkspace();
     });

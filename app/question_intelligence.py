@@ -4,6 +4,11 @@ from typing import Any, Dict, List, Optional
 from urllib import error as _urlerror
 from urllib import request as _urlrequest
 
+try:
+    from .fixed_matrix import execute_fixed_matrix_stack  # type: ignore
+except Exception:  # pragma: no cover
+    from fixed_matrix import execute_fixed_matrix_stack
+
 
 BROAD_QUESTION_HINTS = {
     "best solution",
@@ -130,6 +135,131 @@ DECISION_FAMILY_PATTERNS = {
         "evidence required",
         "confirm",
     ],
+}
+
+FIXED_MATRIX_QUESTION_PATTERNS = {
+    "meaning": ["what does", "what is", "what does this mean", "meaning", "understand", "read on", "status of"],
+    "comparison": ["compare", "versus", "vs", "better than", "trade-off", "difference between"],
+    "threshold": ["threshold", "trigger", "at what point", "red line", "stop", "go/no-go", "when does this become"],
+    "consequence": ["what happens if", "consequence", "fallout", "downside", "risk if", "impact if", "worst case"],
+    "prioritization": ["most important", "priority", "what matters most", "where should i focus", "dominant issue"],
+    "clarification": ["do you mean", "which of these", "narrow this", "more context"],
+    "action": ["what should", "best decision", "best move", "what do we do", "next step", "recommended decision", "what decision is best"],
+    "missing_data": ["what data", "what evidence", "missing evidence", "what else do we need", "what should we verify"],
+}
+
+PERSONA_WRITING_RULES = [
+    {
+        "match": ("ceo",),
+        "lead": "At enterprise level",
+        "matters": "programme credibility, grant exposure, and cross-functional continuity",
+        "next_step": "take an enterprise call that protects date confidence without losing control of precedent",
+    },
+    {
+        "match": ("cfo",),
+        "lead": "Financially",
+        "matters": "contingency, covenant headroom, grant drawdown, and precedent risk",
+        "next_step": "protect headroom and optionality before the number hardens into precedent",
+    },
+    {
+        "match": ("project director",),
+        "lead": "At programme-control level",
+        "matters": "schedule float, contractor behaviour, live-site coordination, and delivery discipline",
+        "next_step": "keep the issue inside disciplined change control and protect critical-path logic",
+    },
+    {
+        "match": ("board chair",),
+        "lead": "From a governance standpoint",
+        "matters": "materiality, disclosure defensibility, and institutional credibility",
+        "next_step": "make sure the board can defend the framing later, not just the action today",
+    },
+    {
+        "match": ("commercial director",),
+        "lead": "Commercially",
+        "matters": "customer confidence, revenue protection, and contractability",
+        "next_step": "protect the account position without creating an avoidable renegotiation trigger",
+    },
+    {
+        "match": ("head of scrap procurement", "procurement"),
+        "lead": "From a supply-assurance standpoint",
+        "matters": "contracted volume security, supplier concentration, and cost-base optionality",
+        "next_step": "secure cover where it matters, but do not lock into the wrong cost position too early",
+    },
+    {
+        "match": ("head of energy",),
+        "lead": "From an energy-position standpoint",
+        "matters": "long-term competitiveness, grid timing, and contracting leverage",
+        "next_step": "protect structural cost position rather than optimize for short-term convenience",
+    },
+    {
+        "match": ("chro",),
+        "lead": "From a workforce-readiness standpoint",
+        "matters": "skills readiness, labour market pressure, and workforce trust",
+        "next_step": "protect readiness and trust before the people system absorbs avoidable damage",
+    },
+    {
+        "match": ("union",),
+        "lead": "From a member-accountability standpoint",
+        "matters": "member trust, fairness, and negotiation leverage",
+        "next_step": "do not spend escalation capital casually, but do not hide the trust consequence either",
+    },
+    {
+        "match": ("council",),
+        "lead": "Publicly",
+        "matters": "community trust, regeneration credibility, and local economic stability",
+        "next_step": "protect institutional trust before the public narrative hardens against the programme",
+    },
+]
+
+VO112_GLOBAL_FACTS = {
+    "claim_total": "£31.4M",
+    "agreed_amount": "£16.5M",
+    "disputed_amount": "£14.9M",
+    "contingency_total": "£93M",
+    "extension": "11 weeks",
+    "schedule_float": "7 weeks",
+    "grant_conditions_at_risk": "2",
+    "offtake_contracted": "61% of target",
+    "decision_window": "21 days",
+    "suspension_extra_slip": "6–8 weeks",
+    "total_slip_if_suspended": "17–19 weeks",
+}
+
+SCENARIO_WRITING_RULES = {
+    "contracts": {
+        "match": ("contracts", "commercial-contracts", "commercial-variance", "variation", "claim"),
+        "name": "contracts / commercial variance",
+        "decision_focus": "current exposure, contractual leverage, and precedent risk",
+    },
+    "schedule": {
+        "match": ("schedule", "delivery", "commissioning"),
+        "name": "schedule / delivery",
+        "decision_focus": "float consumption, dependency risk, and commissioning credibility",
+    },
+    "workforce": {
+        "match": ("workforce", "transition"),
+        "name": "workforce / transition",
+        "decision_focus": "readiness, trust, and organisational execution risk",
+    },
+    "default": {
+        "match": (),
+        "name": "active scenario",
+        "decision_focus": "the live decision tension in the scenario",
+    },
+}
+
+FIXED_MATRIX_LENS_HINTS = {
+    "cautious": ["cautious", "safest", "safe", "protect", "downside", "worst", "defensible", "exposure", "harm"],
+    "strategic": ["strategic", "long-term", "optionality", "future", "precedent", "positioning", "thesis"],
+    "decisive": ["decisive", "now", "immediately", "act", "do now", "next step", "fastest", "commit"],
+    "analytical": ["analytical", "data", "evidence", "compare", "understand", "probability", "certainty", "why"],
+}
+
+FIXED_MATRIX_PERSPECTIVE_HINTS = {
+    "self": ["personal", "my", "role", "accountability", "exposure", "owner", "mandate", "career"],
+    "stakeholder": ["stakeholder", "people", "customer", "union", "government", "community", "relationship", "trust"],
+    "business": ["business", "outcome", "delivery", "commercial", "financial", "schedule", "value", "result"],
+    "ethics": ["ethics", "governance", "approval", "board", "compliance", "defensible", "rule", "disclose", "materiality"],
 }
 
 
@@ -263,6 +393,233 @@ def _classify_decision_family(question: str, context: Dict[str, Any]) -> str:
     return winner
 
 
+def _match_persona_writing_rule(role: str) -> Dict[str, str]:
+    lower = (role or "").lower()
+    for rule in PERSONA_WRITING_RULES:
+        if any(term in lower for term in rule["match"]):
+            return rule
+    return {
+        "lead": f"For {role or 'the active role'}",
+        "matters": "the consequences that sit inside this role's mandate",
+        "next_step": "turn the signal into a concrete next move",
+    }
+
+
+def _match_scenario_writing_rule(kinds: List[str], decision_family: str) -> Dict[str, str]:
+    lower_kinds = " ".join((kinds or [])).lower()
+    for rule in SCENARIO_WRITING_RULES.values():
+        if any(term in lower_kinds for term in rule["match"]):
+            return rule
+    if decision_family in {"contract-entitlement", "commercial-exposure", "variance", "bids-pricing"}:
+        return SCENARIO_WRITING_RULES["contracts"]
+    if decision_family == "timing":
+        return SCENARIO_WRITING_RULES["schedule"]
+    return SCENARIO_WRITING_RULES["default"]
+
+
+def _is_vo112_context(context: Dict[str, Any]) -> bool:
+    combined = " ".join(
+        str(item or "")
+        for item in [
+            context.get("scenario_id"),
+            context.get("scenario_title"),
+            context.get("scenario_summary"),
+        ]
+    ).lower()
+    return any(term in combined for term in ["vo112", "vo-112", "tenova", "variation order cascade"])
+
+
+def _build_vo112_variance_answer(
+    context: Dict[str, Any],
+    cell: Dict[str, Any],
+    execution: Dict[str, Any],
+) -> Optional[Dict[str, str]]:
+    if not _is_vo112_context(context):
+        return None
+    persona = context.get("vo112_persona_schema") or {}
+    role = (persona.get("role") or context.get("persona_role") or "").lower()
+    if "ceo" not in role:
+        return None
+
+    kpi_spine = persona.get("kpi_spine") or []
+    k3 = next((item for item in kpi_spine if str(item.get("kpiCode")) == "K3"), {})
+    k1 = next((item for item in kpi_spine if str(item.get("kpiCode")) == "K1"), {})
+    k7 = next((item for item in kpi_spine if str(item.get("kpiCode")) == "K7"), {})
+    facts = VO112_GLOBAL_FACTS
+
+    direct_answer = (
+        f"Your current variance is a programme-level commercial variance, not just a budget delta. "
+        f"Tenova's VO-112 has created a {facts['claim_total']} cost variance against the approved programme baseline, "
+        f"with {facts['agreed_amount']} agreed in principle and {facts['disputed_amount']} disputed."
+    )
+    why_this_answer = (
+        f"If paid in full, this consumes 33% of total programme contingency ({facts['contingency_total']}). "
+        f"The same event also creates an {facts['extension']} programme extension, leaving only {facts['schedule_float']} of EAF schedule float remaining, "
+        f"while {facts['grant_conditions_at_risk']} grant covenant conditions are now at risk. "
+        f"Customer offtake coverage is {facts['offtake_contracted']}, so any further delay starts to threaten commercial confidence as well.\n\n"
+        f"Highlighted KPI:\n"
+        f"{k3.get('kpiLabel', 'K3 · Grant covenant conditions at risk')}\n"
+        f"This is the most important KPI to surface first because it is marked as a hard priority, alongside schedule float. "
+        f"In this scenario, the system should not stop at 'budget variance'; it should elevate the KPIs that can damage the 2027 commitment and the UK Government relationship."
+    )
+    recommended_decision = (
+        "Negotiate a commercial settlement rather than simply paying the full claim or withholding the disputed amount. "
+        "In the CEO scenario, this is the middle path: preserve programme continuity, avoid triggering Tenova suspension rights, and reduce exposure versus paying the full £31.4M."
+    )
+    decision_risk = (
+        "You may still pay more than Tata's strict legal position requires, and it may set a precedent for future contractor claims. "
+        f"But withholding carries the sharper downside: Tenova may suspend, adding {facts['suspension_extra_slip']} more weeks to the existing extension and potentially pushing total slip to {facts['total_slip_if_suspended']}, which would likely break the 2027 date."
+    )
+    suggested_next_step = (
+        f"Open a {facts['decision_window']} CEO escalation track: authorize commercial negotiation on the disputed {facts['disputed_amount']}, "
+        "prepare a DBET/grant-notification position because grant conditions are already at risk, "
+        "and ask for a combined decision pack showing settlement range, schedule impact if Tenova suspends, and grant/customer exposure if the date slips further."
+    )
+    reasoning_summary = (
+        f"The answer is anchored first on {k3.get('kpiLabel', 'grant covenant conditions at risk')} because it is a hard-priority red signal, "
+        f"then on {k1.get('kpiLabel', 'schedule float remaining')} because the date risk is already compressed, "
+        f"with {k7.get('kpiLabel', 'customer offtake volume contracted')} kept visible as the commercial confidence signal."
+    )
+    return {
+        "direct_answer": direct_answer,
+        "why_this_answer": why_this_answer,
+        "recommended_decision": recommended_decision,
+        "decision_risk": decision_risk,
+        "suggested_next_step": suggested_next_step,
+        "reasoning_summary": reasoning_summary,
+        "likely_consequence": _first_sentence(decision_risk),
+        "watch_item": k1.get("kpiLabel", "K1 · EAF schedule float remaining"),
+        "missing_data": "",
+    }
+
+
+def _compose_fixed_answer_spine(
+    question: str,
+    question_type: str,
+    decision_family: str,
+    cell: Dict[str, Any],
+    execution: Dict[str, Any],
+    context: Dict[str, Any],
+) -> Dict[str, str]:
+    vo112_override = None
+    if decision_family == "variance":
+        vo112_override = _build_vo112_variance_answer(context, cell, execution)
+    if vo112_override:
+        return vo112_override
+
+    normalized_persona = context.get("normalized_decision_profile") or {}
+    normalized_scenario = context.get("normalized_scenario_profile") or {}
+    role = normalized_persona.get("role") or context.get("persona_role") or "the active role"
+    scenario_title = normalized_scenario.get("scenario_title") or context.get("scenario_title") or "this scenario"
+    scenario_tension = normalized_scenario.get("tension") or context.get("persona_tension") or ""
+    scenario_kinds = normalized_scenario.get("scenario_kinds") or []
+    persona_rule = _match_persona_writing_rule(role)
+    scenario_rule = _match_scenario_writing_rule(scenario_kinds, decision_family)
+    matched = execution.get("matched_visible_data") or []
+    primary = matched[0] if matched else {}
+    secondary = matched[1] if len(matched) > 1 else {}
+    support = matched[2] if len(matched) > 2 else {}
+    primary_label = primary.get("label") or cell.get("primary_kpi") or "the leading signal"
+    primary_summary = primary.get("summary") or primary.get("preview") or f"{primary_label} is the dominant signal in the scenario."
+    secondary_label = secondary.get("label") or ""
+    support_label = support.get("label") or ""
+    lens = cell.get("decision_lens_label") or cell.get("emotion_mode_label") or "this decision lens"
+    perspective = cell.get("perspective_label") or cell.get("perspective_code") or "this perspective"
+
+    if decision_family == "variance":
+        direct_answer = f"{persona_rule['lead']}, the main variance in {scenario_title} sits in {primary_label.lower()}."
+    elif decision_family == "commercial-exposure":
+        direct_answer = f"{persona_rule['lead']}, the real commercial exposure in {scenario_title} sits in {primary_label.lower()}."
+    elif decision_family == "contract-entitlement":
+        direct_answer = f"{persona_rule['lead']}, the decision turns on whether {primary_label.lower()} gives enough cover to hold the line in {scenario_title}."
+    elif question_type == "threshold":
+        direct_answer = f"{persona_rule['lead']}, {primary_label.lower()} is the trigger point to watch in {scenario_title}."
+    elif question_type == "missing_data":
+        direct_answer = f"{persona_rule['lead']}, do not lock the decision yet; the missing piece is {primary_label.lower()}."
+    elif question_type == "consequence":
+        direct_answer = f"{persona_rule['lead']}, the first thing that breaks in {scenario_title} is {primary_label.lower()}."
+    else:
+        direct_answer = f"{persona_rule['lead']}, the strongest current call in {scenario_title} is to anchor the decision on {primary_label.lower()}."
+
+    why_this_answer = " ".join([
+        f"In this {scenario_rule['name']} scenario, the signal that matters most now is {primary_label.lower()}.",
+        primary_summary,
+        f"For {role}, that matters because the role is exposed through {persona_rule['matters']}.",
+        scenario_tension and f"The live tension is {scenario_tension.lower()}.",
+        f"This is why the answer routes through {lens} × {perspective}.",
+    ]).strip()
+
+    if question_type == "missing_data":
+        recommended_decision = f"Hold the decision open until {primary_label.lower()} is resolved, then commit from the {lens.lower()} × {perspective.lower()} route."
+    elif question_type == "threshold":
+        recommended_decision = f"Keep the current posture only while {primary_label.lower()} remains inside tolerance; once it worsens, change course."
+    else:
+        recommended_decision = f"Use {primary_label.lower()} as the decision anchor and make the call in a way that protects {scenario_rule['decision_focus']}."
+
+    decision_risk = (
+        secondary.get("summary")
+        or execution.get("decision_risk")
+        or f"The downside is underweighting {secondary_label.lower() if secondary_label else 'the secondary tension'} while the role stays anchored to {primary_label.lower()}."
+    )
+    suggested_next_step = (
+        support.get("summary")
+        or execution.get("suggested_next_step")
+        or f"Next, {persona_rule['next_step']} by testing {support_label.lower() if support_label else primary_label.lower()} explicitly."
+    )
+    reasoning_summary = " ".join([
+        f"The answer is scenario-first: {primary_label.lower()} is the most decision-relevant signal in {scenario_title}.",
+        f"It is then persona-shaped for {role}, with emphasis on {persona_rule['matters']}.",
+        f"The {lens.lower()} lens and {perspective.lower()} perspective determine how the trade-off is interpreted.",
+    ]).strip()
+    likely_consequence = (
+        cell.get("consequence")
+        or secondary.get("summary")
+        or f"If this is handled badly, pressure shifts from {primary_label.lower()} into the next-order consequence for {role}."
+    )
+    watch_item = secondary_label or execution.get("watch_item") or ""
+    missing_data = execution.get("missing_data") or (
+        primary_label if question_type == "missing_data" else ""
+    )
+    return {
+        "direct_answer": direct_answer.strip(),
+        "why_this_answer": why_this_answer.strip(),
+        "recommended_decision": recommended_decision.strip(),
+        "decision_risk": decision_risk.strip(),
+        "suggested_next_step": suggested_next_step.strip(),
+        "reasoning_summary": reasoning_summary.strip(),
+        "likely_consequence": _first_sentence(likely_consequence),
+        "watch_item": watch_item.strip(),
+        "missing_data": missing_data.strip(),
+    }
+
+
+def _uses_fixed_matrix(context: Dict[str, Any]) -> bool:
+    return bool(context.get("uses_fixed_matrix"))
+
+
+def _classify_fixed_question_type(question: str) -> str:
+    lower = (question or "").lower()
+    if any(phrase in lower for phrase in ["what data", "what evidence", "missing evidence", "what else do we need", "what should we verify"]):
+        return "missing_data"
+    if any(phrase in lower for phrase in ["threshold", "trigger", "at what point", "red line", "stop", "go/no-go", "when does this become"]):
+        return "threshold"
+    if any(phrase in lower for phrase in ["compare", "versus", "vs", "better than", "trade-off", "difference between"]):
+        return "comparison"
+    if any(phrase in lower for phrase in ["what should", "best decision", "best move", "what do we do", "next step", "recommended decision", "what decision is best", "route", "decision"]):
+        return "action"
+    if any(phrase in lower for phrase in ["what happens if", "consequence", "fallout", "downside", "risk if", "impact if", "worst case"]):
+        return "consequence"
+    winner = "action"
+    best = 0
+    for question_type, phrases in FIXED_MATRIX_QUESTION_PATTERNS.items():
+        score = sum(3 for phrase in phrases if phrase in lower)
+        score += sum(1 for token in _extract_tokens(lower) if any(token in phrase for phrase in phrases))
+        if score > best:
+            best = score
+            winner = question_type
+    return winner
+
+
 def _find_cell_by_id(context: Dict[str, Any], cell_id: Optional[str]) -> Optional[Dict[str, Any]]:
     if not cell_id:
         return None
@@ -283,6 +640,200 @@ def _build_evidence_used(cell: Dict[str, Any], context: Dict[str, Any]) -> List[
         ],
         5,
     )
+
+
+def _fixed_visible_data_fit(question: str, cell: Dict[str, Any]) -> float:
+    lower = (question or "").lower()
+    score = 0.0
+    for item in cell.get("ranked_visible_data") or []:
+        label = str(item.get("label") or "").lower()
+        summary = str(item.get("summary") or item.get("preview") or "").lower()
+        evidence = " ".join(str(piece or "").lower() for piece in (item.get("evidence") or []))
+        if label and label in lower:
+            score += 1.0
+        score += min(0.6, sum(0.15 for token in _extract_tokens(label) if token in lower))
+        score += min(0.5, sum(0.1 for token in _extract_tokens(summary) if token in lower))
+        score += min(0.3, sum(0.06 for token in _extract_tokens(evidence) if token in lower))
+    return min(1.0, score)
+
+
+def _fixed_lens_score(question: str, cell: Dict[str, Any], question_type: str, context: Dict[str, Any]) -> float:
+    lens_code = str(cell.get("emotion_mode") or "").lower()
+    lower = (question or "").lower()
+    score = 0.0
+    score += min(1.0, sum(0.2 for phrase in FIXED_MATRIX_LENS_HINTS.get(lens_code, []) if phrase in lower))
+    bias = str((context.get("normalized_decision_profile") or {}).get("default_decision_bias") or "").lower()
+    if bias and bias == lens_code:
+        score += 0.2
+    question_fit = {
+        "cautious": {"threshold": 0.35, "consequence": 0.35, "prioritization": 0.10, "action": 0.15, "missing_data": 0.10, "comparison": 0.05, "meaning": 0.05},
+        "strategic": {"comparison": 0.35, "prioritization": 0.35, "action": 0.20, "consequence": 0.15, "meaning": 0.10},
+        "decisive": {"action": 0.40, "threshold": 0.20, "prioritization": 0.15, "consequence": 0.15},
+        "analytical": {"meaning": 0.35, "missing_data": 0.35, "comparison": 0.20, "threshold": 0.10},
+    }
+    score += question_fit.get(lens_code, {}).get(question_type, 0.0)
+    return min(1.0, score)
+
+
+def _fixed_perspective_score(question: str, cell: Dict[str, Any], question_type: str, context: Dict[str, Any]) -> float:
+    perspective_code = str(cell.get("perspective_code") or "").lower()
+    lower = (question or "").lower()
+    score = 0.0
+    score += min(1.0, sum(0.2 for phrase in FIXED_MATRIX_PERSPECTIVE_HINTS.get(perspective_code, []) if phrase in lower))
+    label = str(cell.get("perspective_label") or "").lower()
+    score += min(0.5, sum(0.1 for token in _extract_tokens(label) if token in lower))
+    for item in cell.get("ranked_visible_data") or []:
+        label_tokens = _extract_tokens(str(item.get("label") or ""))
+        if question_type == "missing_data" and item.get("type") == "missing_evidence":
+            score += 0.25
+        if question_type == "threshold" and item.get("type") in {"threshold", "approval_requirement"}:
+            score += 0.25
+        if question_type == "consequence" and item.get("type") in {"downside", "harm_potential", "trust_impact"}:
+            score += 0.25
+        if question_type == "comparison" and item.get("type") in {"expected_value", "option_value", "defensibility"}:
+            score += 0.2
+        if label_tokens and any(token in lower for token in label_tokens):
+            score += 0.1
+    if any(term in lower for term in ["strategic", "long-term", "optionality", "future", "positioning", "route"]):
+        if perspective_code == "business":
+            score += 0.25
+        if perspective_code == "ethics" and any(term in lower for term in ["governance", "defensible", "approval", "board"]):
+            score += 0.15
+    if any(term in lower for term in ["trust", "stakeholder", "workforce", "customer", "community", "government"]):
+        if perspective_code == "stakeholder":
+            score += 0.25
+    return min(1.0, score)
+
+
+def _fixed_persona_alignment(cell: Dict[str, Any], context: Dict[str, Any]) -> float:
+    profile = context.get("normalized_decision_profile") or {}
+    weights = profile.get("default_perspective_weights") or {}
+    perspective_code = str(cell.get("perspective_code") or "")
+    base = float(weights.get(perspective_code, 0.25))
+    lens_code = str(cell.get("emotion_mode") or "")
+    bias = str(profile.get("default_decision_bias") or profile.get("default_emotion_tendency") or "").lower()
+    if bias and bias == lens_code:
+        base += 0.15
+    return min(1.0, max(0.0, base))
+
+
+def _fixed_question_type_compatibility(cell: Dict[str, Any], question_type: str) -> float:
+    ranked_types = [str(item.get("type") or "") for item in (cell.get("ranked_visible_data") or [])]
+    if question_type == "missing_data":
+        return 1.0 if "missing_evidence" in ranked_types else 0.55
+    if question_type == "threshold":
+        return 1.0 if any(item in ranked_types for item in {"threshold", "approval_requirement", "time_window"}) else 0.55
+    if question_type == "consequence":
+        return 1.0 if any(item in ranked_types for item in {"downside", "harm_potential", "trust_impact"}) else 0.55
+    if question_type == "comparison":
+        return 1.0 if any(item in ranked_types for item in {"expected_value", "option_value", "defensibility"}) else 0.55
+    if question_type == "prioritization":
+        return 1.0 if ranked_types else 0.50
+    if question_type == "meaning":
+        return 1.0 if any(item in ranked_types for item in {"confidence", "expected_value", "stakeholder_map"}) else 0.60
+    if question_type == "action":
+        return 1.0 if any(item in ranked_types for item in {"bottleneck", "time_window", "threshold"}) else 0.65
+    return 0.60
+
+
+def _score_fixed_matrix_cell(question: str, cell: Dict[str, Any], context: Dict[str, Any], question_type: str) -> Dict[str, float]:
+    lens = _fixed_lens_score(question, cell, question_type, context)
+    perspective = _fixed_perspective_score(question, cell, question_type, context)
+    persona = _fixed_persona_alignment(cell, context)
+    question_fit = _fixed_question_type_compatibility(cell, question_type)
+    visible_data = _fixed_visible_data_fit(question, cell)
+    total = (0.30 * lens) + (0.30 * perspective) + (0.20 * persona) + (0.10 * question_fit) + (0.10 * visible_data)
+    return {
+        "lens": round(lens, 4),
+        "perspective": round(perspective, 4),
+        "persona": round(persona, 4),
+        "question_type": round(question_fit, 4),
+        "visible_data": round(visible_data, 4),
+        "total": round(total, 4),
+    }
+
+
+def _select_fixed_visible_item(question: str, cell: Dict[str, Any], question_type: str) -> Dict[str, Any]:
+    visible_items = list(cell.get("ranked_visible_data") or [])
+    if not visible_items:
+        return {}
+    preferred_types = {
+        "threshold": {"threshold", "approval_requirement", "time_window"},
+        "consequence": {"downside", "harm_potential", "trust_impact"},
+        "missing_data": {"missing_evidence", "confidence"},
+        "comparison": {"expected_value", "option_value", "defensibility"},
+        "prioritization": {"bottleneck", "expected_value", "downside"},
+        "meaning": {"confidence", "expected_value", "stakeholder_map"},
+        "action": {"bottleneck", "time_window", "threshold", "reversibility"},
+    }.get(question_type, set())
+    scored: List[Dict[str, Any]] = []
+    for item in visible_items:
+        score = float(item.get("score") or 0.0)
+        if item.get("type") in preferred_types:
+            score += 0.35
+        label = str(item.get("label") or "").lower()
+        summary = str(item.get("summary") or item.get("preview") or "").lower()
+        score += min(0.25, sum(0.05 for token in _extract_tokens(label) if token in (question or "").lower()))
+        score += min(0.20, sum(0.04 for token in _extract_tokens(summary) if token in (question or "").lower()))
+        scored.append({"item": item, "score": score})
+    scored.sort(key=lambda entry: entry["score"], reverse=True)
+    return scored[0]["item"]
+
+
+def _build_fixed_matrix_answer_fields(question: str, cell: Dict[str, Any], context: Dict[str, Any], confidence: float, reason: str) -> Dict[str, Any]:
+    question_type = _classify_fixed_question_type(question)
+    decision_family = _classify_decision_family(question, context)
+    visible_items = cell.get("ranked_visible_data") or []
+    top = _select_fixed_visible_item(question, cell, question_type) or (visible_items[0] if visible_items else {})
+    lens = cell.get("decision_lens_label") or cell.get("emotion_mode_label") or cell.get("emotion_mode") or "this decision lens"
+    perspective = cell.get("perspective_label") or cell.get("perspective_code") or "this perspective"
+    execution = execute_fixed_matrix_stack(
+        question=question,
+        question_type=question_type,
+        cell=cell,
+        normalized_persona=context.get("normalized_decision_profile") or {},
+        normalized_scenario=context.get("normalized_scenario_profile") or {},
+        confidence=confidence,
+        preferred_visible_type=str(top.get("type") or ""),
+    )
+    framed = _compose_fixed_answer_spine(question, question_type, decision_family, cell, execution, context)
+    matched = execution.get("matched_visible_data") or []
+    top_label = top.get("label") or cell.get("primary_kpi") or "the strongest decision signal"
+    second = matched[1] if len(matched) > 1 else {}
+    direct_answer = framed.get("direct_answer") or execution.get("recommended_decision") or f"The recommended decision is to prioritize {_lower_first(top_label)} through {lens.lower()} × {perspective.lower()}."
+    why = framed.get("why_this_answer") or (
+        f"This routes through {lens} × {perspective} because "
+        f"{_lower_first(top_label)} is the strongest visible-data match for the question. "
+        f"{execution.get('reasoning_summary') or ''}"
+    ).strip()
+    evidence = _dedupe([
+        *(execution.get("evidence_used") or []),
+        cell.get("decision_style") or "",
+        cell.get("rationale") or "",
+    ], 6)
+    supporting = _dedupe([item.get("label") or "" for item in matched] or [top.get("label") or ""], 4)
+    return {
+        "decision_family": decision_family,
+        "decision_lens": lens,
+        "direct_answer": direct_answer,
+        "why_this_answer": why,
+        "supporting_kpis": supporting,
+        "recommended_action": _first_sentence(framed.get("suggested_next_step") or execution.get("suggested_next_step") or ""),
+        "primary_risk": _first_sentence(framed.get("decision_risk") or execution.get("decision_risk") or ""),
+        "likely_consequence": framed.get("likely_consequence") or _first_sentence(
+            cell.get("consequence") or f"{_lower_first(second.get('label') or top_label)} becomes the dominant consequence if the situation deteriorates."
+        ),
+        "evidence_used": evidence,
+        "recommended_decision": _first_sentence(framed.get("recommended_decision") or execution.get("recommended_decision") or direct_answer),
+        "decision_risk": _first_sentence(framed.get("decision_risk") or execution.get("decision_risk") or ""),
+        "suggested_next_step": _first_sentence(framed.get("suggested_next_step") or execution.get("suggested_next_step") or ""),
+        "reasoning_summary": framed.get("reasoning_summary") or execution.get("reasoning_summary") or "",
+        "watch_item": framed.get("watch_item") or execution.get("watch_item") or "",
+        "missing_data": framed.get("missing_data") or execution.get("missing_data") or "",
+        "answer_mode": execution.get("mode") or "direct_recommendation",
+        "confidence": confidence,
+        "reason": reason,
+    }
 
 
 def _build_direct_answer(question: str, cell: Dict[str, Any], context: Dict[str, Any], decision_family: str) -> str:
@@ -910,6 +1461,49 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "follow_up_questions": [],
         }
 
+    if _uses_fixed_matrix(context):
+        question_type = _classify_fixed_question_type(question)
+        ranked_fixed = sorted(
+            [{"cell": cell, "score": _score_fixed_matrix_cell(question, cell, context, question_type)} for cell in cells],
+            key=lambda item: (
+                item["score"]["total"],
+                item["score"]["visible_data"],
+                float(item["cell"].get("decision_weight") or 0.0),
+            ),
+            reverse=True,
+        )
+        top = ranked_fixed[0]
+        cell = top["cell"]
+        confidence = min(0.94, 0.52 + top["score"]["total"] * 0.42)
+        reason = (
+            f"Matched {cell.get('decision_lens_label') or cell.get('emotion_mode_label') or cell.get('emotion_mode')} × "
+            f"{cell.get('perspective_label')} using fixed-matrix scoring "
+            f"(lens {top['score']['lens']:.2f}, perspective {top['score']['perspective']:.2f}, "
+            f"persona {top['score']['persona']:.2f}, question-type {top['score']['question_type']:.2f}, "
+            f"visible-data {top['score']['visible_data']:.2f})."
+        )
+        answer_fields = _build_fixed_matrix_answer_fields(question, cell, context, confidence, reason)
+        top_visible = [item.get("label") for item in (cell.get("ranked_visible_data") or [])[:2] if item.get("label")]
+        follow_ups = _dedupe([
+            f"What is the biggest downside through the {cell.get('perspective_label')} perspective?",
+            f"What is the trigger point through the {cell.get('decision_lens_label') or cell.get('emotion_mode_label')} lens?",
+            f"What evidence would confirm {_lower_first(top_visible[0])}?" if top_visible else "",
+            f"What is the next step if {_lower_first(top_visible[1])} worsens?" if len(top_visible) > 1 else "",
+        ], 4)
+        return {
+            "mode": "answer",
+            **answer_fields,
+            "persona_id": context.get("persona_id"),
+            "scenario_id": context.get("scenario_id"),
+            "framework_code": context.get("framework_code"),
+            "emotion_mode": cell.get("emotion_mode"),
+            "perspective_code": cell.get("perspective_code"),
+            "target_cell_id": cell.get("cell_id"),
+            "clarifying_question": None,
+            "suggested_questions": [],
+            "follow_up_questions": follow_ups,
+        }
+
     ranked = sorted(
         [{"cell": cell, "score": _score_cell(question, cell, context)} for cell in cells],
         key=lambda item: (
@@ -1105,6 +1699,8 @@ def _build_system_prompt() -> str:
         "You receive one active scenario context, one active persona, visible matrix rows, visible matrix columns, "
         "and a compact inventory of matrix cells. "
         "In this app, matrix rows are called Decision Lenses and matrix columns are called Perspectives. "
+        "Some scenarios use a fixed 4x4 decision framework with ranked visible-data summaries per cell; when uses_fixed_matrix=true, "
+        "route by question type, decision lens, perspective, and visible-data fit, and always return exactly one answer cell. "
         "Treat user phrases like 'through the <decision lens>', 'from the <perspective>', 'using the <lens>', "
         "or 'under the <perspective>' as explicit routing signals. "
         "You must choose exactly one mode: answer, clarify, or suggest. "
@@ -1114,6 +1710,7 @@ def _build_system_prompt() -> str:
         "2b. Also detect whether the user is asking for a best, worst, risky, moderate, or strategic choice, and use that as an outcome preference when selecting the target cell. "
         "3. If the question maps clearly to one cell, return mode=answer with the exact target_cell_id from the inventory. "
         "When mode=answer, also return decision_family, decision_lens, direct_answer, why_this_answer, supporting_kpis, recommended_action, primary_risk, likely_consequence, and evidence_used. "
+        "Also return recommended_decision, decision_risk, suggested_next_step, reasoning_summary, watch_item, missing_data, and answer_mode when possible. "
         "If the question explicitly names a Decision Lens or Perspective that exists in the provided matrix, constrain routing to matching cells first. "
         "4. If one important distinction is missing, return mode=clarify with exactly one short clarifying question. "
         "5. If the question is too broad or malformed, return mode=suggest with 3 to 5 better scenario-specific questions. "
@@ -1146,7 +1743,7 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
         "visible_emotion_modes": context.get("emotion_modes", []),
         "matrix_cells": context.get("matrix_cells", []),
         "clarification_context": clarification_context,
-        "required_output_keys": [
+            "required_output_keys": [
             "mode",
             "decision_family",
             "decision_lens",
@@ -1164,10 +1761,17 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
             "recommended_action",
             "primary_risk",
             "likely_consequence",
-            "evidence_used",
-            "clarifying_question",
-            "suggested_questions",
-            "follow_up_questions",
+                "evidence_used",
+                "recommended_decision",
+                "decision_risk",
+                "suggested_next_step",
+                "reasoning_summary",
+                "watch_item",
+                "missing_data",
+                "answer_mode",
+                "clarifying_question",
+                "suggested_questions",
+                "follow_up_questions",
         ],
     }
     return json.dumps(compact, ensure_ascii=True)
@@ -1213,6 +1817,13 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                         "primary_risk": {"type": ["string", "null"]},
                         "likely_consequence": {"type": ["string", "null"]},
                         "evidence_used": {"type": "array", "items": {"type": "string"}},
+                        "recommended_decision": {"type": ["string", "null"]},
+                        "decision_risk": {"type": ["string", "null"]},
+                        "suggested_next_step": {"type": ["string", "null"]},
+                        "reasoning_summary": {"type": ["string", "null"]},
+                        "watch_item": {"type": ["string", "null"]},
+                        "missing_data": {"type": ["string", "null"]},
+                        "answer_mode": {"type": ["string", "null"]},
                         "clarifying_question": {"type": ["string", "null"]},
                         "suggested_questions": {"type": "array", "items": {"type": "string"}},
                         "follow_up_questions": {"type": "array", "items": {"type": "string"}},
@@ -1236,6 +1847,13 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                         "primary_risk",
                         "likely_consequence",
                         "evidence_used",
+                        "recommended_decision",
+                        "decision_risk",
+                        "suggested_next_step",
+                        "reasoning_summary",
+                        "watch_item",
+                        "missing_data",
+                        "answer_mode",
                         "clarifying_question",
                         "suggested_questions",
                         "follow_up_questions",
@@ -1269,7 +1887,7 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
         raise RuntimeError(f"Invalid OpenAI router response: {raw}") from exc
 
 
-def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any], question: str = "") -> Dict[str, Any]:
     valid_modes = {"answer", "clarify", "suggest"}
     mode = result.get("mode")
     if mode not in valid_modes:
@@ -1303,11 +1921,40 @@ def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any]) -> 
     result["recommended_action"] = (result.get("recommended_action") or "").strip()
     result["primary_risk"] = (result.get("primary_risk") or "").strip()
     result["likely_consequence"] = (result.get("likely_consequence") or "").strip()
+    result["recommended_decision"] = (result.get("recommended_decision") or "").strip()
+    result["decision_risk"] = (result.get("decision_risk") or "").strip()
+    result["suggested_next_step"] = (result.get("suggested_next_step") or "").strip()
+    result["reasoning_summary"] = (result.get("reasoning_summary") or "").strip()
+    result["watch_item"] = (result.get("watch_item") or "").strip()
+    result["missing_data"] = (result.get("missing_data") or "").strip()
+    result["answer_mode"] = (result.get("answer_mode") or "").strip()
     result["confidence"] = float(result.get("confidence") or 0.0)
     if mode == "answer":
         cell = _find_cell_by_id(context, target_cell_id)
         if cell:
-            filled = _build_answer_fields("", cell, context, result["confidence"], result["reason"])
+            filled = _build_answer_fields(question, cell, context, result["confidence"], result["reason"])
+            if _uses_fixed_matrix(context):
+                filled = _build_fixed_matrix_answer_fields(question, cell, context, result["confidence"], result["reason"])
+                for key in [
+                    "decision_family",
+                    "decision_lens",
+                    "direct_answer",
+                    "why_this_answer",
+                    "supporting_kpis",
+                    "recommended_action",
+                    "primary_risk",
+                    "likely_consequence",
+                    "evidence_used",
+                    "recommended_decision",
+                    "decision_risk",
+                    "suggested_next_step",
+                    "reasoning_summary",
+                    "watch_item",
+                    "missing_data",
+                    "answer_mode",
+                ]:
+                    result[key] = filled.get(key)
+                return result
             for key in [
                 "decision_family",
                 "decision_lens",
@@ -1318,9 +1965,22 @@ def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any]) -> 
                 "primary_risk",
                 "likely_consequence",
                 "evidence_used",
+                "recommended_decision",
+                "decision_risk",
+                "suggested_next_step",
+                "reasoning_summary",
+                "watch_item",
+                "missing_data",
+                "answer_mode",
             ]:
                 if not result.get(key):
                     result[key] = filled.get(key)
+            if not result.get("direct_answer"):
+                result["direct_answer"] = result.get("recommended_decision") or filled.get("direct_answer")
+            if not result.get("recommended_action"):
+                result["recommended_action"] = result.get("suggested_next_step") or filled.get("recommended_action")
+            if not result.get("primary_risk"):
+                result["primary_risk"] = result.get("decision_risk") or filled.get("primary_risk")
     return result
 
 
@@ -1331,7 +1991,7 @@ def route_question_with_llm(
 ) -> Dict[str, Any]:
     try:
         result = _call_openai_router(question, context, clarification_context)
-        validated = _validate_router_output(result, context)
+        validated = _validate_router_output(result, context, question)
         return {
             "status": "ok",
             "router": validated,
