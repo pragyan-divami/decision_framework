@@ -454,14 +454,8 @@ def _build_vo112_variance_answer(
         f"with {facts['agreed_amount']} agreed in principle and {facts['disputed_amount']} disputed."
     )
     why_this_answer = (
-        f"If paid in full, this consumes 33% of total programme contingency ({facts['contingency_total']}). "
-        f"The same event also creates an {facts['extension']} programme extension, leaving only {facts['schedule_float']} of EAF schedule float remaining, "
-        f"while {facts['grant_conditions_at_risk']} grant covenant conditions are now at risk. "
-        f"Customer offtake coverage is {facts['offtake_contracted']}, so any further delay starts to threaten commercial confidence as well.\n\n"
-        f"Highlighted KPI:\n"
-        f"{k3.get('kpiLabel', 'K3 · Grant covenant conditions at risk')}\n"
-        f"This is the most important KPI to surface first because it is marked as a hard priority, alongside schedule float. "
-        f"In this scenario, the system should not stop at 'budget variance'; it should elevate the KPIs that can damage the 2027 commitment and the UK Government relationship."
+        f"This already threatens schedule float, grant covenant exposure, and customer confidence. "
+        f"The first KPI to surface is {k3.get('kpiLabel', 'K3 · Grant covenant conditions at risk')} because it is the fastest route to damaging the 2027 commitment and the DBET relationship."
     )
     recommended_decision = (
         "Negotiate a commercial settlement rather than simply paying the full claim or withholding the disputed amount. "
@@ -547,13 +541,9 @@ def _compose_fixed_answer_spine(
         direct_answer = cell_face["decision"]
 
     why_this_answer = " ".join(filter(None, [
-        f"In this {scenario_rule['name']} scenario, the signal that matters most now is {primary_label.lower()}.",
-        f"The key value to surface is {cell_face.get('value')}." if cell_face.get("value") else "",
-        primary_summary,
-        f"For {role}, that matters because the role is exposed through {persona_rule['matters']}.",
-        f"The live tension is {scenario_tension.lower()}." if scenario_tension else "",
-        f"Primary model rationale: {stack_rationale.get('primary')}" if stack_rationale.get("primary") else "",
-        f"This is why the answer routes through {lens} × {perspective}.",
+        f"The call is anchored on {primary_label.lower()}",
+        f"because that is the clearest live signal in {scenario_title}.",
+        f"The context is {scenario_tension.lower()}." if scenario_tension else "",
     ])).strip()
 
     if question_type == "missing_data":
@@ -576,11 +566,8 @@ def _compose_fixed_answer_spine(
         or f"Next, {persona_rule['next_step']} by testing {support_label.lower() if support_label else primary_label.lower()} explicitly."
     )
     reasoning_summary = " ".join(filter(None, [
-        f"The answer is scenario-first: {primary_label.lower()} is the most decision-relevant signal in {scenario_title}.",
-        f"It is then persona-shaped for {role}, with emphasis on {persona_rule['matters']}.",
-        stack_rationale.get("secondary") or "",
-        stack_rationale.get("support") or "",
-        f"The {lens.lower()} lens and {perspective.lower()} perspective determine how the trade-off is interpreted.",
+        f"This routes through {lens} × {perspective}",
+        f"because it best protects {scenario_rule['decision_focus']} for {role}.",
     ])).strip()
     likely_consequence = (
         cell.get("consequence")
@@ -593,11 +580,11 @@ def _compose_fixed_answer_spine(
     )
     return {
         "direct_answer": direct_answer.strip(),
-        "why_this_answer": why_this_answer.strip(),
+        "why_this_answer": _first_sentence(why_this_answer.strip()),
         "recommended_decision": recommended_decision.strip(),
         "decision_risk": decision_risk.strip(),
-        "suggested_next_step": suggested_next_step.strip(),
-        "reasoning_summary": reasoning_summary.strip(),
+        "suggested_next_step": _first_sentence(suggested_next_step.strip()),
+        "reasoning_summary": _first_sentence(reasoning_summary.strip()),
         "likely_consequence": _first_sentence(likely_consequence),
         "watch_item": watch_item.strip(),
         "missing_data": missing_data.strip(),

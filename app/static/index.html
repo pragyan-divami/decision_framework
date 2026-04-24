@@ -1135,6 +1135,55 @@
       overflow: hidden;
     }
 
+    .cell-data-list {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .cell-data-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      min-width: 0;
+    }
+
+    .cell-data-value {
+      font-family: var(--shell-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--shell-sky);
+      white-space: nowrap;
+    }
+
+    .cell-data-label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--shell-blue);
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+    }
+
+    .cell-data-value.rag-r,
+    .cell-data-label.rag-r {
+      color: var(--shell-red);
+    }
+
+    .cell-data-value.rag-y,
+    .cell-data-label.rag-y {
+      color: var(--shell-amber);
+    }
+
+    .cell-data-value.rag-g,
+    .cell-data-label.rag-g {
+      color: var(--shell-green);
+    }
+
     .cell-kpis {
       font-family: var(--shell-font-mono);
       font-size: 9px;
@@ -2565,6 +2614,7 @@
       const second = ranked[1] || null;
       const evidence = ranked.flatMap((item) => item.evidence || []).filter(Boolean);
       const cellFace = runtimeCell.cellFace || {};
+      const displayData = runtimeCell.displayData || [];
       const tone = ["threshold", "harm_potential", "downside", "approval_requirement"].includes(top?.type)
         ? "warn"
         : "accent";
@@ -2610,6 +2660,7 @@
         decisionStyle: runtimeCell.decisionStyle || "",
         whyThisData: runtimeCell.whyThisData || "",
         cellFace,
+        displayData,
         rankedVisibleData: ranked,
         visibleDataPreview: preview,
       };
@@ -4315,10 +4366,16 @@
           if (!cell) return `<div class="matrix-cell"></div>`;
           const active = state.activeCellId === cell.id;
           const routed = state.routedCellId === cell.id;
+          const dataRows = (cell.displayData || []).slice(0, 3).map((item) => `
+            <div class="cell-data-row">
+              <div class="cell-data-value rag-${item.rag || ""}">${item.val || ""}</div>
+              <div class="cell-data-label rag-${item.rag || ""}">${item.label || ""}</div>
+            </div>
+          `).join("");
           return `
             <button class="matrix-cell ${active ? "active" : ""} ${routed ? "routed" : ""}" type="button" data-cell-id="${cell.id}">
-              <div class="cell-title">${cell.optionLabel}</div>
-              <div class="cell-kpis">${(cell.cellFace?.value || cell.kpis?.[0] || "").trim()}</div>
+              ${dataRows ? `<div class="cell-data-list">${dataRows}</div>` : `<div class="cell-title">${cell.optionLabel || ""}</div>`}
+              <div class="cell-kpis">${dataRows ? "" : (cell.cellFace?.value || cell.kpis?.[0] || "").trim()}</div>
               <div class="cell-meta">${cell.cellFace?.decision || cell.summary}</div>
             </button>
           `;
@@ -4986,6 +5043,29 @@
       };
     }
 
+    function firstSentenceText(value) {
+      const text = String(value || "").trim().replace(/\s+/g, " ");
+      if (!text) return "";
+      const match = text.match(/^.*?[.!?](?=\s|$)/);
+      return (match ? match[0] : text).trim();
+    }
+
+    function buildExecutiveAssistantReply(router) {
+      const mainAnswer = firstSentenceText(router.recommended_decision || router.direct_answer || "");
+      const briefContext = firstSentenceText(router.why_this_answer || router.reasoning_summary || "");
+      const risk = firstSentenceText(router.decision_risk || router.primary_risk || "");
+      const nextStep = firstSentenceText(router.suggested_next_step || router.recommended_action || "");
+      const lines = [];
+      if (mainAnswer) lines.push(`Main answer: ${mainAnswer}`);
+      if (briefContext) lines.push(`Context: ${briefContext}`);
+      if (risk) lines.push(`Risk: ${risk}`);
+      if (nextStep) lines.push(`Next: ${nextStep}`);
+      if (Array.isArray(router.external_sources) && router.external_sources.length) {
+        lines.push(`Sources:\n${router.external_sources.slice(0, 4).map((item) => `- ${(item.title || item.domain || item.url)} — ${item.url}`).join("\n")}`);
+      }
+      return lines.join("\n\n");
+    }
+
     function applyBackendQuestionResult(payload, rawQuestion) {
       const router = payload?.router;
       if (!router || !router.mode) return false;
@@ -5040,14 +5120,7 @@
         state.chatHistory.push({ role: "user", text: rawQuestion });
         state.chatHistory.push({
           role: "ai",
-          text: [
-            router.recommended_decision || router.direct_answer || "",
-            router.why_this_answer || "",
-            router.suggested_next_step ? `Next step: ${router.suggested_next_step}` : "",
-            Array.isArray(router.external_sources) && router.external_sources.length
-              ? `Sources:\n${router.external_sources.slice(0, 4).map((item) => `- ${(item.title || item.domain || item.url)} — ${item.url}`).join("\n")}`
-              : "",
-          ].filter(Boolean).join("\n\n"),
+          text: buildExecutiveAssistantReply(router),
         });
         switchTab("chat");
         rerenderWorkspace();

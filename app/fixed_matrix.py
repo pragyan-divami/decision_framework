@@ -964,10 +964,14 @@ def _headline_fragment(text: str) -> str:
         return ""
     cleaned = re.sub(r"\([^)]*\)", "", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned).strip(" .:-")
-    parts = [part.strip() for part in re.split(r"[;,]|(?:\s+-\s+)", cleaned) if part.strip()]
+    parts = [part.strip() for part in re.split(r"[;,.]|(?:\s+-\s+)", cleaned) if part.strip()]
     candidate = parts[0] if parts else cleaned
     lowered = candidate.lower()
     for prefix in [
+        "the ",
+        "approximately ",
+        "about ",
+        "around ",
         "current read on ",
         "whether ",
         "amount of ",
@@ -980,9 +984,11 @@ def _headline_fragment(text: str) -> str:
         if lowered.startswith(prefix):
             candidate = candidate[len(prefix):]
             break
+    if "critical path" in candidate.lower():
+        return "Critical Path Slip"
     words = candidate.split()
-    if len(words) > 5:
-        candidate = " ".join(words[:5])
+    if len(words) > 4:
+        candidate = " ".join(words[:4])
     return candidate.strip(" .:-").title()
 
 
@@ -1220,6 +1226,7 @@ def build_fixed_matrix_cell_runtime(
                 }
             )
         ranked_items.sort(key=lambda item: (-item["score"], desired_types.index(item["type"])))
+        display_data = _dynamic_display_data(ranked_items, normalized_scenario)
         top_item = ranked_items[0] if ranked_items else {}
         cell_face = {
             "title": _title_for_visible_type(
@@ -1237,8 +1244,20 @@ def build_fixed_matrix_cell_runtime(
             "value": "No value signal available yet",
             "decision": "Open the cell to inspect the strongest available evidence before acting.",
         }
+        if display_data:
+            cell_face["title"] = ""
+            cell_face["value"] = " · ".join(
+                f"{item.get('val', '').strip()} {item.get('label', '').strip()}".strip()
+                for item in display_data[:2]
+            )
         preview_items = [
-            {"label": item["label"], "preview": item["preview"], "score": item["score"]}
+            {
+                "label": item["label"],
+                "preview": item["preview"],
+                "score": item["score"],
+                "rag": item.get("rag", ""),
+                "value": item.get("value", ""),
+            }
             for item in ranked_items[:2]
         ]
         cells.append(
@@ -1260,6 +1279,7 @@ def build_fixed_matrix_cell_runtime(
                 "cellFace": cell_face,
                 "preview": preview_items,
                 "rankedVisibleData": ranked_items,
+                "displayData": display_data,
             }
         )
     return {
@@ -1287,6 +1307,136 @@ MODEL_ROLE_EXPLANATIONS: Dict[str, str] = {
     "OODA": "The primary model favors an executable move that can be observed and adjusted quickly.",
     "COM-B": "The primary model tests whether people, capability, and environment can actually support the move.",
 }
+
+def _extract_numeric_signal(candidates: List[str]) -> str:
+    numeric_pattern = r"(?:[£$€]\s?\d[\d.,]*(?:–\d[\d.,]*)?(?:[MKk]|\s?(?:m|bn|MWh|MW|t|yrs?|yr|months?|mths|weeks?|wks?|days?|hrs?|hours?))?|~?\d[\d.,]*(?:–\d[\d.,]*)?\s?(?:%|weeks?|wks?|days?|hrs?|hours?|months?|mths|yrs?|yr|roles?|conditions?|calls?|stakeholders?|scenarios?|t|MWh|MW))"
+    for candidate in candidates:
+        cleaned = _clean_text(candidate)
+        if not cleaned:
+            continue
+        match = re.search(numeric_pattern, cleaned, flags=re.I)
+        if match:
+            return match.group(0).strip()
+    return ""
+
+
+def _display_value_for_item(item: Dict[str, Any], normalized_scenario: Dict[str, Any]) -> str:
+    evidence = [str(piece or "") for piece in (item.get("evidence") or [])]
+    summary = [str(item.get("summary") or ""), str(item.get("preview") or ""), str(item.get("label") or "")]
+    numeric = _extract_numeric_signal(evidence + summary)
+    if numeric:
+        return numeric
+    type_code = str(item.get("type") or "")
+    if type_code == "stakeholder_map":
+        stakeholder_text = " ".join(evidence + summary)
+        stakeholder_count = max(2, len([part for part in re.split(r",\s*", stakeholder_text) if _clean_text(part)]))
+        return f"{stakeholder_count}"
+    if type_code in {"confidence", "expected_value", "option_value", "defensibility"}:
+        score = float(item.get("score") or 0.0)
+        if score >= 0.82:
+            return "High"
+        if score >= 0.62:
+            return "Medium"
+        return "Low"
+    if type_code == "missing_evidence":
+        return "Gap"
+    if type_code in {"threshold", "approval_requirement"}:
+        return "Trigger"
+    if type_code == "time_window":
+        return "Window"
+    compact = _headline_fragment(str(item.get("label") or ""))
+    return compact.split()[0] if compact else "Signal"
+
+
+def _display_rag_for_item(item: Dict[str, Any]) -> str:
+    type_code = str(item.get("type") or "")
+    score = float(item.get("score") or 0.0)
+    if type_code in {"downside", "harm_potential", "threshold", "approval_requirement", "missing_evidence"}:
+        return "r" if score >= 0.62 else "y"
+    if type_code in {"bottleneck", "time_window", "trust_impact", "stakeholder_map", "reversibility"}:
+        return "y" if score >= 0.58 else "g"
+    return "g" if score >= 0.76 else "y"
+
+
+def _display_label_for_item(item: Dict[str, Any]) -> str:
+    generic_labels = {
+        "worst-case downside",
+        "reversibility of the choice",
+        "confidence / certainty level",
+        "expected value",
+        "option value / flexibility",
+        "stakeholder map",
+        "trust impact",
+        "harm potential",
+        "operational bottleneck",
+        "time window for action",
+        "threshold / red line",
+        "missing evidence",
+        "defensibility over time",
+        "approval requirement",
+    }
+    label = _clean_text(str(item.get("label") or ""))
+    type_code = str(item.get("type") or "")
+    summary = _clean_text(str(item.get("summary") or ""))
+    evidence = [_clean_text(str(piece or "")) for piece in (item.get("evidence") or []) if _clean_text(str(piece or ""))]
+    if label.lower() not in generic_labels:
+        return label
+
+    if type_code == "confidence":
+        for candidate in evidence[1:] + evidence[:1]:
+            fragment = _headline_fragment(candidate)
+            if fragment:
+                return fragment
+
+    summary_patterns = [
+        r"main downside sits in (.*?), which",
+        r"most reversible path is (.*?), so",
+        r"expected value lens is driven by (.*?), which",
+        r"people map is anchored on (.*?), with",
+        r"trust consequence runs through (.*?), which",
+        r"harm lens is concentrated around (.*?), which",
+        r"likely bottleneck is (.*?), which",
+        r"action window is defined by (.*?), which",
+        r"clearest threshold sits at (.*?), which",
+        r"main evidence gap is around (.*?), which",
+        r"eventual choice can still be justified against (.*?), once",
+        r"approval boundary sits with (.*?), especially",
+    ]
+    for pattern in summary_patterns:
+        match = re.search(pattern, summary, flags=re.I)
+        if match:
+            fragment = _headline_fragment(match.group(1))
+            if fragment:
+                return fragment
+
+    for candidate in evidence:
+        fragment = _headline_fragment(candidate)
+        if fragment:
+            return fragment
+
+    if label:
+        return label
+    return "Key signal"
+
+
+def _dynamic_display_data(ranked_items: List[Dict[str, Any]], normalized_scenario: Dict[str, Any]) -> List[Dict[str, str]]:
+    display_rows: List[Dict[str, str]] = []
+    seen_labels = set()
+    for item in ranked_items:
+        label = _display_label_for_item(item)
+        if not label or label.lower() in seen_labels:
+            continue
+        seen_labels.add(label.lower())
+        display_rows.append(
+            {
+                "val": _display_value_for_item(item, normalized_scenario),
+                "label": label,
+                "rag": _display_rag_for_item(item),
+            }
+        )
+        if len(display_rows) >= 3:
+            break
+    return display_rows
 
 
 def _select_priority_item(ranked_visible_data: List[Dict[str, Any]], model_name: str, used_types: Optional[set] = None) -> Dict[str, Any]:
