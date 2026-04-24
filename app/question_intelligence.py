@@ -3,6 +3,7 @@ import os
 from typing import Any, Dict, List, Optional
 from urllib import error as _urlerror
 from urllib import request as _urlrequest
+from urllib.parse import urlparse as _urlparse
 
 try:
     from .fixed_matrix import execute_fixed_matrix_stack  # type: ignore
@@ -519,6 +520,8 @@ def _compose_fixed_answer_spine(
     primary = matched[0] if matched else {}
     secondary = matched[1] if len(matched) > 1 else {}
     support = matched[2] if len(matched) > 2 else {}
+    cell_face = execution.get("cell_face") or cell.get("cell_face") or {}
+    stack_rationale = cell.get("stack_rationale") or {}
     primary_label = primary.get("label") or cell.get("primary_kpi") or "the leading signal"
     primary_summary = primary.get("summary") or primary.get("preview") or f"{primary_label} is the dominant signal in the scenario."
     secondary_label = secondary.get("label") or ""
@@ -540,14 +543,18 @@ def _compose_fixed_answer_spine(
         direct_answer = f"{persona_rule['lead']}, the first thing that breaks in {scenario_title} is {primary_label.lower()}."
     else:
         direct_answer = f"{persona_rule['lead']}, the strongest current call in {scenario_title} is to anchor the decision on {primary_label.lower()}."
+    if cell_face.get("decision"):
+        direct_answer = cell_face["decision"]
 
-    why_this_answer = " ".join([
+    why_this_answer = " ".join(filter(None, [
         f"In this {scenario_rule['name']} scenario, the signal that matters most now is {primary_label.lower()}.",
+        f"The key value to surface is {cell_face.get('value')}." if cell_face.get("value") else "",
         primary_summary,
         f"For {role}, that matters because the role is exposed through {persona_rule['matters']}.",
-        scenario_tension and f"The live tension is {scenario_tension.lower()}.",
+        f"The live tension is {scenario_tension.lower()}." if scenario_tension else "",
+        f"Primary model rationale: {stack_rationale.get('primary')}" if stack_rationale.get("primary") else "",
         f"This is why the answer routes through {lens} × {perspective}.",
-    ]).strip()
+    ])).strip()
 
     if question_type == "missing_data":
         recommended_decision = f"Hold the decision open until {primary_label.lower()} is resolved, then commit from the {lens.lower()} × {perspective.lower()} route."
@@ -555,6 +562,8 @@ def _compose_fixed_answer_spine(
         recommended_decision = f"Keep the current posture only while {primary_label.lower()} remains inside tolerance; once it worsens, change course."
     else:
         recommended_decision = f"Use {primary_label.lower()} as the decision anchor and make the call in a way that protects {scenario_rule['decision_focus']}."
+    if cell_face.get("decision"):
+        recommended_decision = cell_face["decision"]
 
     decision_risk = (
         secondary.get("summary")
@@ -566,11 +575,13 @@ def _compose_fixed_answer_spine(
         or execution.get("suggested_next_step")
         or f"Next, {persona_rule['next_step']} by testing {support_label.lower() if support_label else primary_label.lower()} explicitly."
     )
-    reasoning_summary = " ".join([
+    reasoning_summary = " ".join(filter(None, [
         f"The answer is scenario-first: {primary_label.lower()} is the most decision-relevant signal in {scenario_title}.",
         f"It is then persona-shaped for {role}, with emphasis on {persona_rule['matters']}.",
+        stack_rationale.get("secondary") or "",
+        stack_rationale.get("support") or "",
         f"The {lens.lower()} lens and {perspective.lower()} perspective determine how the trade-off is interpreted.",
-    ]).strip()
+    ])).strip()
     likely_consequence = (
         cell.get("consequence")
         or secondary.get("summary")
@@ -787,6 +798,7 @@ def _build_fixed_matrix_answer_fields(question: str, cell: Dict[str, Any], conte
     top = _select_fixed_visible_item(question, cell, question_type) or (visible_items[0] if visible_items else {})
     lens = cell.get("decision_lens_label") or cell.get("emotion_mode_label") or cell.get("emotion_mode") or "this decision lens"
     perspective = cell.get("perspective_label") or cell.get("perspective_code") or "this perspective"
+    cell_face = cell.get("cell_face") or {}
     execution = execute_fixed_matrix_stack(
         question=question,
         question_type=question_type,
@@ -800,13 +812,14 @@ def _build_fixed_matrix_answer_fields(question: str, cell: Dict[str, Any], conte
     matched = execution.get("matched_visible_data") or []
     top_label = top.get("label") or cell.get("primary_kpi") or "the strongest decision signal"
     second = matched[1] if len(matched) > 1 else {}
-    direct_answer = framed.get("direct_answer") or execution.get("recommended_decision") or f"The recommended decision is to prioritize {_lower_first(top_label)} through {lens.lower()} × {perspective.lower()}."
+    direct_answer = framed.get("direct_answer") or cell_face.get("decision") or execution.get("recommended_decision") or f"The recommended decision is to prioritize {_lower_first(top_label)} through {lens.lower()} × {perspective.lower()}."
     why = framed.get("why_this_answer") or (
         f"This routes through {lens} × {perspective} because "
         f"{_lower_first(top_label)} is the strongest visible-data match for the question. "
         f"{execution.get('reasoning_summary') or ''}"
     ).strip()
     evidence = _dedupe([
+        cell_face.get("value") and f"Matrix value: {cell_face.get('value')}",
         *(execution.get("evidence_used") or []),
         cell.get("decision_style") or "",
         cell.get("rationale") or "",
@@ -1736,6 +1749,7 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
             "scenario_kpis": context.get("scenario_kpis", []),
             "persona_tension": context.get("persona_tension"),
             "framework_code": context.get("framework_code"),
+            "assistant_mode": context.get("assistant_mode", "scenario-only"),
         },
         "commercial_logic": context.get("commercial_logic") or {},
         "visible_perspectives": context.get("perspectives", []),
@@ -1775,6 +1789,148 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
         ],
     }
     return json.dumps(compact, ensure_ascii=True)
+
+
+def _router_schema() -> Dict[str, Any]:
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "mode": {"type": "string", "enum": ["answer", "clarify", "suggest"]},
+            "decision_family": {"type": ["string", "null"]},
+            "decision_lens": {"type": ["string", "null"]},
+            "persona_id": {"type": ["string", "null"]},
+            "scenario_id": {"type": ["string", "null"]},
+            "framework_code": {"type": ["string", "null"]},
+            "emotion_mode": {"type": ["string", "null"]},
+            "perspective_code": {"type": ["string", "null"]},
+            "target_cell_id": {"type": ["string", "null"]},
+            "confidence": {"type": "number"},
+            "reason": {"type": "string"},
+            "direct_answer": {"type": ["string", "null"]},
+            "why_this_answer": {"type": ["string", "null"]},
+            "supporting_kpis": {"type": "array", "items": {"type": "string"}},
+            "recommended_action": {"type": ["string", "null"]},
+            "primary_risk": {"type": ["string", "null"]},
+            "likely_consequence": {"type": ["string", "null"]},
+            "evidence_used": {"type": "array", "items": {"type": "string"}},
+            "recommended_decision": {"type": ["string", "null"]},
+            "decision_risk": {"type": ["string", "null"]},
+            "suggested_next_step": {"type": ["string", "null"]},
+            "reasoning_summary": {"type": ["string", "null"]},
+            "watch_item": {"type": ["string", "null"]},
+            "missing_data": {"type": ["string", "null"]},
+            "answer_mode": {"type": ["string", "null"]},
+            "clarifying_question": {"type": ["string", "null"]},
+            "suggested_questions": {"type": "array", "items": {"type": "string"}},
+            "follow_up_questions": {"type": "array", "items": {"type": "string"}},
+            "external_research_used": {"type": ["boolean", "null"]},
+            "external_sources": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "title": {"type": "string"},
+                        "url": {"type": "string"},
+                        "domain": {"type": "string"},
+                    },
+                    "required": ["title", "url", "domain"],
+                },
+            },
+        },
+        "required": [
+            "mode",
+            "decision_family",
+            "decision_lens",
+            "persona_id",
+            "scenario_id",
+            "framework_code",
+            "emotion_mode",
+            "perspective_code",
+            "target_cell_id",
+            "confidence",
+            "reason",
+            "direct_answer",
+            "why_this_answer",
+            "supporting_kpis",
+            "recommended_action",
+            "primary_risk",
+            "likely_consequence",
+            "evidence_used",
+            "recommended_decision",
+            "decision_risk",
+            "suggested_next_step",
+            "reasoning_summary",
+            "watch_item",
+            "missing_data",
+            "answer_mode",
+            "clarifying_question",
+            "suggested_questions",
+            "follow_up_questions",
+            "external_research_used",
+            "external_sources",
+        ],
+    }
+
+
+def _extract_json_object(raw_text: str) -> Dict[str, Any]:
+    text = (raw_text or "").strip()
+    if not text:
+        raise ValueError("Empty model output")
+    try:
+        return json.loads(text)
+    except Exception:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise ValueError(f"Could not parse JSON from model output: {text[:500]}")
+        return json.loads(text[start:end + 1])
+
+
+def _extract_response_output_text(raw: Dict[str, Any]) -> str:
+    texts: List[str] = []
+    for item in raw.get("output", []) or []:
+        if item.get("type") != "message":
+            continue
+        for content in item.get("content", []) or []:
+            if content.get("type") == "output_text" and content.get("text"):
+                texts.append(str(content.get("text")))
+    if texts:
+        return "\n".join(texts)
+    return str(raw.get("output_text") or "")
+
+
+def _extract_response_sources(raw: Dict[str, Any]) -> List[Dict[str, str]]:
+    results: List[Dict[str, str]] = []
+    seen = set()
+
+    def add_source(title: str, url: str) -> None:
+        if not url:
+            return
+        domain = _urlparse(url).netloc or ""
+        key = (title or "", url)
+        if key in seen:
+            return
+        seen.add(key)
+        results.append({
+            "title": title or domain or url,
+            "url": url,
+            "domain": domain,
+        })
+
+    for item in raw.get("output", []) or []:
+        if item.get("type") == "message":
+            for content in item.get("content", []) or []:
+                for annotation in content.get("annotations", []) or []:
+                    if annotation.get("type") == "url_citation":
+                        add_source(str(annotation.get("title") or ""), str(annotation.get("url") or ""))
+        if item.get("type") == "web_search_call":
+            action = item.get("action") or {}
+            for source in action.get("sources", []) or []:
+                add_source(str(source.get("title") or ""), str(source.get("url") or ""))
+
+    return results[:8]
 
 
 def _call_openai_router(question: str, context: Dict[str, Any], clarification_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1827,37 +1983,22 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
                         "clarifying_question": {"type": ["string", "null"]},
                         "suggested_questions": {"type": "array", "items": {"type": "string"}},
                         "follow_up_questions": {"type": "array", "items": {"type": "string"}},
+                        "external_research_used": {"type": ["boolean", "null"]},
+                        "external_sources": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "url": {"type": "string"},
+                                    "domain": {"type": "string"},
+                                },
+                                "required": ["title", "url", "domain"],
+                            },
+                        },
                     },
-                    "required": [
-                        "mode",
-                        "decision_family",
-                        "decision_lens",
-                        "persona_id",
-                        "scenario_id",
-                        "framework_code",
-                        "emotion_mode",
-                        "perspective_code",
-                        "target_cell_id",
-                        "confidence",
-                        "reason",
-                        "direct_answer",
-                        "why_this_answer",
-                        "supporting_kpis",
-                        "recommended_action",
-                        "primary_risk",
-                        "likely_consequence",
-                        "evidence_used",
-                        "recommended_decision",
-                        "decision_risk",
-                        "suggested_next_step",
-                        "reasoning_summary",
-                        "watch_item",
-                        "missing_data",
-                        "answer_mode",
-                        "clarifying_question",
-                        "suggested_questions",
-                        "follow_up_questions",
-                    ],
+                    "required": _router_schema()["required"],
                 },
             },
         },
@@ -1885,6 +2026,58 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
         return json.loads(content)
     except Exception as exc:
         raise RuntimeError(f"Invalid OpenAI router response: {raw}") from exc
+
+
+def _call_openai_router_with_web(question: str, context: Dict[str, Any], clarification_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+    model = os.environ.get("OPENAI_EXTERNAL_MODEL", os.environ.get("OPENAI_MODEL", "gpt-5.4"))
+    system_prompt = (
+        _build_system_prompt()
+        + " External research mode is enabled. You may use web search to fetch current outside facts, "
+          "but you must still anchor the decision to the provided active scenario and matrix cells. "
+          "Use outside facts only as supporting evidence, not as a reason to switch scenario. "
+          "If you use web search, set external_research_used=true and reflect the fetched facts in evidence_used and why_this_answer."
+    )
+    payload = {
+        "model": model,
+        "reasoning": {"effort": "low"},
+        "tools": [{"type": "web_search"}],
+        "tool_choice": "auto",
+        "include": ["web_search_call.action.sources"],
+        "input": [
+            {"role": "system", "content": [{"type": "input_text", "text": system_prompt}]},
+            {"role": "user", "content": [{"type": "input_text", "text": _build_user_payload(question, context, clarification_context)}]},
+        ],
+    }
+    request = _urlrequest.Request(
+        f"{base_url}/responses",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with _urlrequest.urlopen(request, timeout=30) as response:
+            raw = json.loads(response.read().decode("utf-8"))
+    except _urlerror.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"OpenAI responses HTTP {exc.code}: {body}") from exc
+    except _urlerror.URLError as exc:
+        raise RuntimeError(f"OpenAI responses request failed: {exc}") from exc
+
+    try:
+        result = _extract_json_object(_extract_response_output_text(raw))
+    except Exception as exc:
+        raise RuntimeError(f"Invalid OpenAI responses router output: {raw}") from exc
+    result["external_research_used"] = True
+    result["external_sources"] = _extract_response_sources(raw)
+    return result
 
 
 def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any], question: str = "") -> Dict[str, Any]:
@@ -1928,6 +2121,16 @@ def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any], que
     result["watch_item"] = (result.get("watch_item") or "").strip()
     result["missing_data"] = (result.get("missing_data") or "").strip()
     result["answer_mode"] = (result.get("answer_mode") or "").strip()
+    result["external_research_used"] = bool(result.get("external_research_used"))
+    result["external_sources"] = [
+        {
+            "title": str(item.get("title") or "").strip(),
+            "url": str(item.get("url") or "").strip(),
+            "domain": str(item.get("domain") or "").strip(),
+        }
+        for item in (result.get("external_sources") or [])
+        if isinstance(item, dict) and str(item.get("url") or "").strip()
+    ][:8]
     result["confidence"] = float(result.get("confidence") or 0.0)
     if mode == "answer":
         cell = _find_cell_by_id(context, target_cell_id)
@@ -1990,12 +2193,17 @@ def route_question_with_llm(
     clarification_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     try:
-        result = _call_openai_router(question, context, clarification_context)
+        use_external = (context.get("assistant_mode") or "").strip() == "scenario-external"
+        result = (
+            _call_openai_router_with_web(question, context, clarification_context)
+            if use_external
+            else _call_openai_router(question, context, clarification_context)
+        )
         validated = _validate_router_output(result, context, question)
         return {
             "status": "ok",
             "router": validated,
-            "provider": "openai",
+            "provider": "openai-web" if use_external else "openai",
             "fallback_used": False,
         }
     except Exception as exc:
