@@ -704,30 +704,47 @@
       }
     }
 
+    /* Light shell target:
+      - warm white page background
+      - pale surfaces
+      - low-contrast borders
+      - restrained blue interaction accents
+      - semantic lens tints recalibrated for light mode
+    */
     :root {
-      --shell-ink: #0d1117;
-      --shell-surface: #141b24;
-      --shell-raised: #1a2332;
-      --shell-lifted: #1f2c3e;
-      --shell-rim: rgba(255,255,255,0.07);
-      --shell-rim-strong: rgba(255,255,255,0.12);
-      --shell-sky: #e8f2ff;
-      --shell-blue: #4f8dff;
-      --shell-blue-dim: rgba(79,141,255,0.12);
-      --shell-amber: #f5b731;
-      --shell-red: #e05555;
-      --shell-green: #35d18a;
-      --shell-violet: #a87ef5;
-      --shell-text: #dde6f0;
-      --shell-muted: #6a7f9a;
-      --shell-dim: #3a4f66;
-      --shell-font-display: "Syne", "Avenir Next", sans-serif;
-      --shell-font-body: "Inter", "Avenir Next", sans-serif;
+      --shell-bg: #f6f2ea;
+      --shell-bg-soft: #fbf8f2;
+      --shell-surface: rgba(255, 252, 246, 0.92);
+      --shell-surface-strong: rgba(255, 253, 249, 0.98);
+      --shell-raised: #fffdf9;
+      --shell-lifted: #fffaf3;
+      --shell-rim: rgba(18, 32, 51, 0.08);
+      --shell-rim-strong: rgba(18, 32, 51, 0.12);
+      --shell-text: #122033;
+      --shell-muted: #5f6b7b;
+      --shell-dim: #8892a1;
+      --shell-blue: #2d6cdf;
+      --shell-blue-dim: rgba(45, 108, 223, 0.10);
+      --shell-amber: #b9832f;
+      --shell-amber-dim: rgba(185, 131, 47, 0.10);
+      --shell-red: #c15a4d;
+      --shell-red-dim: rgba(193, 90, 77, 0.10);
+      --shell-green: #2d8a66;
+      --shell-green-dim: rgba(45, 138, 102, 0.10);
+      --shell-violet: #7e68c8;
+      --shell-violet-dim: rgba(126, 104, 200, 0.10);
+      --shell-shadow: 0 18px 44px rgba(18, 32, 51, 0.06);
+      --shell-font-display: "Avenir Next", "Segoe UI", sans-serif;
+      --shell-font-body: "Avenir Next", "Segoe UI", sans-serif;
       --shell-font-mono: "IBM Plex Mono", monospace;
+      --shell-sky: #122033;
     }
 
     html, body {
-      background: var(--shell-ink);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(45, 108, 223, 0.08), transparent 28%),
+        radial-gradient(circle at 92% 12%, rgba(193, 90, 77, 0.06), transparent 20%),
+        linear-gradient(180deg, #f8f5ee 0%, #efe8db 100%);
       color: var(--shell-text);
       font-family: var(--shell-font-body);
       overflow: hidden;
@@ -747,10 +764,11 @@
     .topbar-shell {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 0 12px;
-      background: var(--shell-surface);
-      border-bottom: 1px solid var(--shell-rim-strong);
+      gap: 10px;
+      padding: 0 14px;
+      background: rgba(255, 253, 249, 0.84);
+      border-bottom: 1px solid var(--shell-rim);
+      box-shadow: 0 8px 26px rgba(18, 32, 51, 0.04);
       min-width: 0;
     }
 
@@ -769,23 +787,24 @@
       font-style: normal;
     }
 
-    .topbar-pill-shell,
+    .summary-pill-shell,
     .ctx-chip-shell {
       display: inline-flex;
       align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-family: var(--shell-font-display);
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      background: rgba(53,209,138,0.1);
-      color: var(--shell-green);
-      border: 1px solid rgba(53,209,138,0.18);
-      white-space: nowrap;
-      max-width: 100%;
       min-width: 0;
+      max-width: min(540px, 42vw);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--shell-font-body);
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      background: rgba(45, 108, 223, 0.08);
+      color: var(--shell-green);
+      border: 1px solid rgba(45, 108, 223, 0.18);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .topbar-select {
@@ -815,21 +834,24 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 380px);
       min-height: 0;
+      height: 100%;
+      overflow: hidden;
     }
 
     .matrix-side-shell {
       display: flex;
       flex-direction: column;
       min-width: 0;
-      background: var(--shell-ink);
+      background: transparent;
     }
 
     .matrix-head-shell {
-      display: flex;
-      gap: 12px;
-      justify-content: space-between;
-      padding: 10px 16px 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      padding: 14px 18px 10px;
       border-bottom: 1px solid var(--shell-rim);
+      background: rgba(255, 253, 249, 0.65);
     }
 
     .mh-left-shell {
@@ -852,14 +874,21 @@
       font-family: var(--shell-font-display);
       font-size: 18px;
       font-weight: 800;
-      color: var(--shell-sky);
-      line-height: 1.1;
+      line-height: 1.15;
+      color: var(--shell-text);
     }
 
     .mh-role-shell {
-      font-size: 10px;
+      font-size: 11px;
       color: var(--shell-muted);
       letter-spacing: .4px;
+    }
+
+    .mh-right-shell {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      justify-items: end;
     }
 
     .scenario-toggle-shell {
@@ -883,12 +912,13 @@
     .mh-tension-shell,
     .mh-route-shell {
       position: relative;
-      font-size: 10px;
+      font-size: 11px;
       line-height: 1.45;
-      padding: 6px 10px;
-      border-radius: 0 8px 8px 0;
-      background: var(--shell-raised);
-      border-left: 2px solid var(--shell-amber);
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(45, 108, 223, 0.08);
+      border-left: 3px solid var(--shell-amber);
       color: var(--shell-text);
       white-space: pre-line;
     }
@@ -905,9 +935,36 @@
       right: 0;
       bottom: 0;
       height: 28px;
-      background: linear-gradient(180deg, rgba(26,35,50,0), rgba(26,35,50,0.98));
-      border-radius: 0 0 8px 0;
+      background: linear-gradient(180deg, rgba(255, 253, 249, 0), rgba(255, 253, 249, 0.98));
+      border-radius: 0 0 12px 12px;
       pointer-events: none;
+    }
+
+    .mh-stat-shell,
+    .eyebrow-shell {
+      color: var(--shell-muted);
+    }
+
+    .mh-stat-shell {
+      display: grid;
+      gap: 2px;
+      text-align: right;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+
+    .mh-stat-shell strong {
+      font-family: var(--shell-font-display);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--shell-text);
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .mh-stat-shell span {
+      color: var(--shell-muted);
     }
 
     .scenario-modal-shell {
@@ -934,9 +991,9 @@
       gap: 12px;
       padding: 18px;
       border-radius: 16px;
-      background: var(--shell-surface);
-      border: 1px solid var(--shell-rim-strong);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      background: var(--shell-raised);
+      border: 1px solid var(--shell-rim);
+      box-shadow: var(--shell-shadow);
       overflow: hidden;
     }
 
@@ -1013,7 +1070,7 @@
     .matrix-scroll-shell {
       flex: 1;
       overflow: hidden;
-      padding: 8px 16px 12px;
+      padding: 10px 16px 12px;
       min-height: 0;
       display: flex;
     }
@@ -1047,10 +1104,12 @@
       font-family: var(--shell-font-display);
       font-size: 10px;
       font-weight: 800;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.4px;
       text-transform: uppercase;
-      padding: 8px 6px;
-      border-radius: 6px;
+      padding: 9px 8px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
 
     .matrix-head.stub {
@@ -1058,69 +1117,114 @@
       border: none;
     }
 
-    .matrix-head.cautious { background: rgba(245,183,49,.12); color: var(--shell-amber); border: 1px solid rgba(245,183,49,.2); }
-    .matrix-head.strategic { background: rgba(79,141,255,.12); color: var(--shell-blue); border: 1px solid rgba(79,141,255,.2); }
-    .matrix-head.analytical { background: rgba(168,126,245,.12); color: var(--shell-violet); border: 1px solid rgba(168,126,245,.2); }
-    .matrix-head.decisive { background: rgba(224,85,85,.12); color: var(--shell-red); border: 1px solid rgba(224,85,85,.2); }
+    .matrix-head.cautious {
+      background: linear-gradient(180deg, rgba(185, 131, 47, 0.12), rgba(185, 131, 47, 0.06));
+      color: #9a6d22;
+      border-color: rgba(185, 131, 47, 0.18);
+    }
+
+    .matrix-head.strategic {
+      background: linear-gradient(180deg, rgba(45, 108, 223, 0.12), rgba(45, 108, 223, 0.06));
+      color: #2359bb;
+      border-color: rgba(45, 108, 223, 0.18);
+    }
+
+    .matrix-head.analytical {
+      background: linear-gradient(180deg, rgba(126, 104, 200, 0.12), rgba(126, 104, 200, 0.06));
+      color: #6d56b9;
+      border-color: rgba(126, 104, 200, 0.18);
+    }
+
+    .matrix-head.decisive {
+      background: linear-gradient(180deg, rgba(193, 90, 77, 0.12), rgba(193, 90, 77, 0.06));
+      color: #b24e42;
+      border-color: rgba(193, 90, 77, 0.18);
+    }
 
     .persp-label-shell {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      gap: 5px;
-      padding: 9px 11px;
-      background: var(--shell-raised);
-      border: 1px solid var(--shell-rim);
-      border-radius: 8px;
+      gap: 7px;
+      padding: 12px 13px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 244, 236, 0.92));
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 14px;
+      border-left: 3px solid rgba(45, 108, 223, 0.18);
       min-height: 0;
       height: 100%;
       overflow: hidden;
+      box-shadow: 0 10px 24px rgba(18, 32, 51, 0.05);
     }
 
     .persp-name-shell {
       font-family: var(--shell-font-display);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 800;
       color: var(--shell-sky);
+      line-height: 1.3;
     }
 
     .persp-sub-shell {
       font-size: 10px;
       color: var(--shell-muted);
-      line-height: 1.4;
+      line-height: 1.45;
     }
 
     .matrix-cell {
       position: relative;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 7px;
       min-height: 0;
       height: 100%;
-      padding: 8px 9px;
-      background: var(--shell-raised);
-      border: 1px solid var(--shell-rim);
-      border-radius: 8px;
+      padding: 12px 12px 11px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 245, 239, 0.94));
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 14px;
       color: var(--shell-text);
       cursor: pointer;
-      transition: all .18s;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
       text-align: left;
       overflow: hidden;
+      box-shadow: 0 12px 28px rgba(18, 32, 51, 0.05);
+    }
+
+    .matrix-cell::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      height: 3px;
+      background: transparent;
+      transition: background .16s ease;
     }
 
     .matrix-cell:hover {
-      background: var(--shell-lifted);
-      border-color: var(--shell-rim-strong);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(247, 242, 234, 0.96));
+      border-color: rgba(18, 32, 51, 0.13);
+      box-shadow: 0 16px 30px rgba(18, 32, 51, 0.08);
+      transform: translateY(-1px);
     }
 
     .matrix-cell.active {
-      border-color: var(--shell-blue);
-      background: var(--shell-blue-dim);
+      border-color: rgba(45, 108, 223, 0.38);
+      background: linear-gradient(180deg, rgba(245, 249, 255, 0.98), rgba(235, 243, 255, 0.94));
+      box-shadow: 0 18px 34px rgba(45, 108, 223, 0.12);
+    }
+
+    .matrix-cell.active::before {
+      background: linear-gradient(90deg, #3e7af0, #7ea4ef);
     }
 
     .matrix-cell.routed {
-      border-color: var(--shell-amber);
-      box-shadow: inset 0 0 0 1px rgba(245,183,49,.18);
+      border-color: rgba(185, 131, 47, 0.34);
+      background: linear-gradient(180deg, rgba(255, 251, 242, 0.98), rgba(250, 243, 226, 0.95));
+      box-shadow: 0 16px 30px rgba(185, 131, 47, 0.11);
+    }
+
+    .matrix-cell.routed::before {
+      background: linear-gradient(90deg, #c39243, #dec38d);
     }
 
     .cell-title {
@@ -1137,36 +1241,36 @@
 
     .cell-data-list {
       display: grid;
-      gap: 4px;
+      gap: 6px;
       min-width: 0;
     }
 
     .cell-data-row {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 8px;
-      align-items: start;
+      gap: 10px;
+      align-items: center;
       min-width: 0;
     }
 
     .cell-data-value {
       font-family: var(--shell-font-mono);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      line-height: 1.3;
+      line-height: 1.2;
       color: var(--shell-sky);
       white-space: nowrap;
     }
 
     .cell-data-label {
-      font-size: 12px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--shell-blue);
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--shell-text);
+      min-width: 0;
+      white-space: nowrap;
       overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .cell-data-value.rag-r,
@@ -1206,54 +1310,91 @@
     }
 
     .right-panel-shell {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0;
       min-height: 0;
       height: 100%;
       overflow: hidden;
-      border-left: 1px solid var(--shell-rim-strong);
-      background: var(--shell-surface);
+      border-left: 1px solid var(--shell-rim);
+      background: rgba(255, 253, 249, 0.7);
     }
 
-    .rp-tabs-shell {
-      display: flex;
+    .panel-tabs-shell {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      padding: 8px;
       border-bottom: 1px solid var(--shell-rim);
+      background: rgba(255, 253, 249, 0.94);
     }
 
-    .rp-tab-shell {
-      flex: 1;
-      padding: 13px 6px;
+    .panel-tab-shell {
+      appearance: none;
+      border: 1px solid transparent;
       background: transparent;
-      border: 0;
-      border-bottom: 2px solid transparent;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: var(--shell-font-display);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
       color: var(--shell-muted);
       cursor: pointer;
-      font-family: var(--shell-font-display);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      transition: background .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease;
     }
 
-    .rp-tab-shell.active {
+    .panel-tab-shell.active {
       color: var(--shell-blue);
-      border-bottom-color: var(--shell-blue);
+      background: linear-gradient(180deg, rgba(246, 249, 255, 0.98), rgba(237, 244, 255, 0.92));
+      border-color: rgba(45, 108, 223, 0.18);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
-    .right-tab-shell {
+    .panel-pane-shell {
       display: none;
       min-height: 0;
-      flex: 1;
       overflow: hidden;
     }
 
-    .right-tab-shell.active {
-      display: flex;
-      flex-direction: column;
+    .panel-pane-shell.active {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
       min-height: 0;
     }
 
     .detail-scroll-shell,
+    .answer-scroll-shell {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-question-shell {
+      padding: 14px;
+      border-top: 1px solid var(--shell-rim);
+      background: rgba(255, 253, 249, 0.92);
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .panel-question-shell .ctx-line-shell {
+      margin-bottom: 0;
+    }
+
+    .panel-question-shell .ctx-line-shell > span:first-child {
+      font-family: var(--shell-font-display);
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--shell-muted);
+    }
+
     .msgs-shell {
       flex: 1;
       min-height: 0;
@@ -1279,18 +1420,34 @@
       opacity: 0.25;
     }
 
+    .answer-tag-shell {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(45, 108, 223, 0.16);
+      background: rgba(45, 108, 223, 0.08);
+      color: var(--shell-blue);
+      font-family: var(--shell-font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
     .detail-card-shell,
     .bub-shell,
     .chat-foot-shell {
-      background: var(--shell-raised);
-      border: 1px solid var(--shell-rim);
-      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(252, 248, 242, 0.95));
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 16px;
+      box-shadow: 0 14px 32px rgba(18, 32, 51, 0.06);
     }
 
     .detail-card-shell {
-      padding: 14px;
+      padding: 16px;
       display: grid;
-      gap: 8px;
+      gap: 10px;
     }
 
     .detail-label-shell {
@@ -1304,7 +1461,7 @@
 
     .detail-title-shell {
       font-family: var(--shell-font-display);
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 800;
       color: var(--shell-sky);
       line-height: 1.2;
@@ -1313,7 +1470,7 @@
     .detail-copy-shell,
     .detail-list-shell li {
       font-size: 12px;
-      line-height: 1.6;
+      line-height: 1.65;
       color: var(--shell-text);
       white-space: pre-line;
     }
@@ -1328,17 +1485,21 @@
     .detail-grid-shell {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
     }
 
     .detail-chart-shell {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .detail-bar-shell {
       display: grid;
-      gap: 6px;
+      gap: 7px;
+      padding: 12px 12px 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(246, 249, 255, 0.9), rgba(255, 255, 255, 0.88));
+      border: 1px solid rgba(45, 108, 223, 0.08);
     }
 
     .detail-bar-head-shell {
@@ -1366,14 +1527,14 @@
       height: 8px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(18, 32, 51, 0.06);
+      border: 1px solid rgba(18, 32, 51, 0.05);
     }
 
     .detail-bar-fill-shell {
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--shell-blue), var(--shell-violet));
+      background: linear-gradient(90deg, #4a84ef, #8f86dd);
     }
 
     .detail-bar-copy-shell {
@@ -1385,16 +1546,16 @@
     .detail-mini-grid-shell {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 12px;
     }
 
     .detail-metric-shell {
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
+      padding: 12px 13px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 244, 238, 0.92));
+      border: 1px solid rgba(18, 32, 51, 0.07);
       display: grid;
-      gap: 6px;
+      gap: 7px;
     }
 
     .detail-metric-shell .metric-label-shell {
@@ -1408,7 +1569,7 @@
 
     .detail-metric-shell .metric-value-shell {
       font-size: 12px;
-      line-height: 1.5;
+      line-height: 1.55;
       color: var(--shell-text);
     }
 
@@ -1610,16 +1771,48 @@
       }
 
       .matrix-scroll-shell {
-        padding: 14px 16px 16px;
+        padding: 10px 14px 12px;
       }
 
       .matrix-row {
         grid-template-columns: 160px repeat(4, minmax(0, 1fr));
       }
 
+      .persp-label-shell {
+        padding: 10px 11px;
+        gap: 5px;
+      }
+
+      .persp-name-shell {
+        font-size: 11px;
+      }
+
+      .persp-sub-shell {
+        font-size: 9px;
+        line-height: 1.35;
+      }
+
       .matrix-cell {
-        min-height: 76px;
+        min-height: 70px;
         padding: 8px 9px;
+        gap: 5px;
+      }
+
+      .cell-data-list {
+        gap: 4px;
+      }
+
+      .cell-data-row {
+        gap: 8px;
+      }
+
+      .cell-data-value,
+      .cell-data-label {
+        font-size: 12px;
+      }
+
+      .cell-meta {
+        -webkit-line-clamp: 2;
       }
     }
 
@@ -1632,14 +1825,60 @@
         padding: 10px 12px;
       }
 
+      .summary-pill-shell,
       .topbar-select {
         order: 3;
         width: 100%;
+        max-width: none;
       }
 
       .persona-switcher-shell {
         order: 4;
         width: 100%;
+        max-width: none;
+      }
+
+      .summary-pill-shell {
+        order: 2;
+        flex: 1 1 100%;
+      }
+
+      .brand-shell {
+        flex: 1 1 auto;
+      }
+
+      .body-shell {
+        grid-template-columns: minmax(0, 1fr) 320px;
+      }
+
+      .matrix-head-shell {
+        padding: 12px 14px 10px;
+      }
+
+      .mh-name-shell {
+        font-size: 16px;
+      }
+
+      .mh-right-shell {
+        gap: 6px;
+      }
+
+      .matrix-scroll-shell {
+        padding: 8px 12px 10px;
+      }
+
+      .matrix-row {
+        grid-template-columns: 148px repeat(4, minmax(0, 1fr));
+      }
+
+      .matrix-head {
+        padding: 8px 6px;
+        font-size: 9px;
+      }
+
+      .matrix-cell {
+        min-height: 66px;
+        padding: 7px 8px;
       }
     }
 
@@ -1650,7 +1889,7 @@
 
       .right-panel-shell {
         border-left: none;
-        border-top: 1px solid var(--shell-rim-strong);
+        border-top: 1px solid var(--shell-rim);
       }
     }
 
@@ -1682,8 +1921,8 @@
 <body>
   <div class="app-shell">
     <div class="topbar-shell">
-      <div class="brand-shell">PORT <em>TALBOT</em> · DECISION FRAMEWORK</div>
-      <div class="topbar-pill-shell" id="ctxChip">EAF · OCT 2026</div>
+      <div class="brand-shell">PORT TALBOT · DECISION FRAMEWORK</div>
+      <div class="summary-pill-shell" id="scenarioSummaryPill">—</div>
       <select id="scenarioSelect" class="topbar-select"></select>
       <select id="personaSwitcher" class="persona-switcher-shell" aria-label="Select persona"></select>
     </div>
@@ -1692,13 +1931,13 @@
       <section class="matrix-side-shell">
         <div class="matrix-head-shell">
           <div class="mh-left-shell">
-          <div class="eyebrow-shell">Current Scenario</div>
-          <div class="mh-name-shell" id="mhName">—</div>
-          <div class="mh-role-shell" id="mhRole">—</div>
-          <button class="scenario-toggle-shell" id="toggleScenarioDescription" type="button" hidden>Expand scenario</button>
-          <div class="mh-tension-shell" id="mhTension">—</div>
-          <div class="mh-route-shell" id="routeNote">No question routed yet. You can also click any matrix cell directly.</div>
-        </div>
+            <div class="eyebrow-shell">Current Scenario</div>
+            <div class="mh-name-shell" id="mhName">—</div>
+            <div class="mh-role-shell" id="mhRole">—</div>
+            <button class="scenario-toggle-shell" id="toggleScenarioDescription" type="button" hidden>Expand scenario</button>
+            <div class="mh-tension-shell" id="mhTension">—</div>
+            <div class="mh-route-shell" id="routeNote">No question routed yet. You can also click any matrix cell directly.</div>
+          </div>
           <div class="mh-right-shell" id="mhStats"></div>
         </div>
 
@@ -1708,12 +1947,11 @@
       </section>
 
       <aside class="right-panel-shell">
-        <div class="rp-tabs-shell">
-          <button class="rp-tab-shell active" id="tabButtonDetail" type="button" data-tab="detail">Decision Detail</button>
-          <button class="rp-tab-shell" id="tabButtonChat" type="button" data-tab="chat">AI Assistant</button>
+        <div class="panel-tabs-shell">
+          <button class="panel-tab-shell active" id="tabButtonDetail" type="button">Decision Detail</button>
+          <button class="panel-tab-shell" id="tabButtonAnswer" type="button">Question Answer</button>
         </div>
-
-        <section class="right-tab-shell active" id="tabDetail">
+        <section class="panel-pane-shell active" id="detailPane">
           <div class="detail-scroll-shell" id="detailScroll">
             <div class="detail-empty-shell">
               <div class="detail-empty-glyph-shell">◈</div>
@@ -1721,28 +1959,25 @@
             </div>
           </div>
         </section>
-
-        <section class="right-tab-shell" id="tabChat">
-          <div class="chat-wrap-shell">
-            <div class="msgs-shell" id="msgs"></div>
-            <div class="chat-foot-shell">
-              <div class="ctx-line-shell">
-                <span>Context:</span>
-                <span class="ctx-chip-shell" id="chatContextChip">All perspectives</span>
-                <select id="assistantModeSelect" class="assistant-mode-shell" aria-label="Assistant mode">
-                  <option value="scenario-only">Scenario only</option>
-                  <option value="scenario-external">Scenario + external</option>
-                </select>
+        <section class="panel-pane-shell" id="answerPane">
+          <div class="answer-scroll-shell" id="answerScroll">
+            <div class="detail-empty-shell">
+              <div class="detail-empty-glyph-shell">✦</div>
+              <div class="detail-empty-text-shell">Ask a scenario question to see the routed answer, supporting cell, risk, next step, and evidence in one place.</div>
+            </div>
+          </div>
+          <div class="panel-question-shell">
+            <div class="ctx-line-shell">
+              <span>Ask a question</span>
+            </div>
+            <div class="question-assist" id="questionAssist" hidden></div>
+            <div class="inp-row-shell">
+              <div class="inp-wrap-shell">
+                <textarea id="questionInput" rows="1" placeholder="What is my best decision?"></textarea>
               </div>
-              <div class="question-assist" id="questionAssist" hidden></div>
-              <div class="inp-row-shell">
-                <div class="inp-wrap-shell">
-                  <textarea id="questionInput" rows="1" placeholder="Ask about any perspective, emotion, risk, or decision…"></textarea>
-                </div>
-                <button class="send-shell" id="routeQuestionButton" type="button" aria-label="Send question">
-                  <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
-                </button>
-              </div>
+              <button class="send-shell" id="routeQuestionButton" type="button" aria-label="Send question">
+                <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+              </button>
             </div>
           </div>
         </section>
@@ -2176,14 +2411,13 @@
       closeScenarioModal: document.getElementById("closeScenarioModal"),
       mhStats: document.getElementById("mhStats"),
       detailScroll: document.getElementById("detailScroll"),
-      msgs: document.getElementById("msgs"),
-      ctxChip: document.getElementById("ctxChip"),
-      chatContextChip: document.getElementById("chatContextChip"),
-      assistantModeSelect: document.getElementById("assistantModeSelect"),
-      tabButtonDetail: document.getElementById("tabButtonDetail"),
-      tabButtonChat: document.getElementById("tabButtonChat"),
-      tabDetail: document.getElementById("tabDetail"),
-      tabChat: document.getElementById("tabChat")
+      answerScroll: document.getElementById("answerScroll"),
+      scenarioSummaryPill: document.getElementById("scenarioSummaryPill"),
+      assistantModeSelect: document.getElementById("assistantModeSelect")
+      ,tabButtonDetail: document.getElementById("tabButtonDetail")
+      ,tabButtonAnswer: document.getElementById("tabButtonAnswer")
+      ,detailPane: document.getElementById("detailPane")
+      ,answerPane: document.getElementById("answerPane")
     };
 
     function getPersonaById(personaId = state.personaId) {
@@ -2307,6 +2541,13 @@
       els.scenarioModal.setAttribute("aria-hidden", "true");
     }
 
+    function renderSummaryPill(persona, scenario) {
+      if (!els.scenarioSummaryPill) return;
+      const personaCode = persona?.code || persona?.id || "";
+      const scenarioTitle = scenario?.scenarioTitle || scenario?.label || "No active scenario";
+      els.scenarioSummaryPill.textContent = `${personaCode} · ${scenarioTitle}`;
+    }
+
     function renderHero() {
       const scenario = getScenario();
       const persona = getPersona();
@@ -2327,6 +2568,7 @@
         if (els.mhTension) els.mhTension.textContent = heroCopy;
         renderScenarioDescriptionState();
         renderHeaderStats(persona, scenario);
+        renderSummaryPill(persona, scenario);
         return;
       }
       els.heroTitle.textContent = scenario?.scenarioTitle || MODEL.project.name;
@@ -2339,6 +2581,7 @@
       if (els.mhTension) els.mhTension.textContent = scenario?.explanation || scenario?.tension || els.heroCopy.textContent;
       renderScenarioDescriptionState();
       renderHeaderStats(persona, scenario);
+      renderSummaryPill(persona, scenario);
     }
 
     function renderSelectOptions() {
@@ -2369,9 +2612,6 @@
               ${item.label} · ${item.role}
             </option>
           `).join("");
-      }
-      if (els.ctxChip) {
-        els.ctxChip.textContent = `${persona.code} · ${scenarioShortLabel(getScenario())}`;
       }
       if (els.chatContextChip) {
         els.chatContextChip.textContent = `${persona.role} · ${scenarioShortLabel(getScenario())}`;
@@ -4735,78 +4975,110 @@
 
     function renderQuestionAnswerBox(cell) {
       const backendAnswer = state.backendAnswer || null;
-      renderDecisionDetail(cell, backendAnswer);
-      renderChatMessages();
+      if (!els.answerScroll) return;
       if (!state.question && !backendAnswer) {
-        els.questionAnswerTag.textContent = "Awaiting question";
-        els.questionAnswerTitle.textContent = "Ask a scenario question";
-        els.questionAnswerSummary.textContent = "The system will answer from the selected scenario, then use the matrix as supporting evidence.";
-        els.questionAnswerAction.textContent = "The action will appear after the system answers the question.";
-        els.questionAnswerRisk.textContent = "The main risk will appear here.";
-        els.questionAnswerConsequence.textContent = "The likely consequence will appear here.";
-        els.questionSupportCellTitle.textContent = "No cell selected";
-        els.questionSupportCellSummary.textContent = "The selected matrix cell will explain why the answer is grounded in this perspective and decision lens.";
-        els.questionAnswerEvidenceList.innerHTML = "<li>The supporting evidence will appear here.</li>";
+        els.answerScroll.innerHTML = `
+          <div class="detail-empty-shell">
+            <div class="detail-empty-glyph-shell">✦</div>
+            <div class="detail-empty-text-shell">Ask a scenario question to see the routed answer, supporting cell, risk, next step, and evidence in one place.</div>
+          </div>
+        `;
         return;
       }
+      let tag = "Scenario-grounded";
+      let title = "";
+      let summary = "";
+      let action = "";
+      let risk = "";
+      let consequence = "";
+      let supportTitle = "";
+      let supportSummary = "";
+      let evidenceHtml = "";
       if (state.assistMode === "clarify") {
-        els.questionAnswerTag.textContent = "Clarification";
-        els.questionAnswerTitle.textContent = "I need one more distinction before I answer";
-        els.questionAnswerSummary.textContent = state.pendingClarification?.prompt || state.routeExplanation || "Reply in the question box and I’ll route it before highlighting anything.";
-        els.questionAnswerAction.textContent = "Waiting for a narrower question before recommending an action.";
-        els.questionAnswerRisk.textContent = "The answer is still ambiguous across more than one plausible lens.";
-        els.questionAnswerConsequence.textContent = "Once clarified, the answer will resolve to one matrix-supported decision path.";
-        els.questionSupportCellTitle.textContent = "No cell selected yet";
-        els.questionSupportCellSummary.textContent = "The system is waiting for enough context to select the right supporting matrix cell.";
-        els.questionAnswerEvidenceList.innerHTML = "<li>Clarification is required before the scenario evidence can be resolved cleanly.</li>";
-        return;
-      }
-      if (state.assistMode === "suggest") {
-        els.questionAnswerTag.textContent = "Suggestions";
-        els.questionAnswerTitle.textContent = "I need a more specific question";
-        els.questionAnswerSummary.textContent = state.routeExplanation || "Try one of the scenario-specific questions below.";
-        els.questionAnswerAction.textContent = "Choose one of the relevant questions below to generate a scenario-grounded answer.";
-        els.questionAnswerRisk.textContent = "The current wording is too broad to anchor a reliable answer.";
-        els.questionAnswerConsequence.textContent = "Once the question is more specific, the matrix can support a concrete decision path.";
-        els.questionSupportCellTitle.textContent = "No cell selected yet";
-        els.questionSupportCellSummary.textContent = "The selected scenario still has enough evidence, but the question needs to be more specific.";
-        els.questionAnswerEvidenceList.innerHTML = "<li>The current scenario evidence is available, but the question is not specific enough to resolve one dominant answer.</li>";
-        return;
-      }
-      if (!cell) {
-        els.questionAnswerTag.textContent = "Searching";
-        els.questionAnswerTitle.textContent = "Working on your question";
-        els.questionAnswerSummary.textContent = "I’m resolving the scenario context and the best supporting matrix cell.";
-        els.questionAnswerAction.textContent = "Resolving the right recommendation from the active scenario.";
-        els.questionAnswerRisk.textContent = "Evaluating which downside is dominant for this question.";
-        els.questionAnswerConsequence.textContent = "The likely consequence will appear once the answer is grounded.";
-        els.questionSupportCellTitle.textContent = "Resolving supporting cell";
-        els.questionSupportCellSummary.textContent = "The system is resolving the best-fit matrix evidence.";
-        els.questionAnswerEvidenceList.innerHTML = "<li>Searching active scenario evidence…</li>";
-        return;
-      }
-      els.questionAnswerTag.textContent = backendAnswer?.answerMode === "manual_cell_review"
+        tag = "Clarification";
+        title = "I need one more distinction before I answer";
+        summary = state.pendingClarification?.prompt || state.routeExplanation || "Reply in the question box and I’ll route it before highlighting anything.";
+        action = "Waiting for a narrower question before recommending an action.";
+        risk = "The answer is still ambiguous across more than one plausible lens.";
+        consequence = "Once clarified, the answer will resolve to one matrix-supported decision path.";
+        supportTitle = "No cell selected yet";
+        supportSummary = "The system is waiting for enough context to select the right supporting matrix cell.";
+        evidenceHtml = "<li>Clarification is required before the scenario evidence can be resolved cleanly.</li>";
+      } else if (state.assistMode === "suggest") {
+        tag = "Suggestions";
+        title = "I need a more specific question";
+        summary = state.routeExplanation || "Try one of the scenario-specific questions below.";
+        action = "Choose one of the relevant questions below to generate a scenario-grounded answer.";
+        risk = "The current wording is too broad to anchor a reliable answer.";
+        consequence = "Once the question is more specific, the matrix can support a concrete decision path.";
+        supportTitle = "No cell selected yet";
+        supportSummary = "The selected scenario still has enough evidence, but the question needs to be more specific.";
+        evidenceHtml = "<li>The current scenario evidence is available, but the question is not specific enough to resolve one dominant answer.</li>";
+      } else if (!cell) {
+        tag = "Searching";
+        title = "Working on your question";
+        summary = "I’m resolving the scenario context and the best supporting matrix cell.";
+        action = "Resolving the right recommendation from the active scenario.";
+        risk = "Evaluating which downside is dominant for this question.";
+        consequence = "The likely consequence will appear once the answer is grounded.";
+        supportTitle = "Resolving supporting cell";
+        supportSummary = "The system is resolving the best-fit matrix evidence.";
+        evidenceHtml = "<li>Searching active scenario evidence…</li>";
+      } else {
+        tag = backendAnswer?.answerMode === "manual_cell_review"
         ? "Manual exploration"
         : getAnswerConfidenceLevel() === "high" ? "High confidence"
           : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
           : "Low confidence";
-      state.activeCellId = cell.id;
-      state.routedCellId = cell.id;
-      els.questionAnswerTitle.textContent = backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell);
-      els.questionAnswerSummary.textContent = [
+        state.activeCellId = cell.id;
+        state.routedCellId = cell.id;
+        title = backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell);
+        summary = [
         backendAnswer?.whyThisAnswer || buildAnswerSummary(cell),
         backendAnswer?.reasoningSummary || "",
         backendAnswer?.watchItem ? `Watch item: ${backendAnswer.watchItem}` : "",
         backendAnswer?.missingData ? `Missing data: ${backendAnswer.missingData}` : "",
         `Highlighting ${cell.title} because this decision lens × perspective route is the best-fit support for the current answer.`
       ].filter(Boolean).join("\n");
-      els.questionAnswerAction.textContent = backendAnswer?.suggestedNextStep || backendAnswer?.recommendedAction || cell.recommendedAction;
-      els.questionAnswerRisk.textContent = backendAnswer?.decisionRisk || backendAnswer?.primaryRisk || cell.risk;
-      els.questionAnswerConsequence.textContent = backendAnswer?.likelyConsequence || cell.consequence;
-      els.questionSupportCellTitle.textContent = cell.title;
-      els.questionSupportCellSummary.textContent = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
-      const evidenceItems = backendAnswer?.evidenceUsed?.length ? backendAnswer.evidenceUsed : cell.dataRequirements;
-      els.questionAnswerEvidenceList.innerHTML = (evidenceItems || []).map((item) => `<li>${item}</li>`).join("");
+        action = backendAnswer?.suggestedNextStep || backendAnswer?.recommendedAction || cell.recommendedAction;
+        risk = backendAnswer?.decisionRisk || backendAnswer?.primaryRisk || cell.risk;
+        consequence = backendAnswer?.likelyConsequence || cell.consequence;
+        supportTitle = cell.title;
+        supportSummary = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
+        const evidenceItems = backendAnswer?.evidenceUsed?.length ? backendAnswer.evidenceUsed : cell.dataRequirements;
+        evidenceHtml = (evidenceItems || []).map((item) => `<li>${item}</li>`).join("") || "<li>No supporting evidence surfaced yet.</li>";
+      }
+
+      els.answerScroll.innerHTML = `
+        <div class="detail-card-shell">
+          <div class="answer-tag-shell">${tag}</div>
+          <div class="detail-title-shell">${title}</div>
+          <div class="detail-copy-shell">${summary}</div>
+        </div>
+        <div class="detail-grid-shell">
+          <div class="detail-card-shell">
+            <div class="detail-label-shell">Risk</div>
+            <div class="detail-copy-shell">${risk}</div>
+          </div>
+          <div class="detail-card-shell">
+            <div class="detail-label-shell">Next Step</div>
+            <div class="detail-copy-shell">${action}</div>
+          </div>
+        </div>
+        <div class="detail-card-shell">
+          <div class="detail-label-shell">Likely Consequence</div>
+          <div class="detail-copy-shell">${consequence}</div>
+        </div>
+        <div class="detail-card-shell">
+          <div class="detail-label-shell">Supporting Cell</div>
+          <div class="detail-title-shell">${supportTitle}</div>
+          <div class="detail-copy-shell">${supportSummary}</div>
+        </div>
+        <div class="detail-card-shell">
+          <div class="detail-label-shell">Evidence Used</div>
+          <ul class="detail-list-shell">${evidenceHtml}</ul>
+        </div>
+      `;
     }
 
     function renderDecisionDetail(cell, backendAnswer = state.backendAnswer || null) {
@@ -4884,29 +5156,12 @@
       `;
     }
 
-    function renderChatMessages() {
-      if (!els.msgs) return;
-      const messages = state.chatHistory.length
-        ? state.chatHistory
-        : [{
-          role: "ai",
-          text: "Ask about any perspective, emotion, risk, or decision and I will route the question through the active matrix, highlight the best-fit cell, and explain why."
-        }];
-      els.msgs.innerHTML = messages.map((item) => `
-        <div class="msg-shell ${item.role}">
-          <div class="av-shell">${item.role === "user" ? "YOU" : "AI"}</div>
-          <div class="bub-shell">${item.text}</div>
-        </div>
-      `).join("");
-      els.msgs.scrollTop = els.msgs.scrollHeight;
-    }
-
-    function switchTab(tab) {
-      state.activeTab = tab === "chat" ? "chat" : "detail";
+    function switchTab(tab = "detail") {
+      state.activeTab = tab === "answer" ? "answer" : "detail";
       if (els.tabButtonDetail) els.tabButtonDetail.classList.toggle("active", state.activeTab === "detail");
-      if (els.tabButtonChat) els.tabButtonChat.classList.toggle("active", state.activeTab === "chat");
-      if (els.tabDetail) els.tabDetail.classList.toggle("active", state.activeTab === "detail");
-      if (els.tabChat) els.tabChat.classList.toggle("active", state.activeTab === "chat");
+      if (els.tabButtonAnswer) els.tabButtonAnswer.classList.toggle("active", state.activeTab === "answer");
+      if (els.detailPane) els.detailPane.classList.toggle("active", state.activeTab === "detail");
+      if (els.answerPane) els.answerPane.classList.toggle("active", state.activeTab === "answer");
     }
 
     function rerenderWorkspace() {
@@ -4916,6 +5171,7 @@
       renderQuestionAssist();
       const cells = getMatrixCells();
       const activeCell = ensureActiveCell(cells);
+      renderDecisionDetail(activeCell, state.backendAnswer || null);
       renderQuestionAnswerBox(activeCell);
       buildMatrix();
       switchTab(state.activeTab);
@@ -4967,6 +5223,11 @@
       const visiblePerspectives = built.perspectives.filter((item) => state.selectedPerspectives.includes(item.id));
       const visibleModes = built.modes;
       const visibleCells = built.cells.filter((cell) => visiblePerspectives.some((item) => item.id === cell.perspectiveId || item.code === cell.perspectiveId));
+      const activeCell = visibleCells.find((cell) => cell.id === state.activeCellId) || null;
+      const selectedPerspective = visiblePerspectives.length === 1 ? visiblePerspectives[0] : null;
+      const activePerspective = activeCell
+        ? visiblePerspectives.find((item) => item.id === activeCell.perspectiveId || item.code === activeCell.perspectiveId) || null
+        : null;
 
       return {
         persona_id: persona.id,
@@ -4996,6 +5257,17 @@
         framework_code: built.framework?.code || framework.code,
         commercial_logic: MODEL.commercialLogic || {},
         active_cell_id: state.activeCellId,
+        optional_user_selected_emotion: activeCell?.modeId || activeCell?.decisionLensCode || null,
+        optional_user_selected_perspective: selectedPerspective?.code || null,
+        ui_context: {
+          active_cell: activeCell ? {
+            cell_id: activeCell.id,
+            decision_lens: activeCell.modeId || activeCell.decisionLensCode || "",
+            perspective_code: activePerspective?.code || activeCell.perspectiveId || "",
+          } : null,
+          selected_decision_lens: activeCell?.modeId || activeCell?.decisionLensCode || "",
+          selected_perspective: selectedPerspective?.code || "",
+        },
         perspectives: visiblePerspectives.map((item) => ({
           id: item.id,
           code: item.code || item.id,
@@ -5122,7 +5394,7 @@
           role: "ai",
           text: buildExecutiveAssistantReply(router),
         });
-        switchTab("chat");
+        switchTab("answer");
         rerenderWorkspace();
         if (!state.followUpSuggestions.length) {
           const cells = getMatrixCells();
@@ -5150,7 +5422,7 @@
         state.routeExplanation = state.pendingClarification.prompt;
         state.chatHistory.push({ role: "user", text: rawQuestion });
         state.chatHistory.push({ role: "ai", text: state.pendingClarification.prompt });
-        switchTab("chat");
+        switchTab("answer");
         rerenderWorkspace();
         els.routeNote.textContent = state.routeExplanation;
         return true;
@@ -5167,7 +5439,7 @@
         state.routeExplanation = router.reason || "That question is too broad for this scenario. Try one of these instead.";
         state.chatHistory.push({ role: "user", text: rawQuestion });
         state.chatHistory.push({ role: "ai", text: state.routeExplanation });
-        switchTab("chat");
+        switchTab("answer");
         rerenderWorkspace();
         els.routeNote.textContent = state.routeExplanation;
         return true;
@@ -5480,7 +5752,7 @@
     });
 
     els.tabButtonDetail?.addEventListener("click", () => switchTab("detail"));
-    els.tabButtonChat?.addEventListener("click", () => switchTab("chat"));
+    els.tabButtonAnswer?.addEventListener("click", () => switchTab("answer"));
 
     els.matrixGrid.addEventListener("click", (event) => {
       const cellButton = event.target.closest("[data-cell-id]");

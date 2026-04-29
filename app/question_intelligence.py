@@ -597,6 +597,10 @@ def _uses_fixed_matrix(context: Dict[str, Any]) -> bool:
 
 def _classify_fixed_question_type(question: str) -> str:
     lower = (question or "").lower()
+    if any(phrase in lower for phrase in ["why is this showing", "why is this high", "why is reversibility", "why is confidence", "why are we looking at", "why is this important"]):
+        return "clarification"
+    if any(phrase in lower for phrase in ["what should i focus on first", "what matters most", "what is the biggest issue", "what is the dominant issue", "what should be done first", "priority"]):
+        return "prioritization"
     if any(phrase in lower for phrase in ["what data", "what evidence", "missing evidence", "what else do we need", "what should we verify"]):
         return "missing_data"
     if any(phrase in lower for phrase in ["threshold", "trigger", "at what point", "red line", "stop", "go/no-go", "when does this become"]):
@@ -616,6 +620,84 @@ def _classify_fixed_question_type(question: str) -> str:
             best = score
             winner = question_type
     return winner
+
+
+def _fixed_phrase_signal(question: str, phrases: List[str]) -> float:
+    lower = (question or "").lower()
+    if not lower or not phrases:
+        return 0.0
+    score = 0.0
+    score += sum(0.28 for phrase in phrases if phrase in lower)
+    tokens = _extract_tokens(lower)
+    score += sum(
+        0.06
+        for token in tokens
+        if any(token in phrase for phrase in phrases)
+    )
+    return min(1.0, score)
+
+
+def _fixed_question_type_fit_for_lens(lens_code: str, question_type: str) -> float:
+    mapping = {
+        "cautious": {"threshold": 1.0, "consequence": 0.95, "prioritization": 0.45, "action": 0.50, "missing_data": 0.35, "comparison": 0.20, "meaning": 0.20, "clarification": 0.15},
+        "strategic": {"comparison": 0.95, "prioritization": 0.90, "action": 0.60, "consequence": 0.50, "meaning": 0.35, "clarification": 0.25, "threshold": 0.20},
+        "decisive": {"action": 1.0, "threshold": 0.55, "prioritization": 0.45, "consequence": 0.40, "comparison": 0.20, "meaning": 0.10},
+        "analytical": {"meaning": 1.0, "missing_data": 0.95, "comparison": 0.65, "threshold": 0.45, "clarification": 0.85, "prioritization": 0.30},
+    }
+    return mapping.get(lens_code, {}).get(question_type, 0.15)
+
+
+def _fixed_question_object_fit_for_perspective(question_type: str, cell: Dict[str, Any], question: str) -> float:
+    perspective_code = str(cell.get("perspective_code") or "").lower()
+    lower = (question or "").lower()
+    ranked_types = [str(item.get("type") or "") for item in (cell.get("ranked_visible_data") or [])]
+    score = 0.0
+    if question_type == "threshold" and perspective_code == "ethics":
+        score += 0.55
+    if question_type == "consequence" and perspective_code in {"self", "stakeholder"}:
+        score += 0.45
+    if question_type == "comparison" and perspective_code == "business":
+        score += 0.50
+    if question_type == "prioritization" and perspective_code in {"business", "stakeholder"}:
+        score += 0.40
+    if question_type == "clarification" and perspective_code in {"analytical", "ethics"}:
+        score += 0.0
+    if any(term in lower for term in ["risk", "exposure", "accountability", "me", "my"]):
+        score += 0.45 if perspective_code == "self" else 0.0
+    if any(term in lower for term in ["team", "people", "customer", "public", "trust", "worker", "stakeholder"]):
+        score += 0.45 if perspective_code == "stakeholder" else 0.0
+    if any(term in lower for term in ["cost", "revenue", "margin", "delay", "performance", "commercial", "output"]):
+        score += 0.45 if perspective_code == "business" else 0.0
+    if any(term in lower for term in ["policy", "ethical", "legal", "compliance", "governance", "rule", "duty", "legitimacy", "disclose"]):
+        score += 0.45 if perspective_code == "ethics" else 0.0
+    if question_type == "missing_data" and "missing_evidence" in ranked_types:
+        score += 0.25
+    if question_type == "threshold" and any(item in ranked_types for item in {"threshold", "approval_requirement"}):
+        score += 0.20
+    if question_type == "comparison" and any(item in ranked_types for item in {"expected_value", "option_value", "defensibility"}):
+        score += 0.20
+    return min(1.0, score)
+
+
+def _fixed_ui_context_score(context: Dict[str, Any], *, lens_code: Optional[str] = None, perspective_code: Optional[str] = None) -> float:
+    ui_context = context.get("ui_context") or {}
+    active_cell = ui_context.get("active_cell") or {}
+    selected_lens = (ui_context.get("selected_decision_lens") or "").lower()
+    selected_perspective = (ui_context.get("selected_perspective") or "").lower()
+    active_lens = (active_cell.get("decision_lens") or "").lower()
+    active_perspective = (active_cell.get("perspective_code") or "").lower()
+    score = 0.0
+    if lens_code:
+        if selected_lens and selected_lens == lens_code:
+            score = max(score, 1.0)
+        elif active_lens and active_lens == lens_code:
+            score = max(score, 0.7)
+    if perspective_code:
+        if selected_perspective and selected_perspective == perspective_code:
+            score = max(score, 1.0)
+        elif active_perspective and active_perspective == perspective_code:
+            score = max(score, 0.7)
+    return min(1.0, score)
 
 
 def _find_cell_by_id(context: Dict[str, Any], cell_id: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -657,50 +739,37 @@ def _fixed_visible_data_fit(question: str, cell: Dict[str, Any]) -> float:
 
 def _fixed_lens_score(question: str, cell: Dict[str, Any], question_type: str, context: Dict[str, Any]) -> float:
     lens_code = str(cell.get("emotion_mode") or "").lower()
-    lower = (question or "").lower()
-    score = 0.0
-    score += min(1.0, sum(0.2 for phrase in FIXED_MATRIX_LENS_HINTS.get(lens_code, []) if phrase in lower))
-    bias = str((context.get("normalized_decision_profile") or {}).get("default_decision_bias") or "").lower()
-    if bias and bias == lens_code:
-        score += 0.2
-    question_fit = {
-        "cautious": {"threshold": 0.35, "consequence": 0.35, "prioritization": 0.10, "action": 0.15, "missing_data": 0.10, "comparison": 0.05, "meaning": 0.05},
-        "strategic": {"comparison": 0.35, "prioritization": 0.35, "action": 0.20, "consequence": 0.15, "meaning": 0.10},
-        "decisive": {"action": 0.40, "threshold": 0.20, "prioritization": 0.15, "consequence": 0.15},
-        "analytical": {"meaning": 0.35, "missing_data": 0.35, "comparison": 0.20, "threshold": 0.10},
-    }
-    score += question_fit.get(lens_code, {}).get(question_type, 0.0)
-    return min(1.0, score)
+    profile = context.get("normalized_decision_profile") or {}
+    direct_language_signal = _fixed_phrase_signal(question, FIXED_MATRIX_LENS_HINTS.get(lens_code, []))
+    question_type_fit = _fixed_question_type_fit_for_lens(lens_code, question_type)
+    persona_bias_fit = 1.0 if str(profile.get("default_decision_bias") or profile.get("default_emotion_tendency") or "").lower() == lens_code else 0.0
+    current_ui_context = _fixed_ui_context_score(context, lens_code=lens_code)
+    total = (
+        (0.50 * direct_language_signal)
+        + (0.20 * question_type_fit)
+        + (0.20 * persona_bias_fit)
+        + (0.10 * current_ui_context)
+    )
+    return min(1.0, max(0.0, total))
 
 
 def _fixed_perspective_score(question: str, cell: Dict[str, Any], question_type: str, context: Dict[str, Any]) -> float:
     perspective_code = str(cell.get("perspective_code") or "").lower()
-    lower = (question or "").lower()
-    score = 0.0
-    score += min(1.0, sum(0.2 for phrase in FIXED_MATRIX_PERSPECTIVE_HINTS.get(perspective_code, []) if phrase in lower))
+    profile = context.get("normalized_decision_profile") or {}
+    direct_language_signal = _fixed_phrase_signal(question, FIXED_MATRIX_PERSPECTIVE_HINTS.get(perspective_code, []))
     label = str(cell.get("perspective_label") or "").lower()
-    score += min(0.5, sum(0.1 for token in _extract_tokens(label) if token in lower))
-    for item in cell.get("ranked_visible_data") or []:
-        label_tokens = _extract_tokens(str(item.get("label") or ""))
-        if question_type == "missing_data" and item.get("type") == "missing_evidence":
-            score += 0.25
-        if question_type == "threshold" and item.get("type") in {"threshold", "approval_requirement"}:
-            score += 0.25
-        if question_type == "consequence" and item.get("type") in {"downside", "harm_potential", "trust_impact"}:
-            score += 0.25
-        if question_type == "comparison" and item.get("type") in {"expected_value", "option_value", "defensibility"}:
-            score += 0.2
-        if label_tokens and any(token in lower for token in label_tokens):
-            score += 0.1
-    if any(term in lower for term in ["strategic", "long-term", "optionality", "future", "positioning", "route"]):
-        if perspective_code == "business":
-            score += 0.25
-        if perspective_code == "ethics" and any(term in lower for term in ["governance", "defensible", "approval", "board"]):
-            score += 0.15
-    if any(term in lower for term in ["trust", "stakeholder", "workforce", "customer", "community", "government"]):
-        if perspective_code == "stakeholder":
-            score += 0.25
-    return min(1.0, score)
+    direct_language_signal = min(1.0, direct_language_signal + min(0.25, sum(0.05 for token in _extract_tokens(label) if token in (question or "").lower())))
+    question_object_fit = _fixed_question_object_fit_for_perspective(question_type, cell, question)
+    weights = profile.get("default_perspective_weights") or {}
+    persona_priority_fit = min(1.0, max(0.0, float(weights.get(perspective_code, 0.25)) * 2.5))
+    current_ui_context = _fixed_ui_context_score(context, perspective_code=perspective_code)
+    total = (
+        (0.55 * direct_language_signal)
+        + (0.20 * question_object_fit)
+        + (0.15 * persona_priority_fit)
+        + (0.10 * current_ui_context)
+    )
+    return min(1.0, max(0.0, total))
 
 
 def _fixed_persona_alignment(cell: Dict[str, Any], context: Dict[str, Any]) -> float:
@@ -1463,6 +1532,14 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
 
     if _uses_fixed_matrix(context):
         question_type = _classify_fixed_question_type(question)
+        lens_scores = {
+            str(cell.get("emotion_mode") or ""): _fixed_lens_score(question, cell, question_type, context)
+            for cell in cells
+        }
+        perspective_scores = {
+            str(cell.get("perspective_code") or ""): _fixed_perspective_score(question, cell, question_type, context)
+            for cell in cells
+        }
         ranked_fixed = sorted(
             [{"cell": cell, "score": _score_fixed_matrix_cell(question, cell, context, question_type)} for cell in cells],
             key=lambda item: (
@@ -1484,6 +1561,25 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
         )
         answer_fields = _build_fixed_matrix_answer_fields(question, cell, context, confidence, reason)
         top_visible = [item.get("label") for item in (cell.get("ranked_visible_data") or [])[:2] if item.get("label")]
+        matched_visible = answer_fields.get("supporting_kpis") or []
+        routing_trace = {
+            "question_type": question_type,
+            "decision_family": answer_fields.get("decision_family"),
+            "emotion_scores": {key: round(value, 4) for key, value in lens_scores.items()},
+            "perspective_scores": {key: round(value, 4) for key, value in perspective_scores.items()},
+            "winning_cell": cell.get("cell_id"),
+            "winning_cell_score": top["score"],
+            "top_cells": [
+                {
+                    "cell_id": entry["cell"].get("cell_id"),
+                    "decision_lens": entry["cell"].get("decision_lens_label") or entry["cell"].get("emotion_mode"),
+                    "perspective_code": entry["cell"].get("perspective_code"),
+                    "total": entry["score"]["total"],
+                }
+                for entry in ranked_fixed[:4]
+            ],
+            "matched_visible_data": matched_visible[:3],
+        }
         follow_ups = _dedupe([
             f"What is the biggest downside through the {cell.get('perspective_label')} perspective?",
             f"What is the trigger point through the {cell.get('decision_lens_label') or cell.get('emotion_mode_label')} lens?",
@@ -1502,6 +1598,7 @@ def _fallback_route(question: str, context: Dict[str, Any]) -> Dict[str, Any]:
             "clarifying_question": None,
             "suggested_questions": [],
             "follow_up_questions": follow_ups,
+            "routing_trace": routing_trace,
         }
 
     ranked = sorted(
