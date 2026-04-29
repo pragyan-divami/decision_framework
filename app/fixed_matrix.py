@@ -1,5 +1,12 @@
 import re
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+HYBRID_MATRIX_LOGIC_PATH = ROOT_DIR / "all_personas_hybrid_matrix_logic.md"
+PERSONA_MODEL_RATIONALE_PATH = ROOT_DIR / "persona_model_assignment_rationale_pack.md"
 
 
 DECISION_LENSES: List[Dict[str, str]] = [
@@ -331,58 +338,58 @@ PERSONA_PERSPECTIVE_UI_LABELS: Dict[str, Dict[str, str]] = {
         "ethics": "Institutional Trust / Governance",
     },
     "P2": {
-        "self": "Role / Workforce Exposure",
-        "stakeholder": "People / Union Impact",
-        "business": "Transition Programme Outcome",
-        "ethics": "Fairness / Social Legitimacy",
+        "self": "Leadership / Workforce Stability",
+        "stakeholder": "Workforce Trust / Union Climate",
+        "business": "Skills / Readiness Outcome",
+        "ethics": "Institutional Fairness / Transition Legitimacy",
     },
     "P3": {
-        "self": "Project Accountability / Delivery Risk",
-        "stakeholder": "Contractor / Team Coordination",
-        "business": "Construction / Commissioning Outcome",
-        "ethics": "Safety / Delivery Governance",
+        "self": "Personal Accountability / Programme Control",
+        "stakeholder": "Contractor / Site Trust",
+        "business": "Delivery / Critical Path",
+        "ethics": "Compliance / Change Control",
     },
     "P4": {
-        "self": "Capital / Personal Exposure",
-        "stakeholder": "Government / Auditor Confidence",
-        "business": "Capital / Funding Outcome",
-        "ethics": "Grant / Fiduciary Governance",
+        "self": "Capital Protection / Downside Exposure",
+        "stakeholder": "Stakeholder Confidence / Market Signaling",
+        "business": "Programme Value / Financial Outcome",
+        "ethics": "Governance / Grant / Covenant Compliance",
     },
     "P5": {
-        "self": "Union Mandate / Exposure",
-        "stakeholder": "Worker / Community Impact",
-        "business": "Transition Bargain Outcome",
-        "ethics": "Fairness / Public Duty",
+        "self": "Leadership / Member Accountability",
+        "stakeholder": "Workforce Trust / Solidarity",
+        "business": "Transition Outcome / Jobs Protection",
+        "ethics": "Institutional Fairness / Public Defensibility",
     },
     "P6": {
-        "self": "Chair Accountability / Exposure",
-        "stakeholder": "Board / Shareholder Confidence",
-        "business": "Corporate Outcome / Precedent",
-        "ethics": "Governance / Legitimacy",
+        "self": "Director Exposure / Materiality",
+        "stakeholder": "Stakeholder Trust / Political Relationship",
+        "business": "Enterprise Outcome / Strategic Stewardship",
+        "ethics": "Governance / Disclosure / Auditability",
     },
     "P7": {
-        "self": "Supply Exposure / Role Risk",
-        "stakeholder": "Supplier / Customer Dependence",
-        "business": "Scrap Portfolio Outcome",
-        "ethics": "Contract / Quality Governance",
+        "self": "Supply Security / Personal Accountability",
+        "stakeholder": "Supplier Trust / Negotiation Leverage",
+        "business": "Cost / Availability Outcome",
+        "ethics": "Contract Integrity / Commercial Defensibility",
     },
     "P8": {
-        "self": "Energy / Delivery Exposure",
-        "stakeholder": "Grid / Regulatory Stakeholders",
-        "business": "Power / Commissioning Outcome",
-        "ethics": "Infrastructure / Compliance Governance",
+        "self": "Competitive Position / Personal Exposure",
+        "stakeholder": "Government / Utility / Stakeholder Alignment",
+        "business": "Energy Outcome / Cost Curve",
+        "ethics": "Contract / Regulatory Defensibility",
     },
     "P9": {
-        "self": "Political / Personal Exposure",
-        "stakeholder": "Town / Community Impact",
-        "business": "Regional Regeneration Outcome",
-        "ethics": "Public Legitimacy / Duty",
+        "self": "Political Exposure / Public Leadership",
+        "stakeholder": "Community Trust / Stakeholder Confidence",
+        "business": "Local Regeneration Outcome",
+        "ethics": "Institutional Legitimacy / Public Defensibility",
     },
     "P10": {
-        "self": "Account / Commercial Exposure",
-        "stakeholder": "Customer / Market Trust",
-        "business": "Offtake / Revenue Outcome",
-        "ethics": "Disclosure / Commercial Governance",
+        "self": "Revenue / Personal Account Exposure",
+        "stakeholder": "Customer Trust / Market Signaling",
+        "business": "Commercial Outcome / Offtake Security",
+        "ethics": "Contract Credibility / Qualification Defensibility",
     },
 }
 
@@ -623,6 +630,146 @@ def _preview(summary: str) -> str:
     return f"{truncated}..."
 
 
+def _compact_value(summary: str, limit: int = 84) -> str:
+    summary = _clean_text(summary)
+    if len(summary) <= limit:
+        return summary
+    truncated = summary[: max(20, limit - 3)].rsplit(" ", 1)[0].strip()
+    return f"{truncated}..."
+
+
+def _read_optional_markdown(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _extract_md_subsection(body: str, title: str) -> str:
+    match = re.search(
+        rf"^### {re.escape(title)}\n(.*?)(?=^### |\Z)",
+        body,
+        flags=re.M | re.S,
+    )
+    return match.group(1).strip() if match else ""
+
+
+def _canonical_perspective_code(label: str) -> str:
+    lowered = _clean_text(label).lower()
+    if lowered.startswith("self /"):
+        return "self"
+    if lowered.startswith("stakeholder /"):
+        return "stakeholder"
+    if lowered.startswith("business /"):
+        return "business"
+    if lowered.startswith("ethics /"):
+        return "ethics"
+    if lowered.startswith("personal accountability") or lowered.startswith("leadership /") or lowered.startswith("director exposure"):
+        return "self"
+    if lowered.startswith("contractor /") or lowered.startswith("government /") or lowered.startswith("workforce trust /") or lowered.startswith("community trust /") or lowered.startswith("customer trust /") or lowered.startswith("supplier trust /") or lowered.startswith("stakeholder trust /"):
+        return "stakeholder"
+    if lowered.startswith("delivery /") or lowered.startswith("skills /") or lowered.startswith("programme value /") or lowered.startswith("transition outcome /") or lowered.startswith("enterprise outcome /") or lowered.startswith("cost /") or lowered.startswith("energy outcome /") or lowered.startswith("local regeneration") or lowered.startswith("commercial outcome /"):
+        return "business"
+    if lowered.startswith("compliance /") or lowered.startswith("institutional") or lowered.startswith("governance /") or lowered.startswith("contract integrity /") or lowered.startswith("contract /") or lowered.startswith("institutional legitimacy /") or lowered.startswith("contract credibility /"):
+        return "ethics"
+    return ""
+
+
+def _emotion_code(label: str) -> str:
+    lowered = _clean_text(label).lower()
+    for item in DECISION_LENSES:
+        if lowered == item["label"].lower():
+            return item["code"]
+    return ""
+
+
+@lru_cache(maxsize=1)
+def _load_hybrid_matrix_logic() -> Dict[str, Dict[str, Any]]:
+    text = _read_optional_markdown(HYBRID_MATRIX_LOGIC_PATH)
+    personas: Dict[str, Dict[str, Any]] = {}
+    if not text:
+        return personas
+
+    pattern = re.compile(r"^## (P\d+)\s+·\s*([^\n]+)\n(.*?)(?=^## P\d+\s+·|\Z)", re.M | re.S)
+    for match in pattern.finditer(text):
+        code, heading, body = match.groups()
+        perspective_lines = [
+            re.sub(r"^\d+\.\s*", "", line).strip()
+            for line in _extract_md_subsection(body, "Perspectives").splitlines()
+            if re.match(r"^\d+\.\s+", line.strip())
+        ]
+        perspective_map: Dict[str, str] = {}
+        for canonical, label in zip(["self", "stakeholder", "business", "ethics"], perspective_lines[:4]):
+            perspective_map[canonical] = label
+        value_pool = [
+            re.sub(r"^-+\s*", "", line).strip()
+            for line in _extract_md_subsection(body, "Value pool").splitlines()
+            if line.strip().startswith("-")
+        ]
+        decision_voice = [
+            re.sub(r"^-+\s*", "", line).strip()
+            for line in _extract_md_subsection(body, "Decision voice").splitlines()
+            if line.strip().startswith("-")
+        ]
+        personas[code] = {
+            "heading": heading.strip(),
+            "perspective_labels": perspective_map,
+            "value_pool": value_pool,
+            "decision_voice": decision_voice,
+        }
+    return personas
+
+
+@lru_cache(maxsize=1)
+def _load_persona_model_assignments() -> Dict[str, Dict[str, Dict[str, Any]]]:
+    text = _read_optional_markdown(PERSONA_MODEL_RATIONALE_PATH)
+    assignments: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    if not text:
+        return assignments
+
+    pattern = re.compile(r"^# (P\d+)\s+·\s*([^\n]+)\n(.*?)(?=^# P\d+\s+·|\Z)", re.M | re.S)
+    for match in pattern.finditer(text):
+        code, _heading, body = match.groups()
+        persona_cells: Dict[str, Dict[str, Any]] = {}
+        for raw_line in body.splitlines():
+            line = raw_line.strip()
+            if not line.startswith("|"):
+                continue
+            columns = [part.strip() for part in line.strip("|").split("|")]
+            if len(columns) < 7:
+                continue
+            if columns[0] == "Cell" or set("".join(columns)) <= {"-", ":", " "}:
+                continue
+            if "×" not in columns[0]:
+                continue
+            emotion_label, perspective_label = [part.strip() for part in columns[0].split("×", 1)]
+            emotion_code = _emotion_code(emotion_label)
+            perspective_code = _canonical_perspective_code(perspective_label)
+            if not emotion_code or not perspective_code:
+                continue
+            persona_cells[f"{emotion_code}::{perspective_code}"] = {
+                "primary_fit": columns[1],
+                "secondary_fit": columns[3],
+                "support_fit": columns[5],
+                "stack_rationale": {
+                    "primary": columns[2],
+                    "secondary": columns[4],
+                    "support": columns[6],
+                },
+            }
+        if persona_cells:
+            assignments[code] = persona_cells
+    return assignments
+
+
+def _persona_logic(persona_code: str) -> Dict[str, Any]:
+    return _load_hybrid_matrix_logic().get(persona_code, {})
+
+
+def _persona_stack_override(persona_code: str, cell_id: str) -> Dict[str, Any]:
+    return _load_persona_model_assignments().get(persona_code, {}).get(cell_id, {})
+
+
 def _confidence_band(normalized_scenario: Dict[str, Any]) -> str:
     context_count = len(normalized_scenario.get("decision_context", {}))
     option_count = len(normalized_scenario.get("options", []))
@@ -811,6 +958,190 @@ def _build_visible_data_catalog(normalized_persona: Dict[str, Any], normalized_s
     return catalog
 
 
+def _headline_fragment(text: str) -> str:
+    cleaned = _clean_text(text)
+    if not cleaned:
+        return ""
+    cleaned = re.sub(r"\([^)]*\)", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" .:-")
+    parts = [part.strip() for part in re.split(r"[;,.]|(?:\s+-\s+)", cleaned) if part.strip()]
+    candidate = parts[0] if parts else cleaned
+    lowered = candidate.lower()
+    for prefix in [
+        "the ",
+        "approximately ",
+        "about ",
+        "around ",
+        "current read on ",
+        "whether ",
+        "amount of ",
+        "risk of ",
+        "likelihood of ",
+        "status of ",
+        "impact on ",
+        "value of ",
+    ]:
+        if lowered.startswith(prefix):
+            candidate = candidate[len(prefix):]
+            break
+    if "critical path" in candidate.lower():
+        return "Critical Path Slip"
+    words = candidate.split()
+    if len(words) > 4:
+        candidate = " ".join(words[:4])
+    return candidate.strip(" .:-").title()
+
+
+def _scenario_subject_for_heading(
+    primary_item: Dict[str, Any],
+    normalized_persona: Dict[str, Any],
+    normalized_scenario: Dict[str, Any],
+    perspective_code: str,
+) -> str:
+    candidates: List[str] = []
+    decision_context = normalized_scenario.get("decision_context", {}) or {}
+    source_kpis = normalized_scenario.get("source_kpis", []) or []
+    priority_stakeholders = normalized_persona.get("priority_stakeholders", []) or []
+
+    if perspective_code == "stakeholder":
+        candidates.extend([_clean_text(str(item)) for item in priority_stakeholders])
+    if perspective_code == "ethics":
+        candidates.extend([
+            _clean_text(str(decision_context.get("Compliancefocus", ""))),
+            _clean_text(str(decision_context.get("Governancefocus", ""))),
+            _clean_text(str(decision_context.get("Commercialvariance", ""))),
+        ])
+    if perspective_code == "business":
+        candidates.extend([_clean_text(str(item.get("label") or "")) for item in source_kpis])
+
+    candidates.extend([_clean_text(str(item)) for item in (primary_item.get("evidence") or [])])
+    candidates.append(_clean_text(str(primary_item.get("label") or "")))
+    candidates.extend([_clean_text(str(item.get("label") or "")) for item in source_kpis])
+    candidates.extend([_clean_text(str(value)) for value in decision_context.values()])
+    candidates.append(_clean_text(str(normalized_scenario.get("scenario_title") or "")))
+
+    for candidate in candidates:
+        fragment = _headline_fragment(candidate)
+        if not fragment:
+            continue
+        if fragment.lower() in {
+            "expected value",
+            "option value",
+            "confidence",
+            "threshold / red line",
+            "missing evidence",
+            "ceo",
+            "cfo",
+            "chro",
+            "board chair",
+            "commercial director",
+            "project director",
+            "head of energy",
+            "head of scrap procurement",
+        }:
+            continue
+        return fragment
+
+    fallback = _headline_fragment(str(primary_item.get("label") or "")) or "Decision Path"
+    return fallback
+
+
+def _title_for_visible_type(
+    type_code: str,
+    emotion_code: str,
+    primary_item: Dict[str, Any],
+    normalized_persona: Dict[str, Any],
+    normalized_scenario: Dict[str, Any],
+    perspective_code: str,
+) -> str:
+    subject = _scenario_subject_for_heading(primary_item, normalized_persona, normalized_scenario, perspective_code)
+    templates = {
+        "downside": {"cautious": "Protect {subject}", "strategic": "Preserve {subject}", "decisive": "Contain {subject}", "analytical": "Quantify {subject}"},
+        "reversibility": {"cautious": "Keep {subject} Recoverable", "strategic": "Preserve {subject} Options", "decisive": "Keep {subject} Open", "analytical": "Test {subject} Reversibility"},
+        "confidence": {"cautious": "Stabilize {subject}", "strategic": "Back the {subject} Read", "decisive": "Move on {subject}", "analytical": "Test {subject} Confidence"},
+        "expected_value": {"cautious": "Protect {subject}", "strategic": "Back {subject}", "decisive": "Move on {subject}", "analytical": "Compare {subject}"},
+        "option_value": {"cautious": "Avoid Locking {subject}", "strategic": "Preserve {subject}", "decisive": "Keep {subject} Open", "analytical": "Compare {subject}"},
+        "stakeholder_map": {"cautious": "Protect {subject}", "strategic": "Hold {subject}", "decisive": "Mobilize {subject}", "analytical": "Compare {subject}"},
+        "trust_impact": {"cautious": "Protect {subject}", "strategic": "Preserve {subject}", "decisive": "Stabilize {subject}", "analytical": "Test {subject}"},
+        "harm_potential": {"cautious": "Prevent {subject} Harm", "strategic": "Avoid Lasting {subject} Harm", "decisive": "Stop {subject} Damage", "analytical": "Test {subject} Exposure"},
+        "bottleneck": {"cautious": "Protect {subject}", "strategic": "Unlock {subject}", "decisive": "Clear {subject}", "analytical": "Verify {subject}"},
+        "time_window": {"cautious": "Protect {subject} Timing", "strategic": "Use The {subject} Window", "decisive": "Move {subject} Now", "analytical": "Test {subject} Timing"},
+        "threshold": {"cautious": "Respect The {subject} Trigger", "strategic": "Avoid Crossing {subject}", "decisive": "Act At {subject}", "analytical": "Test {subject}"},
+        "missing_evidence": {"cautious": "Do Not Overreach {subject}", "strategic": "Close {subject} Gap", "decisive": "Get The {subject} Read", "analytical": "Close {subject} Gap"},
+        "defensibility": {"cautious": "Keep {subject} Defensible", "strategic": "Protect {subject}", "decisive": "Act Without Breaking {subject}", "analytical": "Justify {subject}"},
+        "approval_requirement": {"cautious": "Keep {subject} Approved", "strategic": "Protect {subject}", "decisive": "Secure {subject}", "analytical": "Test {subject}"},
+    }
+    template = templates.get(type_code, {}).get(emotion_code, "Make The {subject} Call")
+    return template.format(subject=subject).strip()
+
+
+def _best_value_text(primary_item: Dict[str, Any], normalized_scenario: Dict[str, Any]) -> str:
+    type_code = primary_item.get("type") or ""
+    candidates = [
+        *(primary_item.get("evidence") or []),
+        *[item.get("label", "") for item in normalized_scenario.get("source_kpis", []) if item.get("label")],
+        *[str(value) for value in (normalized_scenario.get("decision_context", {}) or {}).values()],
+    ]
+    cleaned = [_clean_text(item) for item in candidates if _clean_text(item)]
+    numeric_pattern = r"[£$€%]|\b\d+(?:\.\d+)?\s*(?:weeks?|wks?|days?|roles?|SMEs?|MWh|MW|months?|conditions?|count|target|coverage|float|delay|extension|consumed|remaining)\b"
+    numeric = next((item for item in cleaned if re.search(numeric_pattern, item, flags=re.I)), "")
+    if numeric:
+        return numeric
+    if type_code == "stakeholder_map" and cleaned:
+        first = cleaned[0]
+        stakeholder_count = max(2, len([item for item in re.split(r",\s*", first) if item.strip()]))
+        return f"{stakeholder_count} priority stakeholders in play"
+    if type_code in {"trust_impact", "defensibility", "approval_requirement"} and cleaned:
+        compact = cleaned[0]
+        if len(compact) > 88:
+            return _compact_value(compact)
+        return compact
+    if cleaned:
+        compact = cleaned[0]
+        if len(compact) > 88:
+            return _compact_value(compact)
+        return compact
+    return primary_item.get("label") or "Signal not yet quantified"
+
+
+def _decision_for_visible_type(
+    emotion_code: str,
+    primary_item: Dict[str, Any],
+    normalized_persona: Dict[str, Any],
+    normalized_scenario: Dict[str, Any],
+) -> str:
+    type_code = primary_item.get("type") or ""
+    signal = _clean_text(primary_item.get("label") or "the leading signal")
+    value_text = _best_value_text(primary_item, normalized_scenario)
+    voice = normalized_persona.get("decision_voice") or []
+    role = normalized_persona.get("role") or "this role"
+    scenario_title = normalized_scenario.get("scenario_title") or "this scenario"
+
+    if emotion_code == "cautious":
+        if type_code in {"downside", "harm_potential", "threshold", "approval_requirement"}:
+            return f"Do not commit further until {signal.lower()} is back inside a safer range."
+        if type_code in {"trust_impact", "stakeholder_map"}:
+            return f"Protect trust first and avoid a move that burns support before the path is defensible."
+        return f"Stay inside the safer route while {signal.lower()} remains the main live constraint."
+    if emotion_code == "strategic":
+        if type_code in {"expected_value", "option_value", "defensibility"}:
+            return f"Choose the path that preserves the strongest long-term outcome while keeping flexibility alive."
+        if type_code in {"trust_impact", "stakeholder_map"}:
+            return f"Keep the coalition together and choose the route that ages best beyond the immediate pressure."
+        return f"Preserve optionality while {signal.lower()} still determines the long-term position."
+    if emotion_code == "decisive":
+        if type_code in {"bottleneck", "time_window"}:
+            return f"Act now on the live blocker before the window tightens further."
+        if type_code in {"threshold", "approval_requirement"}:
+            return f"Escalate and act immediately once {signal.lower()} reaches the trigger."
+        return f"Move quickly on {signal.lower()} and remove the main blocker to progress."
+    if type_code in {"missing_evidence", "confidence"}:
+        return f"Verify the missing evidence before committing, then act on the strongest supported path."
+    if type_code in {"expected_value", "option_value"}:
+        return f"Compare the trade-off carefully and commit only when the stronger value path is clear."
+    return f"Test the trade-off around {signal.lower()} before locking the decision for {role} in {scenario_title}."
+
+
 def _persona_relevance(
     type_code: str,
     normalized_persona: Dict[str, Any],
@@ -866,12 +1197,14 @@ def build_fixed_matrix_cell_runtime(
     normalized_persona: Dict[str, Any],
     normalized_scenario: Dict[str, Any],
 ) -> Dict[str, Any]:
+    persona_code = normalized_persona.get("persona_code", "")
     catalog = _build_visible_data_catalog(normalized_persona, normalized_scenario)
     catalog_by_type = {item["type"]: item for item in catalog}
     cells: List[Dict[str, Any]] = []
     for cell in build_fixed_matrix_cells():
+        cell_spec = {**cell, **_persona_stack_override(persona_code, cell["id"])}
         desired_types = []
-        for label in cell.get("best_data_to_show", []):
+        for label in cell_spec.get("best_data_to_show", []):
             type_code = _visible_data_type_from_label(label)
             if type_code not in desired_types:
                 desired_types.append(type_code)
@@ -880,12 +1213,12 @@ def build_fixed_matrix_cell_runtime(
             candidate = catalog_by_type.get(type_code)
             if not candidate:
                 continue
-            scores = _score_visible_data_for_cell(candidate, cell, normalized_persona)
+            scores = _score_visible_data_for_cell(candidate, cell_spec, normalized_persona)
             ranked_items.append(
                 {
                     **candidate,
                     "matchedFrom": next(
-                        (label for label in cell.get("best_data_to_show", []) if _visible_data_type_from_label(label) == type_code),
+                        (label for label in cell_spec.get("best_data_to_show", []) if _visible_data_type_from_label(label) == type_code),
                         candidate["label"],
                     ),
                     "score": scores["total"],
@@ -893,27 +1226,60 @@ def build_fixed_matrix_cell_runtime(
                 }
             )
         ranked_items.sort(key=lambda item: (-item["score"], desired_types.index(item["type"])))
+        display_data = _dynamic_display_data(ranked_items, normalized_scenario)
+        top_item = ranked_items[0] if ranked_items else {}
+        cell_face = {
+            "title": _title_for_visible_type(
+                str(top_item.get("type") or ""),
+                cell_spec["emotionCode"],
+                top_item,
+                normalized_persona,
+                normalized_scenario,
+                cell_spec["perspectiveCode"],
+            ),
+            "value": _best_value_text(top_item, normalized_scenario),
+            "decision": _decision_for_visible_type(cell_spec["emotionCode"], top_item, normalized_persona, normalized_scenario),
+        } if top_item else {
+            "title": "Review the signal",
+            "value": "No value signal available yet",
+            "decision": "Open the cell to inspect the strongest available evidence before acting.",
+        }
+        if display_data:
+            cell_face["title"] = ""
+            cell_face["value"] = " · ".join(
+                f"{item.get('val', '').strip()} {item.get('label', '').strip()}".strip()
+                for item in display_data[:2]
+            )
         preview_items = [
-            {"label": item["label"], "preview": item["preview"], "score": item["score"]}
+            {
+                "label": item["label"],
+                "preview": item["preview"],
+                "score": item["score"],
+                "rag": item.get("rag", ""),
+                "value": item.get("value", ""),
+            }
             for item in ranked_items[:2]
         ]
         cells.append(
             {
-                "id": cell["id"],
-                "decisionLens": cell["emotion"],
-                "decisionLensCode": cell["emotionCode"],
-                "canonicalPerspective": cell["perspective"],
-                "canonicalPerspectiveCode": cell["perspectiveCode"],
-                "decisionStyle": cell["decision_style"],
-                "whyThisData": cell["why_this_data"],
+                "id": cell_spec["id"],
+                "decisionLens": cell_spec["emotion"],
+                "decisionLensCode": cell_spec["emotionCode"],
+                "canonicalPerspective": cell_spec["perspective"],
+                "canonicalPerspectiveCode": cell_spec["perspectiveCode"],
+                "decisionStyle": cell_spec["decision_style"],
+                "whyThisData": cell_spec["why_this_data"],
                 "frameworkStack": {
-                    "primary": cell["primary_fit"],
-                    "secondary": cell["secondary_fit"],
-                    "support": cell["support_fit"],
+                    "primary": cell_spec["primary_fit"],
+                    "secondary": cell_spec["secondary_fit"],
+                    "support": cell_spec["support_fit"],
                 },
-                "frameworkStackHint": f"{cell['primary_fit']} -> {cell['secondary_fit']} -> {cell['support_fit']}",
+                "frameworkStackHint": f"{cell_spec['primary_fit']} -> {cell_spec['secondary_fit']} -> {cell_spec['support_fit']}",
+                "stackRationale": cell_spec.get("stack_rationale") or {},
+                "cellFace": cell_face,
                 "preview": preview_items,
                 "rankedVisibleData": ranked_items,
+                "displayData": display_data,
             }
         )
     return {
@@ -941,6 +1307,136 @@ MODEL_ROLE_EXPLANATIONS: Dict[str, str] = {
     "OODA": "The primary model favors an executable move that can be observed and adjusted quickly.",
     "COM-B": "The primary model tests whether people, capability, and environment can actually support the move.",
 }
+
+def _extract_numeric_signal(candidates: List[str]) -> str:
+    numeric_pattern = r"(?:[£$€]\s?\d[\d.,]*(?:–\d[\d.,]*)?(?:[MKk]|\s?(?:m|bn|MWh|MW|t|yrs?|yr|months?|mths|weeks?|wks?|days?|hrs?|hours?))?|~?\d[\d.,]*(?:–\d[\d.,]*)?\s?(?:%|weeks?|wks?|days?|hrs?|hours?|months?|mths|yrs?|yr|roles?|conditions?|calls?|stakeholders?|scenarios?|t|MWh|MW))"
+    for candidate in candidates:
+        cleaned = _clean_text(candidate)
+        if not cleaned:
+            continue
+        match = re.search(numeric_pattern, cleaned, flags=re.I)
+        if match:
+            return match.group(0).strip()
+    return ""
+
+
+def _display_value_for_item(item: Dict[str, Any], normalized_scenario: Dict[str, Any]) -> str:
+    evidence = [str(piece or "") for piece in (item.get("evidence") or [])]
+    summary = [str(item.get("summary") or ""), str(item.get("preview") or ""), str(item.get("label") or "")]
+    numeric = _extract_numeric_signal(evidence + summary)
+    if numeric:
+        return numeric
+    type_code = str(item.get("type") or "")
+    if type_code == "stakeholder_map":
+        stakeholder_text = " ".join(evidence + summary)
+        stakeholder_count = max(2, len([part for part in re.split(r",\s*", stakeholder_text) if _clean_text(part)]))
+        return f"{stakeholder_count}"
+    if type_code in {"confidence", "expected_value", "option_value", "defensibility"}:
+        score = float(item.get("score") or 0.0)
+        if score >= 0.82:
+            return "High"
+        if score >= 0.62:
+            return "Medium"
+        return "Low"
+    if type_code == "missing_evidence":
+        return "Gap"
+    if type_code in {"threshold", "approval_requirement"}:
+        return "Trigger"
+    if type_code == "time_window":
+        return "Window"
+    compact = _headline_fragment(str(item.get("label") or ""))
+    return compact.split()[0] if compact else "Signal"
+
+
+def _display_rag_for_item(item: Dict[str, Any]) -> str:
+    type_code = str(item.get("type") or "")
+    score = float(item.get("score") or 0.0)
+    if type_code in {"downside", "harm_potential", "threshold", "approval_requirement", "missing_evidence"}:
+        return "r" if score >= 0.62 else "y"
+    if type_code in {"bottleneck", "time_window", "trust_impact", "stakeholder_map", "reversibility"}:
+        return "y" if score >= 0.58 else "g"
+    return "g" if score >= 0.76 else "y"
+
+
+def _display_label_for_item(item: Dict[str, Any]) -> str:
+    generic_labels = {
+        "worst-case downside",
+        "reversibility of the choice",
+        "confidence / certainty level",
+        "expected value",
+        "option value / flexibility",
+        "stakeholder map",
+        "trust impact",
+        "harm potential",
+        "operational bottleneck",
+        "time window for action",
+        "threshold / red line",
+        "missing evidence",
+        "defensibility over time",
+        "approval requirement",
+    }
+    label = _clean_text(str(item.get("label") or ""))
+    type_code = str(item.get("type") or "")
+    summary = _clean_text(str(item.get("summary") or ""))
+    evidence = [_clean_text(str(piece or "")) for piece in (item.get("evidence") or []) if _clean_text(str(piece or ""))]
+    if label.lower() not in generic_labels:
+        return label
+
+    if type_code == "confidence":
+        for candidate in evidence[1:] + evidence[:1]:
+            fragment = _headline_fragment(candidate)
+            if fragment:
+                return fragment
+
+    summary_patterns = [
+        r"main downside sits in (.*?), which",
+        r"most reversible path is (.*?), so",
+        r"expected value lens is driven by (.*?), which",
+        r"people map is anchored on (.*?), with",
+        r"trust consequence runs through (.*?), which",
+        r"harm lens is concentrated around (.*?), which",
+        r"likely bottleneck is (.*?), which",
+        r"action window is defined by (.*?), which",
+        r"clearest threshold sits at (.*?), which",
+        r"main evidence gap is around (.*?), which",
+        r"eventual choice can still be justified against (.*?), once",
+        r"approval boundary sits with (.*?), especially",
+    ]
+    for pattern in summary_patterns:
+        match = re.search(pattern, summary, flags=re.I)
+        if match:
+            fragment = _headline_fragment(match.group(1))
+            if fragment:
+                return fragment
+
+    for candidate in evidence:
+        fragment = _headline_fragment(candidate)
+        if fragment:
+            return fragment
+
+    if label:
+        return label
+    return "Key signal"
+
+
+def _dynamic_display_data(ranked_items: List[Dict[str, Any]], normalized_scenario: Dict[str, Any]) -> List[Dict[str, str]]:
+    display_rows: List[Dict[str, str]] = []
+    seen_labels = set()
+    for item in ranked_items:
+        label = _display_label_for_item(item)
+        if not label or label.lower() in seen_labels:
+            continue
+        seen_labels.add(label.lower())
+        display_rows.append(
+            {
+                "val": _display_value_for_item(item, normalized_scenario),
+                "label": label,
+                "rag": _display_rag_for_item(item),
+            }
+        )
+        if len(display_rows) >= 3:
+            break
+    return display_rows
 
 
 def _select_priority_item(ranked_visible_data: List[Dict[str, Any]], model_name: str, used_types: Optional[set] = None) -> Dict[str, Any]:
@@ -987,6 +1483,8 @@ def execute_fixed_matrix_stack(
     primary_model = framework_stack.get("primary") or "Expected Utility"
     secondary_model = framework_stack.get("secondary") or ""
     support_model = framework_stack.get("support") or ""
+    cell_face = cell.get("cell_face") or {}
+    stack_rationale = cell.get("stack_rationale") or {}
 
     used_types: set = set()
     if preferred_visible_type:
@@ -1019,6 +1517,8 @@ def execute_fixed_matrix_stack(
         recommended_decision = f"Move through {lens.lower()} × {perspective.lower()} only if {primary_label.lower()} stays inside an acceptable range."
     else:
         recommended_decision = f"Prioritize {primary_label.lower()} through {lens.lower()} × {perspective.lower()} and keep {support_label.lower()} visible while acting."
+    if cell_face.get("decision") and mode in {"direct_recommendation", "conditional_recommendation"}:
+        recommended_decision = cell_face["decision"]
 
     decision_risk = (
         secondary_item.get("summary")
@@ -1029,9 +1529,9 @@ def execute_fixed_matrix_stack(
         or f"Next, test {support_label.lower()} so the decision remains executable for {persona_role}."
     )
     reasoning_summary = (
-        f"{MODEL_ROLE_EXPLANATIONS.get(primary_model, 'The primary model shapes the main call.')} "
-        f"{secondary_model and f'{secondary_model} corrects the blind spot around {secondary_label.lower()}. ' or ''}"
-        f"{support_model and f'{support_model} checks whether {support_label.lower()} makes the move executable.' or ''}"
+        f"{stack_rationale.get('primary') or MODEL_ROLE_EXPLANATIONS.get(primary_model, 'The primary model shapes the main call.')} "
+        f"{stack_rationale.get('secondary') or (secondary_model and f'{secondary_model} corrects the blind spot around {secondary_label.lower()}.') or ''} "
+        f"{stack_rationale.get('support') or (support_model and f'{support_model} checks whether {support_label.lower()} makes the move executable.') or ''}"
     ).strip()
     watch_item = secondary_label
     missing_data = primary_label if mode == "need_more_data" else (
@@ -1058,6 +1558,7 @@ def execute_fixed_matrix_stack(
         "missing_data": missing_data,
         "matched_visible_data": [item for item in [primary_item, secondary_item, support_item] if item],
         "framework_stack": framework_stack,
+        "cell_face": cell_face,
         "evidence_used": [item for item in evidence if item][:6],
         "execution_trace": {
             "persona_role": persona_role,
@@ -1083,7 +1584,10 @@ def build_fixed_matrix_cells() -> List[Dict[str, Any]]:
 
 
 def build_persona_perspective_labels(persona_code: str) -> List[Dict[str, str]]:
-    labels = PERSONA_PERSPECTIVE_UI_LABELS.get(persona_code, {})
+    labels = {
+        **PERSONA_PERSPECTIVE_UI_LABELS.get(persona_code, {}),
+        **(_persona_logic(persona_code).get("perspective_labels") or {}),
+    }
     return [
         {
             "canonicalCode": perspective["code"],
@@ -1101,12 +1605,15 @@ def normalize_persona_for_fixed_matrix(persona: Dict[str, Any]) -> Dict[str, Any
     stakeholders = persona.get("primaryStakeholders", "")
     tension = persona.get("hardestTension", "")
     lens = persona.get("lens", "")
+    hybrid_logic = _persona_logic(code)
+    value_pool = hybrid_logic.get("value_pool") or [item["label"] for item in persona.get("kpiFamilies", [])]
     return {
+        "persona_code": code,
         "persona_id": persona.get("id", ""),
         "role": role,
         "mandate": lens or summary,
-        "primary_accountabilities": [item["label"] for item in persona.get("kpiFamilies", [])[:4]],
-        "key_risks": [item["label"] for item in persona.get("kpiFamilies", [])[4:8]],
+        "primary_accountabilities": value_pool[:4],
+        "key_risks": value_pool[4:8],
         "priority_stakeholders": [item.strip() for item in stakeholders.split(",") if item.strip()],
         "authority_level": "enterprise" if any(term in role.lower() for term in ["ceo", "cfo", "chair"]) else "functional",
         "governance_constraints": [tension] if tension else [],
@@ -1117,6 +1624,8 @@ def normalize_persona_for_fixed_matrix(persona: Dict[str, Any]) -> Dict[str, Any
             {"self": 0.25, "stakeholder": 0.25, "business": 0.25, "ethics": 0.25},
         ),
         "perspective_labels": build_persona_perspective_labels(code),
+        "decision_voice": hybrid_logic.get("decision_voice") or [],
+        "hybrid_value_pool": value_pool,
     }
 
 
