@@ -1645,6 +1645,7 @@ def normalize_scenario_for_fixed_matrix(scenario: Dict[str, Any]) -> Dict[str, A
                 "label": item.get("label", ""),
                 "summary": item.get("summary", ""),
                 "risk": item.get("risk", ""),
+                "scores": item.get("scores", []),
             }
             for item in options
         ],

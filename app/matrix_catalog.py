@@ -217,6 +217,89 @@ COMMERCIAL_QUESTION_FAMILIES = {
     },
 }
 
+PORT_TALBOT_DECISION_DIMENSIONS = ["Schedule", "Financial", "Political", "Commercial"]
+
+PORT_TALBOT_SCENARIO_LIBRARY: List[Dict[str, Any]] = [
+    {
+        "id": "pt-vo-112-tenova-payment",
+        "label": "VO-112 — Tenova Payment",
+        "badge": "CONTRACT",
+        "description": "Tenova variation order £31.4M claim plus 11-week extension. 21-day payment window.",
+        "date": "Oct 2026",
+        "options": [
+            {"code": "A", "label": "Pay full £31.4M under protest", "short": "Pay full", "scores": [85, 40, 65, 55]},
+            {"code": "B", "label": "Pay agreed £16.5M, dispute rest", "short": "Pay £16.5M", "scores": [30, 75, 35, 70]},
+            {"code": "C", "label": "Negotiate £23-25M settlement", "short": "Negotiate", "scores": [80, 60, 70, 60]},
+        ],
+        "kpiOverrides": {},
+    },
+    {
+        "id": "pt-grid-delay-14-week",
+        "label": "National Grid — 14-week Delay",
+        "badge": "INFRASTRUCTURE",
+        "description": "National Grid cannot energise the EAF substation until Q1 2028. 14-week programme slip.",
+        "date": "Oct 2026",
+        "options": [
+            {"code": "A", "label": "Accept delay, revise programme formally", "short": "Accept & revise", "scores": [40, 65, 70, 55]},
+            {"code": "B", "label": "Legal action against National Grid for damages", "short": "Legal action", "scores": [30, 70, 30, 65]},
+            {"code": "C", "label": "Accelerate parallel works to recover 8 weeks", "short": "Accelerate", "scores": [75, 40, 50, 60]},
+        ],
+        "kpiOverrides": {
+            "P1": {"K1": {"val": "59%", "rag": "r"}},
+            "P3": {"K1": {"val": "14 wks behind", "rag": "r"}, "K6": {"val": "0 wks", "rag": "r"}},
+            "P4": {"K1": {"val": "2", "rag": "r"}, "K2": {"val": "61%", "rag": "y"}},
+        },
+    },
+    {
+        "id": "pt-bmw-ahss-grade-commitment",
+        "label": "BMW AHSS Grade Commitment",
+        "badge": "COMMERCIAL",
+        "description": "BMW requires DP1000/DP1200 AHSS grade commitment by Q3 2026. LMF validation Q2 2028. £48M/yr at stake.",
+        "date": "Sep 2026",
+        "options": [
+            {"code": "A", "label": "Commit to BMW on DP1000 now, accelerate validation", "short": "Commit now", "scores": [70, 55, 60, 85]},
+            {"code": "B", "label": "Decline commitment, offer IJmuiden as interim supply", "short": "IJmuiden interim", "scores": [50, 65, 55, 55]},
+            {"code": "C", "label": "Propose BMW co-development partnership", "short": "Co-develop", "scores": [65, 60, 65, 80]},
+        ],
+        "kpiOverrides": {
+            "P10": {"K3": {"val": "£48M", "rag": "r"}, "K8": {"val": "1", "rag": "y"}, "K1": {"val": "61%", "rag": "y"}},
+            "P1": {"K7": {"val": "61%", "rag": "y"}},
+        },
+    },
+    {
+        "id": "pt-ijmuiden-transfer-price",
+        "label": "IJmuiden Transfer Price Renegotiation",
+        "badge": "FINANCIAL",
+        "description": "IJmuiden slab transfer price running £38/tonne above plan. £79M projected overshoot. Group CFO review pending.",
+        "date": "Nov 2026",
+        "options": [
+            {"code": "A", "label": "Renegotiate IJmuiden price to arm's-length market rate", "short": "Renegotiate", "scores": [55, 85, 40, 65]},
+            {"code": "B", "label": "Activate £50M early grant draw from DBET", "short": "Early draw", "scores": [50, 80, 55, 50]},
+            {"code": "C", "label": "Reduce downstream mill volumes to cut slab imports", "short": "Reduce volume", "scores": [40, 70, 45, 40]},
+        ],
+        "kpiOverrides": {
+            "P4": {"K2": {"val": "61%", "rag": "y"}, "K7": {"val": "£97M", "rag": "r"}, "K8": {"val": "£79M", "rag": "r"}},
+            "P10": {"K1": {"val": "55%", "rag": "y"}},
+        },
+    },
+    {
+        "id": "pt-eaf-operator-staffing",
+        "label": "EAF Operator Staffing Crisis",
+        "badge": "WORKFORCE",
+        "description": "47% of 400 EAF operators trained. European specialist pool constrained by VO-112 Factor 2. 20 months to commissioning.",
+        "date": "Oct 2026",
+        "options": [
+            {"code": "A", "label": "Approve £52K premium grade + external market hire", "short": "Premium hire", "scores": [75, 50, 55, 65]},
+            {"code": "B", "label": "Mandate 20 IJmuiden secondments via group escalation", "short": "IJmuiden mandate", "scores": [70, 65, 65, 70]},
+            {"code": "C", "label": "Revise commissioning headcount target to 300 minimum", "short": "Revise target", "scores": [50, 70, 60, 55]},
+        ],
+        "kpiOverrides": {
+            "P2": {"K1": {"val": "47%", "rag": "r"}, "K2": {"val": "74%", "rag": "y"}, "K4": {"val": "3/5", "rag": "y"}},
+            "P1": {"K4": {"val": "47%", "rag": "r"}},
+        },
+    },
+]
+
 
 def _extract_markdown_table(section: str) -> List[Dict[str, str]]:
     lines = [line.rstrip() for line in section.splitlines() if line.strip().startswith("|")]
@@ -391,6 +474,81 @@ def _keywords(*values: str) -> List[str]:
                 seen.add(token)
                 items.append(token)
     return items[:10]
+
+
+def _apply_kpi_overrides(kpis: List[Dict[str, Any]], overrides: Dict[str, Dict[str, str]]) -> List[Dict[str, Any]]:
+    if not overrides:
+        return [dict(item) for item in kpis]
+    result: List[Dict[str, Any]] = []
+    for item in kpis:
+        code = item.get("code", "")
+        result.append({**item, **overrides.get(code, {})})
+    return result
+
+
+def _build_port_talbot_scenario(item: Dict[str, Any]) -> Dict[str, Any]:
+    options = [
+        {
+            "code": option["code"],
+            "label": option["label"],
+            "short": option["short"],
+            "summary": f"{option['short']} path. Dimension scores: schedule {option['scores'][0]}, financial {option['scores'][1]}, political {option['scores'][2]}, commercial {option['scores'][3]}.",
+            "risk": "",
+            "scores": option["scores"],
+            "keywords": _keywords(option["label"], option["short"]),
+        }
+        for option in item["options"]
+    ]
+    kpis = [
+        {"code": "D1", "label": "Schedule effect"},
+        {"code": "D2", "label": "Financial effect"},
+        {"code": "D3", "label": "Political and stakeholder effect"},
+        {"code": "D4", "label": "Commercial and customer effect"},
+    ]
+    scenario = {
+        "id": item["id"],
+        "code": "CROSS",
+        "name": item["label"],
+        "label": item["label"],
+        "personaCode": "CROSS",
+        "personaName": "All personas",
+        "domain": "Industrial Transformation / Steel",
+        "platform": "Port Talbot Transformation Programme",
+        "persona": "All personas",
+        "scenarioDate": item["date"],
+        "classification": item["badge"],
+        "trigger": item["description"],
+        "about": item["description"],
+        "scenarioTitle": item["label"],
+        "scenarioBody": item["description"],
+        "summary": item["description"],
+        "explanation": item["description"],
+        "call": "Choose the most defensible path across the available options.",
+        "tension": item["description"],
+        "decisionContext": {
+            "date": item["date"],
+            "classification": item["badge"],
+        },
+        "decisionDimensions": PORT_TALBOT_DECISION_DIMENSIONS,
+        "kpiFamilies": kpis,
+        "options": options,
+        "kpiOverrides": item.get("kpiOverrides", {}),
+        "sharedAcrossPersonas": True,
+        "personaOverrides": {},
+        "scenarioKinds": ["port-talbot-library", "scored-options"],
+        "keywords": _keywords(
+            item["label"],
+            item["description"],
+            item["badge"],
+            *(option["label"] for option in item["options"]),
+        ),
+    }
+    scenario["normalizedScenarioProfile"] = normalize_scenario_for_fixed_matrix(scenario)
+    return scenario
+
+
+def _load_port_talbot_scenario_library() -> List[Dict[str, Any]]:
+    return [_build_port_talbot_scenario(item) for item in PORT_TALBOT_SCENARIO_LIBRARY]
 
 
 def _is_commercial_context(*values: str) -> bool:
@@ -985,6 +1143,7 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
             scenarios.extend(_parse_scenario_pack_file(path))
         else:
             scenarios.append(_parse_scenario_file(path))
+    scenarios.extend(_load_port_talbot_scenario_library())
     scenario_map: Dict[str, List[Dict[str, Any]]] = {}
     for scenario in scenarios:
         if scenario.get("sharedAcrossPersonas"):
@@ -996,7 +1155,18 @@ def load_matrix_bootstrap() -> Dict[str, Any]:
         persona_scenarios: List[Dict[str, Any]] = []
         for scenario in scenario_map.get(persona["code"], []):
             scenario_copy = dict(scenario)
+            kpi_overrides = scenario_copy.get("kpiOverrides", {}).get(persona["code"], {})
+            if kpi_overrides:
+                scenario_copy["kpiFamilies"] = _apply_kpi_overrides(persona.get("kpiFamilies", []), kpi_overrides)
+                scenario_copy["activeKpiOverrides"] = kpi_overrides
+            elif scenario_copy.get("scenarioKinds") and "port-talbot-library" in scenario_copy.get("scenarioKinds", []):
+                scenario_copy["kpiFamilies"] = [dict(item) for item in persona.get("kpiFamilies", [])]
             normalized_scenario = dict(scenario_copy.get("normalizedScenarioProfile", {}))
+            if scenario_copy.get("kpiFamilies"):
+                normalized_scenario["source_kpis"] = [
+                    {"code": item.get("code", ""), "label": item.get("label", "")}
+                    for item in scenario_copy.get("kpiFamilies", [])
+                ]
             fixed_runtime = build_fixed_matrix_cell_runtime(
                 persona.get("normalizedDecisionProfile", {}),
                 normalized_scenario,

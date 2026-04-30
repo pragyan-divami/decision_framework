@@ -1830,7 +1830,10 @@ def _build_user_payload(question: str, context: Dict[str, Any], clarification_co
             "scenario_title": context.get("scenario_title"),
             "scenario_summary": context.get("scenario_summary"),
             "scenario_decision_context": context.get("scenario_decision_context"),
+            "scenario_options": context.get("scenario_options", []),
+            "decision_dimensions": context.get("decision_dimensions", []),
             "scenario_kpis": context.get("scenario_kpis", []),
+            "active_kpi_overrides": context.get("active_kpi_overrides", {}),
             "persona_tension": context.get("persona_tension"),
             "framework_code": context.get("framework_code"),
             "assistant_mode": context.get("assistant_mode", "scenario-only"),
@@ -2112,6 +2115,57 @@ def _call_openai_router(question: str, context: Dict[str, Any], clarification_co
         raise RuntimeError(f"Invalid OpenAI router response: {raw}") from exc
 
 
+def _call_groq_router(question: str, context: Dict[str, Any], clarification_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured")
+
+    base_url = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+    system_prompt = (
+        _build_system_prompt()
+        + " Return a single JSON object matching the required_output_keys in the user payload. "
+          "Use null for unknown scalar fields and [] for unknown list fields. "
+          "For why_this_answer and reasoning_summary, write a useful executive explanation grounded in the provided scenario_options, option scores, KPI values, active_kpi_overrides, matrix cell evidence, and decision_context. "
+          "Make direct_answer and recommended_decision the user's answer first. Use target_cell_id as supporting evidence that the UI will highlight separately. "
+          "Treat those provided facts as the available real-world programme data. Do not claim live internet access or cite outside facts unless they are present in the payload. "
+          "Do not wrap the JSON in markdown."
+    )
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": _build_user_payload(question, context, clarification_context)},
+        ],
+        "response_format": {"type": "json_object"},
+        "temperature": float(os.environ.get("GROQ_TEMPERATURE", "0.2")),
+        "max_tokens": int(os.environ.get("GROQ_MAX_TOKENS", "1800")),
+    }
+    request = _urlrequest.Request(
+        f"{base_url}/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+    try:
+        with _urlrequest.urlopen(request, timeout=int(os.environ.get("GROQ_TIMEOUT_SECONDS", "20"))) as response:
+            raw = json.loads(response.read().decode("utf-8"))
+    except _urlerror.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Groq HTTP {exc.code}: {body}") from exc
+    except _urlerror.URLError as exc:
+        raise RuntimeError(f"Groq request failed: {exc}") from exc
+
+    try:
+        content = raw["choices"][0]["message"]["content"]
+        return _extract_json_object(content)
+    except Exception as exc:
+        raise RuntimeError(f"Invalid Groq router response: {raw}") from exc
+
+
 def _call_openai_router_with_web(question: str, context: Dict[str, Any], clarification_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
@@ -2221,26 +2275,34 @@ def _validate_router_output(result: Dict[str, Any], context: Dict[str, Any], que
         if cell:
             filled = _build_answer_fields(question, cell, context, result["confidence"], result["reason"])
             if _uses_fixed_matrix(context):
+                model_narrative = {
+                    "why_this_answer": result.get("why_this_answer"),
+                    "reasoning_summary": result.get("reasoning_summary"),
+                    "watch_item": result.get("watch_item"),
+                    "missing_data": result.get("missing_data"),
+                    "evidence_used": result.get("evidence_used") or [],
+                }
                 filled = _build_fixed_matrix_answer_fields(question, cell, context, result["confidence"], result["reason"])
                 for key in [
                     "decision_family",
                     "decision_lens",
                     "direct_answer",
-                    "why_this_answer",
                     "supporting_kpis",
                     "recommended_action",
                     "primary_risk",
                     "likely_consequence",
-                    "evidence_used",
                     "recommended_decision",
                     "decision_risk",
                     "suggested_next_step",
-                    "reasoning_summary",
-                    "watch_item",
-                    "missing_data",
                     "answer_mode",
                 ]:
                     result[key] = filled.get(key)
+                for key in ["why_this_answer", "reasoning_summary", "watch_item", "missing_data"]:
+                    result[key] = (model_narrative.get(key) or "").strip() or filled.get(key)
+                result["evidence_used"] = _dedupe(
+                    [*(model_narrative.get("evidence_used") or []), *(filled.get("evidence_used") or [])],
+                    6,
+                )
                 return result
             for key in [
                 "decision_family",
@@ -2277,17 +2339,25 @@ def route_question_with_llm(
     clarification_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     try:
+        provider = os.environ.get("AI_PROVIDER", "openai").strip().lower()
         use_external = (context.get("assistant_mode") or "").strip() == "scenario-external"
-        result = (
-            _call_openai_router_with_web(question, context, clarification_context)
-            if use_external
-            else _call_openai_router(question, context, clarification_context)
-        )
+        if provider == "groq":
+            result = _call_groq_router(question, context, clarification_context)
+            provider_name = "groq"
+        elif provider == "fallback":
+            raise RuntimeError("AI_PROVIDER=fallback")
+        else:
+            result = (
+                _call_openai_router_with_web(question, context, clarification_context)
+                if use_external
+                else _call_openai_router(question, context, clarification_context)
+            )
+            provider_name = "openai-web" if use_external else "openai"
         validated = _validate_router_output(result, context, question)
         return {
             "status": "ok",
             "router": validated,
-            "provider": "openai-web" if use_external else "openai",
+            "provider": provider_name,
             "fallback_used": False,
         }
     except Exception as exc:

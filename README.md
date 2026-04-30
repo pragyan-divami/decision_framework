@@ -31,8 +31,14 @@ npx skills add pragyan-divami/decision_framework
 **Running the Web Interface Locally:**
 If you prefer a standalone deterministic web app instead of a chat-based LLM skill:
 1. Ensure you have Python installed.
-2. Run the server:
+2. Optional: enable Groq-backed answers by setting:
+```bash
+export AI_PROVIDER=groq
+export GROQ_API_KEY=your_groq_api_key
+export GROQ_MODEL=llama-3.3-70b-versatile
+```
+3. Run the server:
 ```bash
 python app/server.py
 ```
-3. The engine will serve the static UI where you can upload Markdown decision documents for interactive, multi-lens matrix rendering and analysis.
+4. The engine will serve the static UI where you can upload Markdown decision documents for interactive, multi-lens matrix rendering and analysis.

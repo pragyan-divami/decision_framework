@@ -1220,11 +1220,27 @@
     .matrix-cell.routed {
       border-color: rgba(185, 131, 47, 0.34);
       background: linear-gradient(180deg, rgba(255, 251, 242, 0.98), rgba(250, 243, 226, 0.95));
-      box-shadow: 0 16px 30px rgba(185, 131, 47, 0.11);
+      box-shadow: 0 16px 30px rgba(185, 131, 47, 0.11), 0 0 0 3px rgba(195, 146, 67, 0.16);
     }
 
     .matrix-cell.routed::before {
       background: linear-gradient(90deg, #c39243, #dec38d);
+    }
+
+    .matrix-cell.routed::after {
+      content: "Routed answer";
+      position: absolute;
+      top: 8px;
+      right: 9px;
+      padding: 3px 6px;
+      border-radius: 999px;
+      background: rgba(195, 146, 67, 0.14);
+      color: #8a5d19;
+      font-family: var(--shell-font-display);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .7px;
+      text-transform: uppercase;
     }
 
     .cell-title {
@@ -1730,6 +1746,7 @@
     .question-assist {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 6px;
     }
 
@@ -1750,6 +1767,33 @@
     .question-chip:hover {
       color: var(--shell-blue);
       border-color: var(--shell-blue);
+    }
+
+    .chat-answer-card-shell {
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.94));
+      border-color: rgba(45, 108, 223, 0.14);
+    }
+
+    .chat-answer-card-shell .detail-title-shell {
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .chat-answer-card-shell .detail-copy-shell {
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-line;
+    }
+
+    .question-assist-title {
+      flex: 0 0 100%;
+      font-family: var(--font-display);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      color: var(--shell-muted);
+      text-transform: uppercase;
     }
 
     @media (max-width: 1400px) {
@@ -3076,6 +3120,67 @@
       return dedupeItems(suggestions, 5);
     }
 
+    function shortQuestionSignal(label = "") {
+      return String(label || "the leading signal")
+        .replace(/^K\d+\s*[·:-]\s*/i, "")
+        .replace(/\([^)]*\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 70);
+    }
+
+    function shortRoleLabel(persona = getPersona()) {
+      return String(persona?.role || persona?.label || "this persona")
+        .split(/[·,]/)[0]
+        .trim();
+    }
+
+    function buildActiveScenarioQuestions(persona = getPersona(), scenario = getScenario()) {
+      if (!scenario || !persona) return [];
+      if (isVo112Scenario(scenario)) return getVo112Suggestions(persona);
+
+      const scenarioTitle = scenario.scenarioTitle || scenario.label || "this scenario";
+      const role = shortRoleLabel(persona);
+      const primaryKpi = shortQuestionSignal(
+        scenario.kpiFamilies?.[0]?.label
+        || persona.kpiFamilies?.[0]?.label
+        || "the leading KPI"
+      );
+      const hasScoredOptions = (scenario.options || []).some((option) => Array.isArray(option.scores) && option.scores.length >= 4);
+
+      if (hasScoredOptions) {
+        const framework = getFramework();
+        const built = buildCellsForContext({ persona, scenario, frameworkCode: framework.code, question: "" });
+        const firstCell = built.cells?.[0] || null;
+        const firstPerspective = built.perspectives?.find((item) => item.id === firstCell?.perspectiveId || item.code === firstCell?.perspectiveId) || built.perspectives?.[0] || {};
+        const firstMode = built.modes?.find((item) => item.id === firstCell?.modeId || item.code === firstCell?.modeId) || built.modes?.[0] || {};
+        const rankedOptions = [...(scenario.options || [])]
+          .map((option) => ({ option, score: scoreScenarioOption(option, firstPerspective, firstMode, scenario) }))
+          .sort((a, b) => b.score - a.score);
+        const topOption = rankedOptions[0]?.option;
+        const optionName = topOption?.short || topOption?.label || "the leading option";
+        return dedupeItems([
+          `Which option is most defensible for ${role} in ${scenarioTitle}?`,
+          `What breaks first for ${role} if Tata chooses ${optionName}?`,
+          `Which KPI would change the recommendation on ${primaryKpi}?`,
+          `Who must ${role} align before committing in ${scenarioTitle}?`,
+        ], 4);
+      }
+
+      const framework = getFramework();
+      const built = buildCellsForContext({ persona, scenario, frameworkCode: framework.code, question: "" });
+      const topCells = selectDistinctCells(built.cells, 4);
+      const families = ["action", "risk", "data", "stakeholder"];
+      const suggestions = topCells.map((cell, index) => buildQuestionForCell(cell, persona, scenario, families[index] || "action"));
+      if (suggestions.length) return dedupeItems(suggestions, 4);
+      return dedupeItems([
+        `What is the best decision for ${role} in ${scenarioTitle}?`,
+        `What is the dominant downside if Tata waits in ${scenarioTitle}?`,
+        `Which KPI should ${role} inspect first before deciding?`,
+        `Who should ${role} tell first if this scenario worsens?`,
+      ], 4);
+    }
+
     function buildFollowUpSuggestions(cell, persona = getPersona(), scenario = getScenario(), framework = getFramework()) {
       if (!cell) return [];
       const perspectives = getActivePerspectives(persona, scenario).filter((item) => item.id !== cell.perspectiveId && item.code !== cell.perspectiveId);
@@ -3105,14 +3210,11 @@
     }
 
     function renderQuestionAssist() {
-      let suggestions = [];
-      let prefix = "";
-      if (isVo112Scenario()) {
-        suggestions = getVo112Suggestions();
-      }
+      const suggestions = buildActiveScenarioQuestions(getPersona(), getScenario());
+      const prefix = suggestions.length ? `<span class="question-assist-title">Likely questions</span>` : "";
       els.questionAssist.hidden = !suggestions.length;
       els.questionAssist.innerHTML = `${prefix}${suggestions.map((text) => `
-        <button class="question-chip" type="button" data-question-chip="${text.replace(/"/g, "&quot;")}">${text}</button>
+        <button class="question-chip" type="button" data-question-chip="${escapeHtml(text)}">${escapeHtml(text)}</button>
       `).join("")}`;
     }
 
@@ -4374,7 +4476,34 @@
       `).join("");
     }
 
+    function scoreScenarioOptionByDimensions(option, perspective, mode, scenario) {
+      if (!Array.isArray(option.scores) || option.scores.length < 4) return null;
+      const text = [
+        perspective?.label,
+        ...(perspective?.kpis || []),
+        ...(perspective?.keywords || []),
+        mode?.label,
+        mode?.focus,
+        ...(mode?.keywords || []),
+        scenario?.scenarioTitle,
+        scenario?.tension
+      ].join(" ").toLowerCase();
+      const weights = [1, 1, 1, 1];
+      if (/schedule|delivery|timeline|programme|milestone|commission|delay|construction|grid|staffing/.test(text)) weights[0] += 2;
+      if (/financial|finance|cost|cash|budget|contingency|grant|price|spend|revenue|margin/.test(text)) weights[1] += 2;
+      if (/political|stakeholder|government|union|community|minister|board|sentiment|trust|public/.test(text)) weights[2] += 2;
+      if (/commercial|customer|contract|supplier|counterparty|offtake|bmw|bid|market|grade|claim|variation/.test(text)) weights[3] += 2;
+      if (/decisive|speed|action|command|clarity/.test(text)) weights[0] += 1;
+      if (/cautious|risk|downside|containment|regret|threshold/.test(text)) weights[1] += 1;
+      if (/diplomatic|relationship|alignment|signaling|escalation/.test(text)) weights[2] += 1;
+      if (/strategic|positioning|optionality|second-order|long-horizon/.test(text)) weights[3] += 1;
+      const total = weights.reduce((sum, item) => sum + item, 0);
+      return option.scores.slice(0, 4).reduce((sum, score, index) => sum + Number(score || 0) * weights[index], 0) / total;
+    }
+
     function scoreScenarioOption(option, perspective, mode, scenario) {
+      const dimensionScore = scoreScenarioOptionByDimensions(option, perspective, mode, scenario);
+      if (dimensionScore !== null) return dimensionScore;
       const haystack = `${option.label} ${option.summary} ${option.risk}`.toLowerCase();
       let score = 0;
       [...(perspective.keywords || []), ...(mode.keywords || []), ...(scenario?.keywords || [])].forEach((keyword) => {
@@ -4985,51 +5114,29 @@
         `;
         return;
       }
-      let tag = "Scenario-grounded";
+      let tag = "Data-backed answer";
       let title = "";
       let summary = "";
-      let action = "";
-      let risk = "";
-      let consequence = "";
-      let supportTitle = "";
-      let supportSummary = "";
-      let evidenceHtml = "";
       if (state.assistMode === "clarify") {
         tag = "Clarification";
         title = "I need one more distinction before I answer";
         summary = state.pendingClarification?.prompt || state.routeExplanation || "Reply in the question box and I’ll route it before highlighting anything.";
-        action = "Waiting for a narrower question before recommending an action.";
-        risk = "The answer is still ambiguous across more than one plausible lens.";
-        consequence = "Once clarified, the answer will resolve to one matrix-supported decision path.";
-        supportTitle = "No cell selected yet";
-        supportSummary = "The system is waiting for enough context to select the right supporting matrix cell.";
-        evidenceHtml = "<li>Clarification is required before the scenario evidence can be resolved cleanly.</li>";
       } else if (state.assistMode === "suggest") {
         tag = "Suggestions";
         title = "I need a more specific question";
         summary = state.routeExplanation || "Try one of the scenario-specific questions below.";
-        action = "Choose one of the relevant questions below to generate a scenario-grounded answer.";
-        risk = "The current wording is too broad to anchor a reliable answer.";
-        consequence = "Once the question is more specific, the matrix can support a concrete decision path.";
-        supportTitle = "No cell selected yet";
-        supportSummary = "The selected scenario still has enough evidence, but the question needs to be more specific.";
-        evidenceHtml = "<li>The current scenario evidence is available, but the question is not specific enough to resolve one dominant answer.</li>";
       } else if (!cell) {
         tag = "Searching";
         title = "Working on your question";
-        summary = "I’m resolving the scenario context and the best supporting matrix cell.";
-        action = "Resolving the right recommendation from the active scenario.";
-        risk = "Evaluating which downside is dominant for this question.";
-        consequence = "The likely consequence will appear once the answer is grounded.";
-        supportTitle = "Resolving supporting cell";
-        supportSummary = "The system is resolving the best-fit matrix evidence.";
-        evidenceHtml = "<li>Searching active scenario evidence…</li>";
+        summary = "I’m resolving the best answer from the active scenario.";
       } else {
+        const hasModelNarrative = Boolean(backendAnswer?.whyThisAnswer || backendAnswer?.reasoningSummary);
         tag = backendAnswer?.answerMode === "manual_cell_review"
         ? "Manual exploration"
-        : getAnswerConfidenceLevel() === "high" ? "High confidence"
-          : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
-          : "Low confidence";
+        : hasModelNarrative ? "Groq answer"
+          : getAnswerConfidenceLevel() === "high" ? "Data-backed answer"
+            : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
+            : "Low confidence";
         state.activeCellId = cell.id;
         state.routedCellId = cell.id;
         title = backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell);
@@ -5038,45 +5145,14 @@
         backendAnswer?.reasoningSummary || "",
         backendAnswer?.watchItem ? `Watch item: ${backendAnswer.watchItem}` : "",
         backendAnswer?.missingData ? `Missing data: ${backendAnswer.missingData}` : "",
-        `Highlighting ${cell.title} because this decision lens × perspective route is the best-fit support for the current answer.`
       ].filter(Boolean).join("\n");
-        action = backendAnswer?.suggestedNextStep || backendAnswer?.recommendedAction || cell.recommendedAction;
-        risk = backendAnswer?.decisionRisk || backendAnswer?.primaryRisk || cell.risk;
-        consequence = backendAnswer?.likelyConsequence || cell.consequence;
-        supportTitle = cell.title;
-        supportSummary = `${cell.rationale} Highlighted matrix cell: ${cell.title}. ${cell.summary}`;
-        const evidenceItems = backendAnswer?.evidenceUsed?.length ? backendAnswer.evidenceUsed : cell.dataRequirements;
-        evidenceHtml = (evidenceItems || []).map((item) => `<li>${item}</li>`).join("") || "<li>No supporting evidence surfaced yet.</li>";
       }
 
       els.answerScroll.innerHTML = `
-        <div class="detail-card-shell">
+        <div class="detail-card-shell chat-answer-card-shell">
           <div class="answer-tag-shell">${tag}</div>
-          <div class="detail-title-shell">${title}</div>
-          <div class="detail-copy-shell">${summary}</div>
-        </div>
-        <div class="detail-grid-shell">
-          <div class="detail-card-shell">
-            <div class="detail-label-shell">Risk</div>
-            <div class="detail-copy-shell">${risk}</div>
-          </div>
-          <div class="detail-card-shell">
-            <div class="detail-label-shell">Next Step</div>
-            <div class="detail-copy-shell">${action}</div>
-          </div>
-        </div>
-        <div class="detail-card-shell">
-          <div class="detail-label-shell">Likely Consequence</div>
-          <div class="detail-copy-shell">${consequence}</div>
-        </div>
-        <div class="detail-card-shell">
-          <div class="detail-label-shell">Supporting Cell</div>
-          <div class="detail-title-shell">${supportTitle}</div>
-          <div class="detail-copy-shell">${supportSummary}</div>
-        </div>
-        <div class="detail-card-shell">
-          <div class="detail-label-shell">Evidence Used</div>
-          <ul class="detail-list-shell">${evidenceHtml}</ul>
+          ${title ? `<div class="detail-title-shell">${escapeHtml(title)}</div>` : ""}
+          ${summary ? `<div class="detail-copy-shell">${escapeHtml(summary)}</div>` : ""}
         </div>
       `;
     }
@@ -5236,9 +5312,21 @@
         scenario_title: scenario?.scenarioTitle || scenario?.label,
         scenario_summary: scenario?.summary || scenario?.about || "",
         scenario_decision_context: scenario?.decisionContext || {},
+        scenario_options: (scenario?.options || []).map((item) => ({
+          code: item.code || "",
+          label: item.label || "",
+          short: item.short || "",
+          summary: item.summary || "",
+          risk: item.risk || "",
+          scores: Array.isArray(item.scores) ? item.scores : [],
+        })),
+        decision_dimensions: scenario?.decisionDimensions || ["Schedule", "Financial", "Political", "Commercial"],
+        active_kpi_overrides: scenario?.activeKpiOverrides || {},
         scenario_kpis: (scenario?.kpiFamilies || []).map((item) => ({
           code: item.code || "",
           label: item.label || String(item || ""),
+          val: item.val || "",
+          rag: item.rag || "",
         })),
         assistant_mode: state.assistantMode || "scenario-external",
         uses_fixed_matrix: usesFixedMatrixScenario(scenario),
@@ -5355,6 +5443,19 @@
           state.selectedFramework = router.framework_code;
         }
         ensurePerspectiveSelection();
+        const activeContext = buildCellsForContext({
+          persona: getPersona(),
+          scenario: getScenario(),
+          frameworkCode: state.selectedFramework,
+          question: rawQuestion,
+        });
+        const routedCell = activeContext.cells.find((cell) => cell.id === router.target_cell_id) || null;
+        if (routedCell) {
+          const routedPerspective = activeContext.perspectives.find((item) => item.id === routedCell.perspectiveId || item.code === routedCell.perspectiveId);
+          if (routedPerspective && !state.selectedPerspectives.includes(routedPerspective.id)) {
+            state.selectedPerspectives = [routedPerspective.id, ...state.selectedPerspectives].slice(0, 4);
+          }
+        }
         const perspectiveCode = router.perspective_code;
         if (perspectiveCode) {
           const activePerspectives = getActivePerspectives(getPersona(), getScenario());
