@@ -819,6 +819,37 @@
       margin-left: auto;
     }
 
+    .view-switch-shell {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--shell-rim-strong);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .view-switch-btn-shell {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: transparent;
+      color: var(--shell-muted);
+      font-family: var(--shell-font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .view-switch-btn-shell.active {
+      color: var(--shell-blue);
+      background: rgba(45, 108, 223, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(45, 108, 223, 0.14);
+    }
+
     .persona-switcher-shell {
       width: clamp(240px, 28vw, 360px);
       min-width: 0;
@@ -836,6 +867,170 @@
       min-height: 0;
       height: 100%;
       overflow: hidden;
+    }
+
+    .body-shell[hidden],
+    .conflict-screen-shell[hidden] {
+      display: none !important;
+    }
+
+    .conflict-screen-shell {
+      min-height: 0;
+      height: 100%;
+      overflow: auto;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 249, 0.68), rgba(246, 240, 231, 0.72));
+    }
+
+    .conflict-shell {
+      display: grid;
+      gap: 14px;
+      max-width: 1480px;
+      margin: 0 auto;
+    }
+
+    .conflict-head-shell {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .conflict-title-shell {
+      font-family: var(--shell-font-display);
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--shell-sky);
+      letter-spacing: .2px;
+    }
+
+    .conflict-subtitle-shell {
+      margin-top: 4px;
+      color: var(--shell-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .conflict-legend-shell {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      color: var(--shell-muted);
+      font-size: 11px;
+    }
+
+    .conflict-grid-shell {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      overflow: auto;
+      border: 1px solid var(--shell-rim);
+      border-radius: 18px;
+      background: rgba(255, 253, 249, 0.82);
+      box-shadow: 0 18px 42px rgba(18, 32, 51, 0.06);
+    }
+
+    .conflict-row-shell {
+      display: grid;
+      grid-template-columns: 230px repeat(4, minmax(150px, 1fr));
+      gap: 6px;
+      min-width: 860px;
+    }
+
+    .conflict-axis-shell,
+    .conflict-persona-shell,
+    .conflict-cell-shell {
+      border: 1px solid rgba(18, 32, 51, 0.08);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .conflict-axis-shell {
+      padding: 10px 12px;
+      font-family: var(--shell-font-display);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--shell-muted);
+      text-align: center;
+    }
+
+    .conflict-persona-shell {
+      padding: 12px;
+      display: grid;
+      gap: 4px;
+      align-content: center;
+    }
+
+    .conflict-persona-name-shell {
+      font-family: var(--shell-font-display);
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--shell-blue);
+    }
+
+    .conflict-persona-role-shell {
+      color: var(--shell-muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .conflict-cell-shell {
+      min-height: 96px;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+      align-content: center;
+      position: relative;
+    }
+
+    .conflict-cell-shell.winner {
+      border-color: rgba(31, 171, 110, 0.28);
+      background: linear-gradient(180deg, rgba(238, 255, 247, 0.94), rgba(248, 255, 252, 0.84));
+    }
+
+    .conflict-cell-shell.split {
+      border-color: rgba(195, 146, 67, 0.3);
+      background: linear-gradient(180deg, rgba(255, 250, 239, 0.94), rgba(255, 253, 248, 0.84));
+    }
+
+    .conflict-score-shell {
+      font-family: var(--shell-font-display);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--shell-green);
+      line-height: 1;
+    }
+
+    .conflict-option-shell {
+      color: var(--shell-text);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .conflict-perspective-shell {
+      color: var(--shell-muted);
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .conflict-insights-shell {
+      display: grid;
+      gap: 8px;
+      padding: 14px 16px;
+      border: 1px solid var(--shell-rim);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.82);
+    }
+
+    .conflict-insight-line-shell {
+      color: var(--shell-text);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .matrix-side-shell {
@@ -1786,6 +1981,51 @@
       white-space: pre-line;
     }
 
+    .chat-thread-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .chat-msg-shell {
+      max-width: 88%;
+      display: grid;
+      gap: 5px;
+      padding: 11px 13px;
+      border-radius: 14px;
+      border: 1px solid var(--shell-rim);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--shell-text);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .chat-msg-shell.user {
+      align-self: flex-end;
+      background: rgba(45, 108, 223, 0.1);
+      border-color: rgba(45, 108, 223, 0.2);
+    }
+
+    .chat-msg-shell.ai {
+      align-self: flex-start;
+      background: rgba(255, 253, 249, 0.92);
+    }
+
+    .chat-role-shell {
+      font-family: var(--shell-font-display);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--shell-muted);
+    }
+
+    .chat-text-shell {
+      overflow-wrap: anywhere;
+    }
+
     .question-assist-title {
       flex: 0 0 100%;
       font-family: var(--font-display);
@@ -1966,12 +2206,16 @@
   <div class="app-shell">
     <div class="topbar-shell">
       <div class="brand-shell">PORT TALBOT · DECISION FRAMEWORK</div>
+      <div class="view-switch-shell" aria-label="Switch page">
+        <button class="view-switch-btn-shell active" id="viewMatrixButton" type="button" data-app-view="matrix">Matrix</button>
+        <button class="view-switch-btn-shell" id="viewConflictButton" type="button" data-app-view="conflict">Conflict</button>
+      </div>
       <div class="summary-pill-shell" id="scenarioSummaryPill">—</div>
       <select id="scenarioSelect" class="topbar-select"></select>
       <select id="personaSwitcher" class="persona-switcher-shell" aria-label="Select persona"></select>
     </div>
 
-    <div class="body-shell">
+    <div class="body-shell" id="matrixPage">
       <section class="matrix-side-shell">
         <div class="matrix-head-shell">
           <div class="mh-left-shell">
@@ -2027,6 +2271,25 @@
         </section>
       </aside>
     </div>
+
+    <section class="conflict-screen-shell" id="conflictPage" hidden>
+      <div class="conflict-shell">
+        <div class="conflict-head-shell">
+          <div>
+            <div class="eyebrow-shell">Cross-Persona Conflict</div>
+            <div class="conflict-title-shell" id="conflictTitle">—</div>
+            <div class="conflict-subtitle-shell" id="conflictSubtitle">—</div>
+          </div>
+          <div class="conflict-legend-shell">
+            <span>Rows: personas</span>
+            <span>Columns: decision lenses</span>
+            <span>Cell: recommendation + score</span>
+          </div>
+        </div>
+        <div class="conflict-grid-shell" id="conflictGrid"></div>
+        <div class="conflict-insights-shell" id="conflictInsights"></div>
+      </div>
+    </section>
 
     <div class="scenario-modal-shell" id="scenarioModal" aria-hidden="true">
       <div class="scenario-modal-card-shell" role="dialog" aria-modal="true" aria-labelledby="scenarioModalTitle">
@@ -2414,8 +2677,10 @@
       followUpSuggestions: [],
       activeTab: "detail",
       chatHistory: [],
+      lastSubmittedQuestion: "",
       scenarioDescriptionExpanded: false,
-      assistantMode: "scenario-external"
+      assistantMode: "scenario-external",
+      appView: "matrix"
     };
 
     const els = {
@@ -2462,6 +2727,14 @@
       ,tabButtonAnswer: document.getElementById("tabButtonAnswer")
       ,detailPane: document.getElementById("detailPane")
       ,answerPane: document.getElementById("answerPane")
+      ,matrixPage: document.getElementById("matrixPage")
+      ,conflictPage: document.getElementById("conflictPage")
+      ,viewMatrixButton: document.getElementById("viewMatrixButton")
+      ,viewConflictButton: document.getElementById("viewConflictButton")
+      ,conflictGrid: document.getElementById("conflictGrid")
+      ,conflictTitle: document.getElementById("conflictTitle")
+      ,conflictSubtitle: document.getElementById("conflictSubtitle")
+      ,conflictInsights: document.getElementById("conflictInsights")
     };
 
     function getPersonaById(personaId = state.personaId) {
@@ -4282,6 +4555,8 @@
       state.routeExplanation = `${switchMessage} Routed to ${candidate.cell.title}. Confidence: ${confidence}. ${assumed}`.trim();
       state.followUpSuggestions = buildFollowUpSuggestions(candidate.cell, candidate.persona, candidate.scenario, candidate.framework);
       state.recoverySuggestions = [];
+      appendChatExchange(state.lastSubmittedQuestion || state.question, buildLocalAssistantReply(candidate.cell));
+      switchTab("answer");
       rerenderWorkspace();
       els.routeNote.textContent = state.routeExplanation;
     }
@@ -4524,6 +4799,75 @@
         if (/joint|qualification|counter|private|hybrid|time-limited|negotiate/i.test(option.label + option.summary)) score += 2;
       }
       return score;
+    }
+
+    function clampScore(value, min = 0, max = 100) {
+      return Math.max(min, Math.min(max, Number(value) || 0));
+    }
+
+    function scoreConflictOptionFromScenario(option, { persona, scenario, mode, perspective, cell }) {
+      const optionText = [
+        option?.label,
+        option?.short,
+        option?.summary,
+        option?.risk,
+      ].join(" ").toLowerCase();
+      const contextText = [
+        scenario?.scenarioTitle,
+        scenario?.summary,
+        scenario?.tension,
+        persona?.role,
+        mode?.label,
+        mode?.focus,
+        perspective?.label,
+        cell?.recommendedAction,
+        cell?.risk,
+        cell?.consequence,
+        ...(cell?.kpis || []),
+        ...(cell?.rankedVisibleData || []).flatMap((item) => [item.label, item.summary, ...(item.evidence || [])]),
+      ].join(" ").toLowerCase();
+      const kpiTerms = (scenario?.kpiFamilies || []).flatMap((item) => extractTextTokens(`${item.code || ""} ${item.label || item}`));
+      const optionTokens = new Set(extractTextTokens(optionText));
+      const contextTokens = new Set(extractTextTokens(contextText));
+      const overlap = [...optionTokens].reduce((sum, token) => sum + (contextTokens.has(token) ? 1 : 0), 0);
+      const kpiOverlap = kpiTerms.reduce((sum, token) => sum + (optionText.includes(token) ? 1 : 0), 0);
+      let score = 34 + Math.min(18, overlap * 2) + Math.min(16, kpiOverlap * 3);
+      score += clampScore(Number(cell?.decisionWeight || 0), 0, 100) * 0.18;
+
+      const modeText = `${mode?.id || ""} ${mode?.code || ""} ${mode?.label || ""} ${mode?.focus || ""}`.toLowerCase();
+      if (/cautious|downside|risk|containment|regret|threshold/.test(modeText)) {
+        if (/quiet|private|hold|wait|revise|renegotiate|protect|partial|hybrid|under protest|minimum|contain|defer/.test(optionText)) score += 15;
+        if (/public|immediate|mandate|lock|commit now|approve/.test(optionText)) score -= 5;
+      }
+      if (/strategic|long|option|second|future|position/.test(modeText)) {
+        if (/negotiate|partnership|co-develop|long|recover|lock|strategic|market|premium|parallel|future/.test(optionText)) score += 15;
+      }
+      if (/decisive|speed|action|command|clarity/.test(modeText)) {
+        if (/immediate|escalate|accelerate|commit|approve|reject|mandate|activate|notify|draw|pay full/.test(optionText)) score += 15;
+      }
+      if (/analytical|evidence|expected|sensitivity|data|utility/.test(modeText)) {
+        if (/validate|joint|require|evidence|formal|specific|revised|counter|co-development|threshold|market rate/.test(optionText)) score += 15;
+      }
+
+      const perspectiveText = `${perspective?.code || ""} ${perspective?.label || ""}`.toLowerCase();
+      if (/self|personal|risk|exposure/.test(perspectiveText) && /risk|exposure|protect|grievance|covenant|accountability|liability/.test(optionText)) score += 8;
+      if (/stakeholder|people|political/.test(perspectiveText) && /government|union|community|board|customer|public|dbet|welsh|relationship|fairness/.test(optionText)) score += 8;
+      if (/business|outcome|financial/.test(perspectiveText) && /cost|schedule|revenue|grant|capex|budget|margin|commissioning|target|volume/.test(optionText)) score += 8;
+      if (/ethics|governance|contract|commercial/.test(perspectiveText) && /contract|covenant|compliance|fairness|governance|precedent|specific|formal/.test(optionText)) score += 8;
+
+      if (/severe|breach|clawback|halts?|loss|damages|grievance|critical|retaliation|strain/.test(optionText)) score -= 5;
+      return clampScore(Math.round(score), 12, 96);
+    }
+
+    function rankConflictScenarioOptions({ persona, scenario, mode, perspective, cell }) {
+      const options = (scenario?.options || []).filter(Boolean);
+      if (!options.length) return [];
+      return options.map((option) => {
+        if (Array.isArray(option.scores) && option.scores.length >= 4) {
+          return { option, score: Math.round(scoreScenarioOption(option, perspective, mode, scenario)) };
+        }
+        return { option, score: scoreConflictOptionFromScenario(option, { persona, scenario, mode, perspective, cell }) };
+      }).sort((a, b) => b.score - a.score);
     }
 
     async function loadMatrixBootstrap() {
@@ -5103,58 +5447,27 @@
     }
 
     function renderQuestionAnswerBox(cell) {
-      const backendAnswer = state.backendAnswer || null;
       if (!els.answerScroll) return;
-      if (!state.question && !backendAnswer) {
+      if (!state.chatHistory.length) {
         els.answerScroll.innerHTML = `
           <div class="detail-empty-shell">
-            <div class="detail-empty-glyph-shell">✦</div>
-            <div class="detail-empty-text-shell">Ask a scenario question to see the routed answer, supporting cell, risk, next step, and evidence in one place.</div>
+            <div class="detail-empty-glyph-shell">?</div>
+            <div class="detail-empty-text-shell">Ask a scenario question. The conversation will appear here.</div>
           </div>
         `;
         return;
       }
-      let tag = "Data-backed answer";
-      let title = "";
-      let summary = "";
-      if (state.assistMode === "clarify") {
-        tag = "Clarification";
-        title = "I need one more distinction before I answer";
-        summary = state.pendingClarification?.prompt || state.routeExplanation || "Reply in the question box and I’ll route it before highlighting anything.";
-      } else if (state.assistMode === "suggest") {
-        tag = "Suggestions";
-        title = "I need a more specific question";
-        summary = state.routeExplanation || "Try one of the scenario-specific questions below.";
-      } else if (!cell) {
-        tag = "Searching";
-        title = "Working on your question";
-        summary = "I’m resolving the best answer from the active scenario.";
-      } else {
-        const hasModelNarrative = Boolean(backendAnswer?.whyThisAnswer || backendAnswer?.reasoningSummary);
-        tag = backendAnswer?.answerMode === "manual_cell_review"
-        ? "Manual exploration"
-        : hasModelNarrative ? "Groq answer"
-          : getAnswerConfidenceLevel() === "high" ? "Data-backed answer"
-            : getAnswerConfidenceLevel() === "medium" ? "Scenario-grounded"
-            : "Low confidence";
-        state.activeCellId = cell.id;
-        state.routedCellId = cell.id;
-        title = backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell);
-        summary = [
-        backendAnswer?.whyThisAnswer || buildAnswerSummary(cell),
-        backendAnswer?.reasoningSummary || "",
-        backendAnswer?.watchItem ? `Watch item: ${backendAnswer.watchItem}` : "",
-        backendAnswer?.missingData ? `Missing data: ${backendAnswer.missingData}` : "",
-      ].filter(Boolean).join("\n");
-      }
-
       els.answerScroll.innerHTML = `
-        <div class="detail-card-shell chat-answer-card-shell">
-          <div class="answer-tag-shell">${tag}</div>
-          ${title ? `<div class="detail-title-shell">${escapeHtml(title)}</div>` : ""}
-          ${summary ? `<div class="detail-copy-shell">${escapeHtml(summary)}</div>` : ""}
+        <div class="chat-thread-shell">
+          ${state.chatHistory.map((message) => `
+            <div class="chat-msg-shell ${message.role === "user" ? "user" : "ai"}">
+              <div class="chat-role-shell">${message.role === "user" ? "You" : "AI"}</div>
+              <div class="chat-text-shell">${escapeHtml(message.text || "")}</div>
+            </div>
+          `).join("")}
         </div>
       `;
+      els.answerScroll.scrollTop = els.answerScroll.scrollHeight;
     }
 
     function renderDecisionDetail(cell, backendAnswer = state.backendAnswer || null) {
@@ -5240,6 +5553,189 @@
       if (els.answerPane) els.answerPane.classList.toggle("active", state.activeTab === "answer");
     }
 
+    function setAppView(view = "matrix") {
+      state.appView = view === "conflict" ? "conflict" : "matrix";
+      renderAppView();
+    }
+
+    function renderAppView() {
+      const conflictActive = state.appView === "conflict";
+      if (els.matrixPage) els.matrixPage.hidden = conflictActive;
+      if (els.conflictPage) els.conflictPage.hidden = !conflictActive;
+      if (els.viewMatrixButton) els.viewMatrixButton.classList.toggle("active", !conflictActive);
+      if (els.viewConflictButton) els.viewConflictButton.classList.toggle("active", conflictActive);
+      if (conflictActive) renderConflictScreen();
+    }
+
+    function visiblePersonasForConflict() {
+      return MODEL.personas.filter((persona) => (
+        persona.platformBias.includes(state.platform) || state.platform === "programme-core"
+      ));
+    }
+
+    function getConflictScenarioForPersona(persona) {
+      const exactScenario = (persona?.scenarios || []).find((item) => item.id === state.scenarioId);
+      if (exactScenario) return getScenarioForPersona(persona, state.scenarioId);
+      const activeScenario = getScenario();
+      const activeTitle = activeScenario?.scenarioTitle || activeScenario?.label || "";
+      const titleMatchedScenario = (persona?.scenarios || []).find((item) => (
+        activeTitle && (item.scenarioTitle || item.label || "") === activeTitle
+      ));
+      if (titleMatchedScenario) return getScenarioForPersona(persona, titleMatchedScenario.id);
+      const activePersonaScenarios = getPersona()?.scenarios || [];
+      const activeScenarioIndex = activePersonaScenarios.findIndex((item) => item.id === state.scenarioId);
+      const indexMatchedScenario = activeScenarioIndex >= 0 ? (persona?.scenarios || [])[activeScenarioIndex] : null;
+      return indexMatchedScenario ? getScenarioForPersona(persona, indexMatchedScenario.id) : null;
+    }
+
+    function getConflictModesForScenario(scenario) {
+      if (usesFixedMatrixScenario(scenario)) return getFixedDecisionLenses().slice(0, 4);
+      if (isVo112Scenario(scenario)) return getVo112EmotionRows().slice(0, 4);
+      return getFrameworkModesForContext(state.selectedFramework, scenario).slice(0, 4);
+    }
+
+    function hasScoredScenarioOptions(scenario) {
+      return (scenario?.options || []).some((option) => Array.isArray(option.scores) && option.scores.length >= 4);
+    }
+
+    function getConflictModeKey(mode) {
+      return mode?.code || mode?.id || mode?.label || "";
+    }
+
+    function buildConflictEntry(persona, mode) {
+      const scenario = getConflictScenarioForPersona(persona);
+      if (!scenario) return null;
+      const frameworkCode = persona.recommendedFramework || state.selectedFramework;
+      const context = buildCellsForContext({ persona, scenario, frameworkCode, question: "" });
+      const modeKey = getConflictModeKey(mode);
+      const modeCells = context.cells.filter((cell) => cell.modeId === modeKey || cell.modeId === mode.id || cell.modeId === mode.code);
+      const bestCell = [...modeCells].sort((a, b) => Number(b.decisionWeight || 0) - Number(a.decisionWeight || 0))[0] || null;
+      const perspective = context.perspectives.find((item) => item.id === bestCell?.perspectiveId || item.code === bestCell?.perspectiveId)
+        || context.perspectives[0]
+        || {};
+      let optionLabel = bestCell?.optionLabel || bestCell?.kpis?.[0] || "Best route";
+      let optionCode = slugify(optionLabel);
+      let score = Math.round(Number(bestCell?.decisionWeight || 0));
+
+      const rankedOptions = rankConflictScenarioOptions({ persona, scenario, mode, perspective, cell: bestCell });
+      const top = rankedOptions[0] || null;
+      if (top) {
+        optionLabel = top.option.short || top.option.label || optionLabel;
+        optionCode = top.option.code || slugify(optionLabel);
+        score = Math.round(Number(top.score || score));
+      }
+
+      return {
+        persona,
+        scenario,
+        mode,
+        modeKey,
+        score,
+        optionLabel,
+        optionCode,
+        perspectiveLabel: perspective.label || bestCell?.title?.split(" × ")[1] || "Perspective",
+        cellTitle: bestCell?.title || "",
+      };
+    }
+
+    function countConflictWinners(entriesByMode) {
+      const winners = {};
+      Object.entries(entriesByMode).forEach(([modeKey, entries]) => {
+        const counts = {};
+        entries.filter(Boolean).forEach((entry) => {
+          const key = entry.optionCode || slugify(entry.optionLabel);
+          counts[key] = {
+            key,
+            label: entry.optionLabel,
+            count: (counts[key]?.count || 0) + 1,
+          };
+        });
+        const winner = Object.values(counts).sort((a, b) => b.count - a.count)[0] || null;
+        const scores = entries.filter(Boolean).map((entry) => Number(entry.score || 0));
+        winners[modeKey] = {
+          ...winner,
+          spread: scores.length ? Math.max(...scores) - Math.min(...scores) : 0,
+          total: entries.filter(Boolean).length,
+        };
+      });
+      return winners;
+    }
+
+    function renderConflictScreen() {
+      if (!els.conflictGrid) return;
+      const activeScenario = getScenario();
+      const modes = getConflictModesForScenario(activeScenario);
+      const personas = visiblePersonasForConflict().filter((persona) => Boolean(getConflictScenarioForPersona(persona)));
+      if (!activeScenario || !modes.length || !personas.length) {
+        els.conflictTitle.textContent = "No conflict matrix available";
+        els.conflictSubtitle.textContent = "Select a scenario with personas and decision lenses.";
+        els.conflictGrid.innerHTML = "";
+        els.conflictInsights.innerHTML = "";
+        return;
+      }
+
+      const rows = personas.map((persona) => ({
+        persona,
+        entries: modes.map((mode) => buildConflictEntry(persona, mode)),
+      }));
+      const entriesByMode = modes.reduce((acc, mode, index) => {
+        const modeKey = getConflictModeKey(mode);
+        acc[modeKey] = rows.map((row) => row.entries[index]).filter(Boolean);
+        return acc;
+      }, {});
+      const winners = countConflictWinners(entriesByMode);
+      const header = `
+        <div class="conflict-row-shell">
+          <div class="conflict-axis-shell">Persona</div>
+          ${modes.map((mode) => `<div class="conflict-axis-shell">${escapeHtml(mode.label || mode.code || mode.id)}</div>`).join("")}
+        </div>
+      `;
+      const body = rows.map((row) => `
+        <div class="conflict-row-shell">
+          <div class="conflict-persona-shell">
+            <div class="conflict-persona-name-shell">${escapeHtml(row.persona.label || row.persona.role)}</div>
+            <div class="conflict-persona-role-shell">${escapeHtml(row.persona.role || "")}</div>
+          </div>
+          ${row.entries.map((entry) => {
+            if (!entry) return `<div class="conflict-cell-shell split"><div class="conflict-option-shell">No route</div></div>`;
+            const winner = winners[entry.modeKey] || {};
+            const isWinner = winner.key && (entry.optionCode || slugify(entry.optionLabel)) === winner.key;
+            return `
+              <div class="conflict-cell-shell ${isWinner ? "winner" : "split"}" title="${escapeHtml(entry.cellTitle)}">
+                <div class="conflict-score-shell">${escapeHtml(entry.score)}</div>
+                <div class="conflict-option-shell">${escapeHtml(entry.optionLabel)}</div>
+                <div class="conflict-perspective-shell">${escapeHtml(entry.perspectiveLabel)}</div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `).join("");
+
+      const scenarioTitle = activeScenario.scenarioTitle || activeScenario.label || "Active scenario";
+      els.conflictTitle.textContent = scenarioTitle;
+      els.conflictSubtitle.textContent = "Compare how each persona scores the likely path across the selected decision lenses.";
+      els.conflictGrid.innerHTML = header + body;
+
+      const aligned = Object.entries(winners)
+        .map(([modeKey, winner]) => ({
+          mode: modes.find((item) => getConflictModeKey(item) === modeKey),
+          ...winner,
+        }))
+        .sort((a, b) => (b.count || 0) - (a.count || 0) || (a.spread || 0) - (b.spread || 0))[0];
+      const insightLines = [
+        aligned?.mode
+          ? `Strongest alignment: ${aligned.mode.label} has ${aligned.count}/${aligned.total} personas converging on ${aligned.label}.`
+          : "",
+        ...Object.entries(winners).map(([modeKey, winner]) => {
+          const mode = modes.find((item) => getConflictModeKey(item) === modeKey);
+          return `${mode?.label || modeKey}: ${winner.count || 0}/${winner.total || 0} personas prefer ${winner.label || "no clear route"}; score spread ${Math.round(winner.spread || 0)} pts.`;
+        }),
+      ].filter(Boolean);
+      els.conflictInsights.innerHTML = insightLines.map((line) => `
+        <div class="conflict-insight-line-shell">${escapeHtml(line)}</div>
+      `).join("");
+    }
+
     function rerenderWorkspace() {
       renderHero();
       renderSelectOptions();
@@ -5251,6 +5747,7 @@
       renderQuestionAnswerBox(activeCell);
       buildMatrix();
       switchTab(state.activeTab);
+      renderAppView();
     }
 
     function choosePersona(personaId) {
@@ -5269,6 +5766,7 @@
       state.recoverySuggestions = [];
       state.followUpSuggestions = [];
       state.chatHistory = [];
+      state.lastSubmittedQuestion = "";
       state.activeTab = "detail";
       state.scenarioDescriptionExpanded = false;
       rerenderWorkspace();
@@ -5286,6 +5784,7 @@
       state.recoverySuggestions = [];
       state.followUpSuggestions = [];
       state.chatHistory = [];
+      state.lastSubmittedQuestion = "";
       state.activeTab = "detail";
       state.scenarioDescriptionExpanded = false;
       rerenderWorkspace();
@@ -5426,6 +5925,28 @@
       return lines.join("\n\n");
     }
 
+    function buildLocalAssistantReply(cell, backendAnswer = state.backendAnswer || null) {
+      if (!cell) return "I could not find a strong enough route for that question in the current scenario.";
+      const mainAnswer = firstSentenceText(backendAnswer?.recommendedDecision || backendAnswer?.directAnswer || buildDirectAnswer(cell));
+      const briefContext = firstSentenceText(backendAnswer?.whyThisAnswer || buildAnswerSummary(cell));
+      const risk = firstSentenceText(backendAnswer?.decisionRisk || backendAnswer?.primaryRisk || cell.risk || "");
+      const nextStep = firstSentenceText(backendAnswer?.suggestedNextStep || backendAnswer?.recommendedAction || cell.recommendedAction || "");
+      return [
+        mainAnswer,
+        briefContext ? `Why: ${briefContext}` : "",
+        risk ? `Risk: ${risk}` : "",
+        nextStep ? `Next: ${nextStep}` : "",
+      ].filter(Boolean).join("\n\n");
+    }
+
+    function appendChatExchange(question, answer) {
+      const cleanQuestion = String(question || "").trim();
+      const cleanAnswer = String(answer || "").trim();
+      if (cleanQuestion) state.chatHistory.push({ role: "user", text: cleanQuestion });
+      if (cleanAnswer) state.chatHistory.push({ role: "ai", text: cleanAnswer });
+      if (cleanQuestion && els.questionInput) els.questionInput.value = "";
+    }
+
     function applyBackendQuestionResult(payload, rawQuestion) {
       const router = payload?.router;
       if (!router || !router.mode) return false;
@@ -5490,11 +6011,7 @@
         state.routedCellId = router.target_cell_id;
         state.activeCellId = router.target_cell_id;
         state.routeExplanation = router.reason || "Question routed through the backend matrix router.";
-        state.chatHistory.push({ role: "user", text: rawQuestion });
-        state.chatHistory.push({
-          role: "ai",
-          text: buildExecutiveAssistantReply(router),
-        });
+        appendChatExchange(rawQuestion, buildExecutiveAssistantReply(router));
         switchTab("answer");
         rerenderWorkspace();
         if (!state.followUpSuggestions.length) {
@@ -5521,8 +6038,7 @@
         state.followUpSuggestions = [];
         state.routedCellId = null;
         state.routeExplanation = state.pendingClarification.prompt;
-        state.chatHistory.push({ role: "user", text: rawQuestion });
-        state.chatHistory.push({ role: "ai", text: state.pendingClarification.prompt });
+        appendChatExchange(rawQuestion, state.pendingClarification.prompt);
         switchTab("answer");
         rerenderWorkspace();
         els.routeNote.textContent = state.routeExplanation;
@@ -5538,8 +6054,7 @@
         state.followUpSuggestions = [];
         state.routedCellId = null;
         state.routeExplanation = router.reason || "That question is too broad for this scenario. Try one of these instead.";
-        state.chatHistory.push({ role: "user", text: rawQuestion });
-        state.chatHistory.push({ role: "ai", text: state.routeExplanation });
+        appendChatExchange(rawQuestion, state.routeExplanation);
         switchTab("answer");
         rerenderWorkspace();
         els.routeNote.textContent = state.routeExplanation;
@@ -5555,6 +6070,7 @@
         routeQuestionLocal();
         return;
       }
+      state.lastSubmittedQuestion = rawQuestion;
       try {
         const response = await fetch("/question-intelligence", {
           method: "POST",
@@ -5584,6 +6100,7 @@
     function routeQuestionLocal() {
       const rawQuestion = els.questionInput.value.trim();
       const question = rawQuestion.toLowerCase();
+      state.lastSubmittedQuestion = rawQuestion;
       state.question = rawQuestion;
       if (!question) {
         state.backendAnswer = null;
@@ -5643,6 +6160,8 @@
           state.followUpSuggestions = [];
           state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
           state.routedCellId = null;
+          appendChatExchange(rawQuestion, state.pendingClarification.prompt);
+          switchTab("answer");
           els.routeNote.textContent = state.routeExplanation;
           rerenderWorkspace();
           return;
@@ -5696,6 +6215,8 @@
         } else {
           state.routeExplanation = "That question is too broad for this scenario. Try one of these instead.";
         }
+        appendChatExchange(rawQuestion, state.routeExplanation);
+        switchTab("answer");
         els.routeNote.textContent = state.routeExplanation;
         rerenderWorkspace();
         return;
@@ -5747,6 +6268,8 @@
         state.recoverySuggestions = buildRecoverySuggestions(effectiveQuestion, getPersona(), getScenario(), getFramework());
         state.followUpSuggestions = [];
         state.routeExplanation = "That question is too broad for this scenario. Try one of these instead.";
+        appendChatExchange(rawQuestion, state.routeExplanation);
+        switchTab("answer");
         els.routeNote.textContent = state.routeExplanation;
         rerenderWorkspace();
         return;
@@ -5765,6 +6288,8 @@
           state.followUpSuggestions = [];
           state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll answer from the selected scenario before highlighting anything.`;
           state.routedCellId = null;
+          appendChatExchange(rawQuestion, state.pendingClarification.prompt);
+          switchTab("answer");
           els.routeNote.textContent = state.routeExplanation;
           rerenderWorkspace();
           return;
@@ -5785,6 +6310,8 @@
           state.routeExplanation = `${state.pendingClarification.prompt} Reply in the question box and I’ll route it before highlighting anything.`;
         }
         state.routedCellId = null;
+        appendChatExchange(rawQuestion, state.pendingClarification.prompt);
+        switchTab("answer");
         els.routeNote.textContent = state.routeExplanation;
         rerenderWorkspace();
         return;
@@ -5854,6 +6381,8 @@
 
     els.tabButtonDetail?.addEventListener("click", () => switchTab("detail"));
     els.tabButtonAnswer?.addEventListener("click", () => switchTab("answer"));
+    els.viewMatrixButton?.addEventListener("click", () => setAppView("matrix"));
+    els.viewConflictButton?.addEventListener("click", () => setAppView("conflict"));
 
     els.matrixGrid.addEventListener("click", (event) => {
       const cellButton = event.target.closest("[data-cell-id]");
