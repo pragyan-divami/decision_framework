@@ -921,6 +921,48 @@
       font-size: 11px;
     }
 
+    .conflict-filter-shell {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border: 1px solid var(--shell-rim);
+      border-radius: 14px;
+      background: rgba(255, 253, 249, 0.82);
+    }
+
+    .conflict-filter-label-shell {
+      font-family: var(--shell-font-display);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--shell-muted);
+      margin-right: 3px;
+    }
+
+    .conflict-emo-btn-shell {
+      appearance: none;
+      border: 1px solid var(--shell-rim-strong);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--shell-muted);
+      font-family: var(--shell-font-display);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .conflict-emo-btn-shell.active {
+      color: var(--shell-blue);
+      border-color: rgba(45, 108, 223, 0.28);
+      background: rgba(45, 108, 223, 0.1);
+    }
+
     .conflict-grid-shell {
       display: grid;
       gap: 6px;
@@ -934,7 +976,6 @@
 
     .conflict-row-shell {
       display: grid;
-      grid-template-columns: 230px repeat(4, minmax(150px, 1fr));
       gap: 6px;
       min-width: 860px;
     }
@@ -985,6 +1026,7 @@
       gap: 6px;
       align-content: center;
       position: relative;
+      cursor: pointer;
     }
 
     .conflict-cell-shell.winner {
@@ -992,9 +1034,24 @@
       background: linear-gradient(180deg, rgba(238, 255, 247, 0.94), rgba(248, 255, 252, 0.84));
     }
 
+    .conflict-cell-shell.winner::after {
+      content: "↑";
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      color: var(--shell-green);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
     .conflict-cell-shell.split {
       border-color: rgba(195, 146, 67, 0.3);
       background: linear-gradient(180deg, rgba(255, 250, 239, 0.94), rgba(255, 253, 248, 0.84));
+    }
+
+    .conflict-cell-shell.blocked {
+      border-color: rgba(204, 69, 75, 0.3);
+      background: linear-gradient(180deg, rgba(255, 241, 242, 0.94), rgba(255, 248, 249, 0.84));
     }
 
     .conflict-score-shell {
@@ -1004,6 +1061,10 @@
       color: var(--shell-green);
       line-height: 1;
     }
+
+    .conflict-score-shell.ok { color: var(--shell-green); }
+    .conflict-score-shell.wa { color: var(--shell-amber); }
+    .conflict-score-shell.er { color: var(--shell-red); }
 
     .conflict-option-shell {
       color: var(--shell-text);
@@ -1031,6 +1092,54 @@
       color: var(--shell-text);
       font-size: 13px;
       line-height: 1.5;
+    }
+
+    .conflict-detail-shell {
+      display: none;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid rgba(45, 108, 223, 0.22);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, 0.9);
+    }
+
+    .conflict-detail-shell.visible {
+      display: grid;
+    }
+
+    .conflict-detail-title-shell {
+      font-family: var(--shell-font-display);
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--shell-sky);
+      line-height: 1.25;
+    }
+
+    .conflict-detail-grid-shell {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .conflict-detail-card-shell {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--shell-rim);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .conflict-detail-card-shell strong {
+      color: var(--shell-text);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .conflict-detail-copy-shell {
+      color: var(--shell-muted);
+      font-size: 12px;
+      line-height: 1.55;
     }
 
     .matrix-side-shell {
@@ -1424,10 +1533,12 @@
 
     .matrix-cell.routed::after {
       content: "Routed answer";
-      position: absolute;
-      top: 8px;
-      right: 9px;
+      position: static;
+      order: -1;
+      align-self: flex-end;
+      flex: 0 0 auto;
       padding: 3px 6px;
+      margin-bottom: -2px;
       border-radius: 999px;
       background: rgba(195, 146, 67, 0.14);
       color: #8a5d19;
@@ -2282,12 +2393,20 @@
           </div>
           <div class="conflict-legend-shell">
             <span>Rows: personas</span>
-            <span>Columns: decision lenses</span>
+            <span>Columns: scenario options</span>
             <span>Cell: recommendation + score</span>
           </div>
         </div>
+        <div class="conflict-filter-shell" id="conflictEmotionFilter">
+          <span class="conflict-filter-label-shell">Emotion</span>
+          <button class="conflict-emo-btn-shell active" type="button" data-conflict-emotion="cautious">Cautious</button>
+          <button class="conflict-emo-btn-shell" type="button" data-conflict-emotion="strategic">Strategic</button>
+          <button class="conflict-emo-btn-shell" type="button" data-conflict-emotion="analytical">Analytical</button>
+          <button class="conflict-emo-btn-shell" type="button" data-conflict-emotion="decisive">Decisive</button>
+        </div>
         <div class="conflict-grid-shell" id="conflictGrid"></div>
         <div class="conflict-insights-shell" id="conflictInsights"></div>
+        <div class="conflict-detail-shell" id="conflictDetail"></div>
       </div>
     </section>
 
@@ -2680,7 +2799,9 @@
       lastSubmittedQuestion: "",
       scenarioDescriptionExpanded: false,
       assistantMode: "scenario-external",
-      appView: "matrix"
+      appView: "matrix",
+      conflictEmotion: "cautious",
+      conflictDetail: null
     };
 
     const els = {
@@ -2735,6 +2856,8 @@
       ,conflictTitle: document.getElementById("conflictTitle")
       ,conflictSubtitle: document.getElementById("conflictSubtitle")
       ,conflictInsights: document.getElementById("conflictInsights")
+      ,conflictEmotionFilter: document.getElementById("conflictEmotionFilter")
+      ,conflictDetail: document.getElementById("conflictDetail")
     };
 
     function getPersonaById(personaId = state.personaId) {
@@ -4848,6 +4971,20 @@
       if (/analytical|evidence|expected|sensitivity|data|utility/.test(modeText)) {
         if (/validate|joint|require|evidence|formal|specific|revised|counter|co-development|threshold|market rate/.test(optionText)) score += 15;
       }
+      const activeEmotion = state.conflictEmotion || "cautious";
+      if (activeEmotion === "cautious") {
+        if (/quiet|private|manage|hold|wait|partial|under protest|reserve|renegotiate|protect|contain/.test(optionText)) score += 12;
+        if (/immediate|public|mandate|lock|commit now|draw early/.test(optionText)) score -= 8;
+      } else if (activeEmotion === "strategic") {
+        if (/negotiate|partial|partnership|co-develop|long|strategic|relationship|option|market|premium|future/.test(optionText)) score += 14;
+        if (/reject|decline|reduce volume|publicly/.test(optionText)) score -= 4;
+      } else if (activeEmotion === "analytical") {
+        if (/formal|validate|joint|require|evidence|specific|revised|counter|threshold|market rate|under protest/.test(optionText)) score += 14;
+        if (/publicly|immediate|commit now/.test(optionText)) score -= 3;
+      } else if (activeEmotion === "decisive") {
+        if (/immediate|public|escalate|accelerate|commit|approve|reject|mandate|activate|notify|draw|pay full|lock/.test(optionText)) score += 20;
+        if (/quiet|wait|manage it quietly|defer|monitor without escalating/.test(optionText)) score -= 12;
+      }
 
       const perspectiveText = `${perspective?.code || ""} ${perspective?.label || ""}`.toLowerCase();
       if (/self|personal|risk|exposure/.test(perspectiveText) && /risk|exposure|protect|grievance|covenant|accountability|liability/.test(optionText)) score += 8;
@@ -5134,7 +5271,7 @@
     }
 
     function isVarianceQuestion(question = "") {
-      return /\bvariance\b/i.test(question || "");
+      return /\bvariance\b|\bcalculate\b|\bcalculation\b|\bdelta\b|\boverrun\b|\bvs plan\b|\bvs budget\b|\bhow much\b/i.test(question || "");
     }
 
     function isCommercialPositionQuestion(question = "") {
@@ -5229,6 +5366,144 @@
         return { candidate, score };
       }).sort((a, b) => b.score - a.score);
       return candidates[0]?.candidate || null;
+    }
+
+    function detectVarianceKind(question = "") {
+      const lower = String(question || "").toLowerCase();
+      if (/schedule|delay|timeline|milestone|commission|float|days|weeks/.test(lower)) return "schedule";
+      if (/financial|finance|cost|budget|cash|contingency|grant|covenant|£|money/.test(lower)) return "financial";
+      if (/commercial|contract|customer|revenue|offtake|supplier|claim|variation/.test(lower)) return "commercial";
+      if (/people|governance|stakeholder|political|government|union|trust/.test(lower)) return "people";
+      return "";
+    }
+
+    function personaVariancePreference(persona = getPersona()) {
+      const role = String(persona?.role || "").toLowerCase();
+      if (/cfo|finance/.test(role)) return ["financial", "commercial", "schedule", "people"];
+      if (/project|construction|director/.test(role)) return ["schedule", "financial", "commercial", "people"];
+      if (/commercial|customer/.test(role)) return ["commercial", "financial", "schedule", "people"];
+      if (/chro|hr|workforce|people/.test(role)) return ["people", "schedule", "financial", "commercial"];
+      if (/ceo|chair|board/.test(role)) return ["schedule", "financial", "people", "commercial"];
+      return ["schedule", "financial", "commercial", "people"];
+    }
+
+    function formatNumericCalculation(text = "") {
+      const value = String(text || "");
+      const dayMatch = value.match(/(\d+)\s*[- ]?day/i);
+      if (dayMatch) {
+        const days = Number(dayMatch[1]);
+        return `${days} days, about ${(days / 7).toFixed(1)} weeks`;
+      }
+      const monthPounds = value.match(/(\d+)\s*[- ]?month[^£]*£\s*(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)\s*M/i);
+      if (monthPounds) {
+        const months = Number(monthPounds[1]);
+        const low = Number(monthPounds[2]);
+        const high = Number(monthPounds[3]);
+        return `£${low}-${high}M over ${months} months, about £${(low / months).toFixed(1)}-${(high / months).toFixed(1)}M/month`;
+      }
+      const pounds = value.match(/£\s*(\d+(?:\.\d+)?)\s*[–-]\s*(\d+(?:\.\d+)?)\s*M/i);
+      if (pounds) return `£${pounds[1]}-${pounds[2]}M`;
+      const count = value.match(/(\d+)\s+(?:milestones?|conditions?|events?)\b/i);
+      if (count) return `${count[1]} at-risk items`;
+      return "";
+    }
+
+    function buildVarianceCandidates(persona = getPersona(), scenario = getScenario()) {
+      const context = scenario?.decisionContext || {};
+      const contextEntries = Object.entries(context).map(([key, value]) => ({ key, value: String(value || "") }));
+      const kpis = scenario?.kpiFamilies || [];
+      const candidates = [];
+      const addCandidate = (kind, label, source, baseline, priority = 0) => {
+        if (!label && !source) return;
+        const calculation = formatNumericCalculation(`${source} ${label}`);
+        candidates.push({
+          kind,
+          label: label || source,
+          source: source || label,
+          baseline,
+          calculation,
+          priority,
+        });
+      };
+
+      kpis.forEach((kpi, index) => {
+        const label = kpi?.label || String(kpi || "");
+        const lower = label.toLowerCase();
+        if (/schedule|milestone|float|delay|commission|weeks/.test(lower)) {
+          const source = contextEntries.find((item) => /time|schedule|delay|window|horizon/i.test(`${item.key} ${item.value}`))?.value || label;
+          addCandidate("schedule", label, source, inferBaselineFromVarianceLabel(label, "programme milestone / commissioning baseline"), 20 - index);
+        } else if (/financial|cost|budget|cash|contingency|grant|covenant|p&l|£/.test(lower)) {
+          const source = /grant|covenant/.test(lower)
+            ? (contextEntries.find((item) => /grant|covenant/i.test(`${item.key} ${item.value}`))?.value || label)
+            : (
+              contextEntries.find((item) => /financial|cost|budget|cash|p&l/i.test(item.key))?.value
+              || contextEntries.find((item) => /financial|cost|budget|cash|p&l|£/i.test(`${item.key} ${item.value}`))?.value
+              || label
+            );
+          addCandidate("financial", label, source, inferBaselineFromVarianceLabel(label, "approved budget / grant baseline"), 18 - index);
+        } else if (/commercial|customer|offtake|revenue|contract|supplier/.test(lower)) {
+          const source = contextEntries.find((item) => /commercial|customer|contract|offtake|revenue|supplier/i.test(`${item.key} ${item.value}`))?.value || label;
+          addCandidate("commercial", label, source, inferBaselineFromVarianceLabel(label, "contracted commercial baseline"), 16 - index);
+        } else if (/political|stakeholder|government|trust|media|workforce|union|safety/.test(lower)) {
+          const source = contextEntries.find((item) => /political|stakeholder|government|media|trust|union|safety/i.test(`${item.key} ${item.value}`))?.value || label;
+          addCandidate("people", label, source, inferBaselineFromVarianceLabel(label, "stakeholder / governance baseline"), 14 - index);
+        }
+      });
+
+      contextEntries.forEach(({ key, value }) => {
+        const combined = `${key} ${value}`.toLowerCase();
+        if (/financial|cost|£|budget/.test(combined)) addCandidate("financial", key, value, "approved financial plan", 8);
+        if (/time|delay|day|week|schedule|window/.test(combined)) addCandidate("schedule", key, value, "programme timing baseline", 8);
+        if (/political|stakeholder|government|media|trust/.test(combined)) addCandidate("people", key, value, "stakeholder / governance baseline", 6);
+      });
+
+      const preference = personaVariancePreference(persona);
+      return candidates
+        .map((candidate) => ({ ...candidate, priority: candidate.priority + Math.max(0, 12 - preference.indexOf(candidate.kind) * 3) }))
+        .sort((a, b) => b.priority - a.priority);
+    }
+
+    function inferBaselineFromVarianceLabel(label = "", fallback = "scenario baseline") {
+      const lower = label.toLowerCase();
+      const explicit = label.match(/vs\s+(.+?)(?:\)|$)/i);
+      if (explicit) return explicit[1].replace(/[)]/g, "").trim();
+      if (/schedule|milestone|commission/.test(lower)) return "programme milestone / commissioning baseline";
+      if (/budget|cost|cash|contingency|p&l/.test(lower)) return "approved budget / plan";
+      if (/grant|covenant/.test(lower)) return "grant covenant baseline";
+      if (/commercial|customer|offtake|revenue/.test(lower)) return "contracted commercial baseline";
+      return fallback;
+    }
+
+    function buildVarianceCalculationAnswer(question = "", persona = getPersona(), scenario = getScenario()) {
+      const requestedKind = detectVarianceKind(question);
+      const candidates = buildVarianceCandidates(persona, scenario);
+      if (!candidates.length) {
+        return {
+          mode: "clarify",
+          prompt: `I do not see a clear variance KPI for ${persona.role} in this scenario. Do you mean schedule, financial, people/governance, or contract/commercial variance?`,
+        };
+      }
+      const matched = requestedKind ? candidates.filter((candidate) => candidate.kind === requestedKind) : candidates;
+      if (requestedKind && !matched.length) {
+        return {
+          mode: "clarify",
+          prompt: `${requestedKind.charAt(0).toUpperCase() + requestedKind.slice(1)} variance is not the clearest signal for ${persona.role} in this scenario. Do you mean ${dedupeItems(candidates.map((candidate) => candidate.kind), 4).join(", ")} variance instead?`,
+        };
+      }
+      const top = matched[0];
+      const alternatives = dedupeItems(candidates.filter((candidate) => candidate.kind !== top.kind).map((candidate) => candidate.kind), 3);
+      const calculationLine = top.calculation ? `Calculated read: ${top.calculation}.` : `Current read: ${top.source}.`;
+      return {
+        mode: "answer",
+        text: [
+          `Your ${top.kind} variance is ${top.label}.`,
+          `Baseline: ${top.baseline}.`,
+          calculationLine,
+          `Why this is relevant: ${persona.role} is exposed to this because of ${scenario?.scenarioTitle || "the active scenario"}.`,
+          alternatives.length ? `Other variance types visible here: ${alternatives.join(", ")}.` : "",
+        ].filter(Boolean).join("\n\n"),
+        candidate: top,
+      };
     }
 
     function buildVarianceAnswer(cell, persona = getPersona(), scenario = getScenario()) {
@@ -5564,13 +5839,19 @@
       if (els.conflictPage) els.conflictPage.hidden = !conflictActive;
       if (els.viewMatrixButton) els.viewMatrixButton.classList.toggle("active", !conflictActive);
       if (els.viewConflictButton) els.viewConflictButton.classList.toggle("active", conflictActive);
+      if (els.personaSwitcher) els.personaSwitcher.style.display = conflictActive ? "none" : "";
       if (conflictActive) renderConflictScreen();
     }
 
-    function visiblePersonasForConflict() {
+    function getConflictPersonaOrder() {
+      const preferredCodes = ["P1", "P3", "P4", "P2", "P10"];
+      const preferred = preferredCodes
+        .map((code) => MODEL.personas.find((persona) => persona.code === code))
+        .filter(Boolean);
+      if (preferred.length) return preferred;
       return MODEL.personas.filter((persona) => (
         persona.platformBias.includes(state.platform) || state.platform === "programme-core"
-      ));
+      )).slice(0, 5);
     }
 
     function getConflictScenarioForPersona(persona) {
@@ -5585,155 +5866,221 @@
       const activePersonaScenarios = getPersona()?.scenarios || [];
       const activeScenarioIndex = activePersonaScenarios.findIndex((item) => item.id === state.scenarioId);
       const indexMatchedScenario = activeScenarioIndex >= 0 ? (persona?.scenarios || [])[activeScenarioIndex] : null;
-      return indexMatchedScenario ? getScenarioForPersona(persona, indexMatchedScenario.id) : null;
+      return indexMatchedScenario ? getScenarioForPersona(persona, indexMatchedScenario.id) : activeScenario;
     }
 
-    function getConflictModesForScenario(scenario) {
-      if (usesFixedMatrixScenario(scenario)) return getFixedDecisionLenses().slice(0, 4);
-      if (isVo112Scenario(scenario)) return getVo112EmotionRows().slice(0, 4);
-      return getFrameworkModesForContext(state.selectedFramework, scenario).slice(0, 4);
+    function getConflictOptions(scenario = getScenario()) {
+      return (scenario?.options || []).filter(Boolean).map((option, index) => ({
+        ...option,
+        conflictKey: option.code || option.id || `option-${index}`,
+        conflictLabel: option.short || option.label || `Option ${index + 1}`,
+      }));
     }
 
-    function hasScoredScenarioOptions(scenario) {
-      return (scenario?.options || []).some((option) => Array.isArray(option.scores) && option.scores.length >= 4);
+    function getConflictEmotionMode(scenario = getScenario()) {
+      const modes = usesFixedMatrixScenario(scenario)
+        ? getFixedDecisionLenses()
+        : isVo112Scenario(scenario)
+          ? getVo112EmotionRows()
+          : getFrameworkModesForContext(state.selectedFramework, scenario);
+      const emotion = state.conflictEmotion || "cautious";
+      const matches = {
+        cautious: ["cautious", "A"],
+        strategic: ["strategic", "B"],
+        analytical: ["analytical", "C"],
+        decisive: ["decisive", "D"],
+      }[emotion] || [emotion];
+      return modes.find((mode) => matches.includes(mode.code) || matches.includes(mode.id)) || modes[0] || {};
     }
 
-    function getConflictModeKey(mode) {
-      return mode?.code || mode?.id || mode?.label || "";
+    function getScoreTone(score) {
+      if (score >= 70) return "ok";
+      if (score >= 58) return "wa";
+      return "er";
     }
 
-    function buildConflictEntry(persona, mode) {
-      const scenario = getConflictScenarioForPersona(persona);
-      if (!scenario) return null;
+    function isConflictOptionBlocked(option, persona, scenario) {
+      if (option?.blocked || option?.eliminated || option?.hardBlocked) return true;
+      const blockedFor = option?.blockedFor || option?.eliminatedFor || [];
+      return blockedFor.includes(persona?.code) || blockedFor.includes(persona?.id);
+    }
+
+    function buildConflictPersonaContext(persona, scenario, mode) {
       const frameworkCode = persona.recommendedFramework || state.selectedFramework;
       const context = buildCellsForContext({ persona, scenario, frameworkCode, question: "" });
-      const modeKey = getConflictModeKey(mode);
-      const modeCells = context.cells.filter((cell) => cell.modeId === modeKey || cell.modeId === mode.id || cell.modeId === mode.code);
-      const bestCell = [...modeCells].sort((a, b) => Number(b.decisionWeight || 0) - Number(a.decisionWeight || 0))[0] || null;
-      const perspective = context.perspectives.find((item) => item.id === bestCell?.perspectiveId || item.code === bestCell?.perspectiveId)
-        || context.perspectives[0]
-        || {};
-      let optionLabel = bestCell?.optionLabel || bestCell?.kpis?.[0] || "Best route";
-      let optionCode = slugify(optionLabel);
-      let score = Math.round(Number(bestCell?.decisionWeight || 0));
-
-      const rankedOptions = rankConflictScenarioOptions({ persona, scenario, mode, perspective, cell: bestCell });
-      const top = rankedOptions[0] || null;
-      if (top) {
-        optionLabel = top.option.short || top.option.label || optionLabel;
-        optionCode = top.option.code || slugify(optionLabel);
-        score = Math.round(Number(top.score || score));
-      }
-
-      return {
-        persona,
-        scenario,
-        mode,
-        modeKey,
-        score,
-        optionLabel,
-        optionCode,
-        perspectiveLabel: perspective.label || bestCell?.title?.split(" × ")[1] || "Perspective",
-        cellTitle: bestCell?.title || "",
-      };
+      const perspective = context.perspectives[0] || {};
+      const modeKey = mode?.code || mode?.id;
+      const cell = context.cells.find((item) => (
+        (item.modeId === modeKey || item.modeId === mode?.id || item.modeId === mode?.code)
+        && (item.perspectiveId === perspective.id || item.perspectiveId === perspective.code)
+      )) || context.cells.find((item) => item.modeId === modeKey) || context.cells[0] || null;
+      return { frameworkCode, context, perspective, cell };
     }
 
-    function countConflictWinners(entriesByMode) {
-      const winners = {};
-      Object.entries(entriesByMode).forEach(([modeKey, entries]) => {
-        const counts = {};
-        entries.filter(Boolean).forEach((entry) => {
-          const key = entry.optionCode || slugify(entry.optionLabel);
-          counts[key] = {
-            key,
-            label: entry.optionLabel,
-            count: (counts[key]?.count || 0) + 1,
+    function scoreConflictOption(option, persona, scenario, mode, perspective, cell, activeScenario) {
+      if (Array.isArray(option.scores) && option.scores.length >= 4) {
+        return Math.round(scoreScenarioOption(option, perspective, mode, activeScenario || scenario));
+      }
+      return scoreConflictOptionFromScenario(option, { persona, scenario, mode, perspective, cell });
+    }
+
+    function buildConflictModel() {
+      const activeScenario = getScenario();
+      const options = getConflictOptions(activeScenario);
+      const personas = getConflictPersonaOrder();
+      const mode = getConflictEmotionMode(activeScenario);
+      const rows = personas.map((persona) => {
+        const scenario = getConflictScenarioForPersona(persona);
+        const { perspective, cell } = buildConflictPersonaContext(persona, scenario || activeScenario, mode);
+        const entries = options.map((option) => {
+          const blocked = isConflictOptionBlocked(option, persona, scenario || activeScenario);
+          const score = blocked ? 0 : scoreConflictOption(option, persona, scenario || activeScenario, mode, perspective, cell, activeScenario);
+          return {
+            persona,
+            scenario: scenario || activeScenario,
+            option,
+            optionKey: option.conflictKey,
+            optionLabel: option.conflictLabel,
+            score,
+            blocked,
+            perspective,
+            cell,
           };
         });
-        const winner = Object.values(counts).sort((a, b) => b.count - a.count)[0] || null;
-        const scores = entries.filter(Boolean).map((entry) => Number(entry.score || 0));
-        winners[modeKey] = {
-          ...winner,
-          spread: scores.length ? Math.max(...scores) - Math.min(...scores) : 0,
-          total: entries.filter(Boolean).length,
-        };
+        const winner = entries
+          .filter((entry) => !entry.blocked)
+          .sort((a, b) => b.score - a.score)[0] || null;
+        return { persona, scenario: scenario || activeScenario, perspective, cell, entries, winner };
       });
-      return winners;
+      return { activeScenario, options, personas, mode, rows };
+    }
+
+    function buildConflictInsights(model) {
+      const optionVotes = {};
+      model.options.forEach((option) => {
+        optionVotes[option.conflictKey] = model.rows.filter((row) => row.winner?.optionKey === option.conflictKey);
+      });
+      const winnerOption = [...model.options].sort((a, b) => (
+        (optionVotes[b.conflictKey]?.length || 0) - (optionVotes[a.conflictKey]?.length || 0)
+      ))[0] || null;
+      const winnerRows = winnerOption ? optionVotes[winnerOption.conflictKey] || [] : [];
+      const dissenters = winnerOption ? model.rows.filter((row) => row.winner?.optionKey !== winnerOption.conflictKey) : [];
+      const lines = [];
+      if (winnerOption) {
+        if (winnerRows.length === model.rows.length) {
+          lines.push(`Full consensus: all ${model.rows.length} leaders recommend ${winnerOption.conflictLabel} in ${state.conflictEmotion} mode.`);
+        } else if (winnerRows.length >= Math.ceil(model.rows.length / 2)) {
+          lines.push(`Majority: ${winnerRows.map((row) => row.persona.label).join(", ")} recommend ${winnerOption.conflictLabel}. ${dissenters.map((row) => row.persona.label).join(", ")} dissent.`);
+        } else {
+          lines.push(`Split decision: no clear majority in ${state.conflictEmotion} mode. Try another emotion filter to test whether consensus appears.`);
+        }
+      }
+      const blocked = model.rows.flatMap((row) => row.entries.filter((entry) => entry.blocked).map((entry) => `${row.persona.label} blocks ${entry.optionLabel}`));
+      if (blocked.length) lines.push(`Hard constraints active: ${blocked.join(" · ")}.`);
+      model.options.forEach((option) => {
+        const scores = model.rows.map((row) => row.entries.find((entry) => entry.optionKey === option.conflictKey)?.score || 0);
+        const spread = scores.length ? Math.max(...scores) - Math.min(...scores) : 0;
+        if (spread >= 20) {
+          lines.push(`${option.conflictLabel} has a ${Math.round(spread)}-point spread across personas — high disagreement.`);
+        }
+      });
+      return lines.length ? lines : [`No major conflict signal surfaced in ${state.conflictEmotion} mode.`];
+    }
+
+    function renderConflictDetail(model) {
+      if (!els.conflictDetail) return;
+      const detail = state.conflictDetail;
+      if (!detail) {
+        els.conflictDetail.classList.remove("visible");
+        els.conflictDetail.innerHTML = "";
+        return;
+      }
+      const row = model.rows.find((item) => item.persona.id === detail.personaId);
+      const entry = row?.entries.find((item) => item.optionKey === detail.optionKey);
+      if (!row || !entry) return;
+      const dissenters = model.rows
+        .filter((item) => item.persona.id !== row.persona.id)
+        .map((otherRow) => {
+          const otherEntry = otherRow.entries.find((item) => item.optionKey === entry.optionKey);
+          return { row: otherRow, entry: otherEntry, gap: Math.abs((entry.score || 0) - (otherEntry?.score || 0)) };
+        })
+        .sort((a, b) => b.gap - a.gap);
+      const dissenter = dissenters[0] || null;
+      els.conflictDetail.classList.add("visible");
+      els.conflictDetail.innerHTML = `
+        <div class="conflict-detail-title-shell">${escapeHtml(row.persona.label)} on "${escapeHtml(entry.optionLabel)}" · ${escapeHtml(state.conflictEmotion)} mode · Score ${entry.blocked ? "blocked" : entry.score}</div>
+        <div class="conflict-detail-grid-shell">
+          <div class="conflict-detail-card-shell">
+            <strong>${escapeHtml(row.persona.label)}'s view</strong>
+            <div class="conflict-detail-copy-shell">${escapeHtml(firstSentence(entry.cell?.recommendedAction || entry.cell?.rationale || entry.cell?.risk || "This option is scored against the persona's primary perspective."))}</div>
+            <div class="conflict-detail-copy-shell">Perspective: ${escapeHtml(entry.perspective?.label || "Primary perspective")}</div>
+          </div>
+          <div class="conflict-detail-card-shell">
+            <strong>${escapeHtml(dissenter ? `${dissenter.row.persona.label}'s dissent (${Math.round(dissenter.gap)}pt gap)` : "No significant dissent")}</strong>
+            <div class="conflict-detail-copy-shell">${escapeHtml(dissenter?.entry ? firstSentence(dissenter.entry.cell?.recommendedAction || dissenter.entry.cell?.rationale || dissenter.entry.cell?.risk || "The score gap is driven by a different primary perspective.") : "All other personas score this option close to the selected persona.")}</div>
+            <div class="conflict-detail-copy-shell">${dissenter?.entry ? `Score: ${dissenter.entry.score}` : ""}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setConflictEmotion(emotion) {
+      state.conflictEmotion = ["cautious", "strategic", "analytical", "decisive"].includes(emotion) ? emotion : "cautious";
+      state.conflictDetail = null;
+      renderConflictScreen();
     }
 
     function renderConflictScreen() {
       if (!els.conflictGrid) return;
-      const activeScenario = getScenario();
-      const modes = getConflictModesForScenario(activeScenario);
-      const personas = visiblePersonasForConflict().filter((persona) => Boolean(getConflictScenarioForPersona(persona)));
-      if (!activeScenario || !modes.length || !personas.length) {
+      const model = buildConflictModel();
+      const { activeScenario, options, rows } = model;
+      if (!activeScenario || !options.length || !rows.length) {
         els.conflictTitle.textContent = "No conflict matrix available";
-        els.conflictSubtitle.textContent = "Select a scenario with personas and decision lenses.";
+        els.conflictSubtitle.textContent = "Select a scenario with decision options.";
         els.conflictGrid.innerHTML = "";
         els.conflictInsights.innerHTML = "";
+        if (els.conflictDetail) els.conflictDetail.innerHTML = "";
         return;
       }
-
-      const rows = personas.map((persona) => ({
-        persona,
-        entries: modes.map((mode) => buildConflictEntry(persona, mode)),
-      }));
-      const entriesByMode = modes.reduce((acc, mode, index) => {
-        const modeKey = getConflictModeKey(mode);
-        acc[modeKey] = rows.map((row) => row.entries[index]).filter(Boolean);
-        return acc;
-      }, {});
-      const winners = countConflictWinners(entriesByMode);
+      if (els.conflictEmotionFilter) {
+        els.conflictEmotionFilter.querySelectorAll("[data-conflict-emotion]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.conflictEmotion === state.conflictEmotion);
+        });
+      }
+      const gridTemplate = `230px repeat(${options.length}, minmax(150px, 1fr))`;
+      const minWidth = 230 + options.length * 170;
       const header = `
-        <div class="conflict-row-shell">
+        <div class="conflict-row-shell" style="grid-template-columns:${gridTemplate}; min-width:${minWidth}px;">
           <div class="conflict-axis-shell">Persona</div>
-          ${modes.map((mode) => `<div class="conflict-axis-shell">${escapeHtml(mode.label || mode.code || mode.id)}</div>`).join("")}
+          ${options.map((option) => `<div class="conflict-axis-shell">${escapeHtml(option.conflictLabel)}</div>`).join("")}
         </div>
       `;
       const body = rows.map((row) => `
-        <div class="conflict-row-shell">
+        <div class="conflict-row-shell" style="grid-template-columns:${gridTemplate}; min-width:${minWidth}px;">
           <div class="conflict-persona-shell">
             <div class="conflict-persona-name-shell">${escapeHtml(row.persona.label || row.persona.role)}</div>
             <div class="conflict-persona-role-shell">${escapeHtml(row.persona.role || "")}</div>
           </div>
           ${row.entries.map((entry) => {
-            if (!entry) return `<div class="conflict-cell-shell split"><div class="conflict-option-shell">No route</div></div>`;
-            const winner = winners[entry.modeKey] || {};
-            const isWinner = winner.key && (entry.optionCode || slugify(entry.optionLabel)) === winner.key;
+            const isWinner = !entry.blocked && row.winner?.optionKey === entry.optionKey;
             return `
-              <div class="conflict-cell-shell ${isWinner ? "winner" : "split"}" title="${escapeHtml(entry.cellTitle)}">
-                <div class="conflict-score-shell">${escapeHtml(entry.score)}</div>
-                <div class="conflict-option-shell">${escapeHtml(entry.optionLabel)}</div>
-                <div class="conflict-perspective-shell">${escapeHtml(entry.perspectiveLabel)}</div>
-              </div>
+              <button class="conflict-cell-shell ${entry.blocked ? "blocked" : isWinner ? "winner" : "split"}" type="button" data-conflict-persona="${escapeHtml(row.persona.id)}" data-conflict-option="${escapeHtml(entry.optionKey)}">
+                <div class="conflict-score-shell ${getScoreTone(entry.score)}">${entry.blocked ? "x" : escapeHtml(entry.score)}</div>
+                <div class="conflict-option-shell">${escapeHtml(entry.blocked ? "blocked" : isWinner ? "recommended" : "candidate")}</div>
+                <div class="conflict-perspective-shell">${escapeHtml(entry.perspective?.label || "Primary perspective")}</div>
+              </button>
             `;
           }).join("")}
         </div>
       `).join("");
-
       const scenarioTitle = activeScenario.scenarioTitle || activeScenario.label || "Active scenario";
       els.conflictTitle.textContent = scenarioTitle;
-      els.conflictSubtitle.textContent = "Compare how each persona scores the likely path across the selected decision lenses.";
+      els.conflictSubtitle.textContent = `Scores show each leader's view of the active options in ${state.conflictEmotion} mode.`;
       els.conflictGrid.innerHTML = header + body;
-
-      const aligned = Object.entries(winners)
-        .map(([modeKey, winner]) => ({
-          mode: modes.find((item) => getConflictModeKey(item) === modeKey),
-          ...winner,
-        }))
-        .sort((a, b) => (b.count || 0) - (a.count || 0) || (a.spread || 0) - (b.spread || 0))[0];
-      const insightLines = [
-        aligned?.mode
-          ? `Strongest alignment: ${aligned.mode.label} has ${aligned.count}/${aligned.total} personas converging on ${aligned.label}.`
-          : "",
-        ...Object.entries(winners).map(([modeKey, winner]) => {
-          const mode = modes.find((item) => getConflictModeKey(item) === modeKey);
-          return `${mode?.label || modeKey}: ${winner.count || 0}/${winner.total || 0} personas prefer ${winner.label || "no clear route"}; score spread ${Math.round(winner.spread || 0)} pts.`;
-        }),
-      ].filter(Boolean);
-      els.conflictInsights.innerHTML = insightLines.map((line) => `
+      els.conflictInsights.innerHTML = buildConflictInsights(model).map((line) => `
         <div class="conflict-insight-line-shell">${escapeHtml(line)}</div>
       `).join("");
+      renderConflictDetail(model);
     }
 
     function rerenderWorkspace() {
@@ -6071,6 +6418,13 @@
         return;
       }
       state.lastSubmittedQuestion = rawQuestion;
+      const effectiveVarianceQuestion = state.pendingClarification?.originalQuestion && isVarianceQuestion(state.pendingClarification.originalQuestion)
+        ? `${state.pendingClarification.originalQuestion} ${rawQuestion}`
+        : rawQuestion;
+      if (isVarianceQuestion(effectiveVarianceQuestion)) {
+        answerVarianceQuestion(rawQuestion, effectiveVarianceQuestion);
+        return;
+      }
       try {
         const response = await fetch("/question-intelligence", {
           method: "POST",
@@ -6097,6 +6451,39 @@
       routeQuestionLocal();
     }
 
+    function answerVarianceQuestion(rawQuestion, effectiveQuestion = rawQuestion) {
+      state.lastSubmittedQuestion = rawQuestion;
+      state.question = effectiveQuestion;
+      const result = buildVarianceCalculationAnswer(effectiveQuestion, getPersona(), getScenario());
+      state.backendAnswer = null;
+      state.recoverySuggestions = [];
+      state.followUpSuggestions = [];
+      state.routedCellId = null;
+      if (result.mode === "clarify") {
+        state.assistMode = "clarify";
+        state.pendingClarification = {
+          originalQuestion: rawQuestion,
+          prompt: result.prompt,
+          candidates: [],
+          suggestions: [
+            "What is my schedule variance in this scenario?",
+            "What is my financial variance in this scenario?",
+            "What is my contract/commercial variance in this scenario?",
+          ],
+        };
+        state.routeExplanation = result.prompt;
+        appendChatExchange(rawQuestion, result.prompt);
+      } else {
+        state.assistMode = "answered";
+        state.pendingClarification = null;
+        state.routeExplanation = "Answered as a variance calculation from the active persona and scenario data.";
+        appendChatExchange(rawQuestion, result.text);
+      }
+      switchTab("answer");
+      rerenderWorkspace();
+      els.routeNote.textContent = state.routeExplanation;
+    }
+
     function routeQuestionLocal() {
       const rawQuestion = els.questionInput.value.trim();
       const question = rawQuestion.toLowerCase();
@@ -6118,6 +6505,10 @@
       const effectiveQuestion = state.pendingClarification
         ? `${state.pendingClarification.originalQuestion} ${rawQuestion}`
         : rawQuestion;
+      if (isVarianceQuestion(effectiveQuestion)) {
+        answerVarianceQuestion(rawQuestion, effectiveQuestion);
+        return;
+      }
       const broadQuestion = !state.pendingClarification && isBroadQuestion(effectiveQuestion);
       const useCrossContext = hasExplicitCrossContextSignal(effectiveQuestion);
 
@@ -6383,6 +6774,20 @@
     els.tabButtonAnswer?.addEventListener("click", () => switchTab("answer"));
     els.viewMatrixButton?.addEventListener("click", () => setAppView("matrix"));
     els.viewConflictButton?.addEventListener("click", () => setAppView("conflict"));
+    els.conflictEmotionFilter?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-conflict-emotion]");
+      if (!button) return;
+      setConflictEmotion(button.dataset.conflictEmotion);
+    });
+    els.conflictGrid?.addEventListener("click", (event) => {
+      const cell = event.target.closest("[data-conflict-persona][data-conflict-option]");
+      if (!cell) return;
+      state.conflictDetail = {
+        personaId: cell.dataset.conflictPersona,
+        optionKey: cell.dataset.conflictOption,
+      };
+      renderConflictScreen();
+    });
 
     els.matrixGrid.addEventListener("click", (event) => {
       const cellButton = event.target.closest("[data-cell-id]");
