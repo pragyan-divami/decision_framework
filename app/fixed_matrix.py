@@ -771,9 +771,9 @@ def _persona_stack_override(persona_code: str, cell_id: str) -> Dict[str, Any]:
 
 
 def _confidence_band(normalized_scenario: Dict[str, Any]) -> str:
-    context_count = len(normalized_scenario.get("decision_context", {}))
-    option_count = len(normalized_scenario.get("options", []))
-    signal_count = len(normalized_scenario.get("source_kpis", []))
+    context_count = len(normalized_scenario.get("decision_context") or normalized_scenario.get("decisionContext") or {})
+    option_count = len(normalized_scenario.get("options") or [])
+    signal_count = len(normalized_scenario.get("source_kpis") or normalized_scenario.get("sourceKpis") or normalized_scenario.get("kpiFamilies") or [])
     total = context_count + option_count + signal_count
     if total >= 14:
         return "high"
@@ -797,9 +797,14 @@ def _visible_data_type_from_label(label: str) -> str:
 def _build_visible_data_catalog(normalized_persona: Dict[str, Any], normalized_scenario: Dict[str, Any]) -> List[Dict[str, Any]]:
     scenario_summary = _clean_text(normalized_scenario.get("scenario_summary", ""))
     tension = _clean_text(normalized_scenario.get("tension", ""))
-    decision_context = normalized_scenario.get("decision_context", {}) or {}
+    decision_context = normalized_scenario.get("decision_context") or normalized_scenario.get("decisionContext") or {}
     context_values = [_clean_text(str(value)) for value in decision_context.values() if _clean_text(str(value))]
-    source_signals = [_sanitize_signal(item.get("label", "")) for item in normalized_scenario.get("source_kpis", []) if item.get("label")]
+    raw_source_kpis = normalized_scenario.get("source_kpis") or normalized_scenario.get("sourceKpis") or normalized_scenario.get("kpiFamilies") or []
+    source_signals = [
+        _sanitize_signal(item.get("label", "") if isinstance(item, dict) else str(item))
+        for item in raw_source_kpis
+        if (item.get("label") if isinstance(item, dict) else item)
+    ]
     option_summaries = [
         _clean_text(" ".join(part for part in [item.get("label", ""), item.get("summary", ""), item.get("risk", "")] if part))
         for item in normalized_scenario.get("options", [])
